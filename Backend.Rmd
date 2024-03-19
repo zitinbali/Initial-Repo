@@ -1,7 +1,142 @@
 
+
+```{r libraries}
+
+library(tidyverse)
+library(ggplot2)
+library(zoo)
+
+```
+
 ```{r test}
 
+library(readxl)
+RGDP_Data <- read_excel("RGDP Data.xlsx")
 
-blah blah
+# extracting the most revised values/recent data
+latest_data <- RGDP_Data$ROUTPUT24Q1
+
+# creating a lag for all quarters
+lag(latest_data)
+
+
+check <- data.frame(RGDP_Data$DATE, log(latest_data), lag(log(latest_data)))
+
+check <- check %>% 
+  rename(c("Date" = "RGDP_Data.DATE",
+           "Raw Data" = "log.latest_data.",
+           "First Lag" = "lag.log.latest_data.."))
+
+check <- check[-1,] %>% 
+  mutate(growth_rate = (`Raw Data` - `First Lag`)/`First Lag` * 100)
+
+# formatting the data variable in terms of year and quarters
+Dates <- gsub(":", " ", check$Date) 
+check <- check %>% 
+  mutate(Time = as.yearqtr(Dates)) %>% 
+  select(c(Time, growth_rate)) %>% 
+  mutate(growth_rate = as.numeric(growth_rate))
+
+## EXPLAIN EVERYTHING 
+# variance of initial years (prior to them changing to GDP) seems higher 
+plot(c(1:307), check$growth_rate, type = "l", lwd = 1)
+
+ggplot(check, aes(Time, growth_rate)) + 
+  geom_point() + 
+  geom_line()
+
+# add line to show where they changed computation method 
+# add line to show Covid as well 
+
+```
+
+### AR Function & Model 
+
+```{r autoregression}
+
+fitAR=function(Y,p,h){
+  
+  #Inputs: Y- predicted variable,  p - AR order, h -forecast horizon
+  
+  
+  aux=embed(Y,p+h) #create p lags + forecast horizon shift (=h option)
+  y=aux[,1] #  Y variable aligned/adjusted for missing data due to lags
+  X=as.matrix(aux[,-c(1:(ncol(Y)*h))]) # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)  
+
+    X.out=tail(aux,1)[1:ncol(X)] #retrieve last p observations 
+
+  
+
+    model=lm(y~X) #estimate direct h-step AR(p) by OLS 
+    coef=coef(model) #extract coefficients
+
+  
+
+  pred=c(1,X.out)%*%coef #make a forecast using the last few observations: a direct h-step forecast.
+  #note the addition of a constant to the test observation vector
+  
+  rmsfe=sqrt(sum(model$residuals^2)/nrow(X)) #get unadjusted rmsfe (ignoring estimation uncertainty)
+  
+  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) #save estimated AR regression, prediction, and estimated coefficients
+}
+
+test <- as.matrix(log(check$growth_rate))
+
+
+fitAR(test, 2, 2)
+
+```
+
+
+### Advanced AR Model 
+
+
+```{r advanced AR}
+
+# calculating mean first revision percentage changes 
+
+# extracting initial values of all variables
+# take pre-COVID data
+data_65q3_onwards <- RGDP_Data[c(75:292), c(1:219)]  %>% 
+  subset(select = -DATE) 
+
+m1 <- as.matrix(data_65q3_onwards) 
+
+data_65q3_onwards <- matrix(m1, ncol = ncol(data_65q3_onwards), dimnames = NULL)
+
+# extracting initial values of all variables
+initial_values <- diag(data_65q3_onwards)
+
+
+# extracting first revision values of all variables
+first_revision_data <- RGDP_Data[c(75:292), c(1:219)] %>% 
+  select(-c(1, 2))
+
+# base dataset 
+
+df <- RGDP_Data[c(75:292), c(1:219)] %>%
+  subset(select = -DATE) 
+
+colnames(df) <- NULL
+
+df <- as.matrix(df)
+
+revised_values <- data.frame(matrix(NA, nrow = 218, ncol = 0))
+
+for (i in 1:40){
+  na_vector = c(replicate(218, NA)) 
+  na_vector = as.numeric(na_vector)
+  
+  values <- diag(df)
+  
+  col_name = paste0("revision", i)
+  
+  na_vector[1:(219-i)] = values[1:(219-i)]
+  revised_values[[`col_name`]] = na_vector
+  
+  df <- df[,-c(1)]
+}
+
+
 
 ```
