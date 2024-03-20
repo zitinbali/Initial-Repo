@@ -203,8 +203,6 @@ for (i in 1:length(recent_values)){
 
 all_data = c(ancient_values, forecast_growth)
 
-#plot(all_data, type = "ol", lwd = 1)
-
 fitAR=function(Y,p,h){
   
   #Inputs: Y- predicted variable,  p - AR order, h -forecast horizon
@@ -226,12 +224,16 @@ fitAR=function(Y,p,h){
   return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) #save estimated AR regression, prediction, and estimated coefficients
 }
 
-test <- as.matrix(log(check$growth_rate))
+test2 <- as.matrix(log(all_data))
 
+AR_fitted_model = fitAR(test2, 2, 2)
 
-fitAR(test, 2, 2)
+example_forecast = AR_fitted_model$pred
+example_model = AR_fitted_model$model
+example_forecast
 
-
+plot(c(all_data), type = "l", lwd = 1)
+plot(c(all_data, example_forecast), type = "l", lwd = 1)
 
 ```
 
