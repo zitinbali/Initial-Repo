@@ -184,12 +184,26 @@ perc_change_df = (100 * (working_df - lagged_working_df) / lagged_working_df)[-c
 
 # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
 ten_year_mark = (example_yq - 10 - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4
+end_of_row_mark = (example_yq - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4 - 1
 
-
+# Most recent values for start of time to 10 years before target date
 ancient_values <- perc_change_df[1:ten_year_mark,][[`example_q`]]
-recent_values <- perc_change_df[(ten_year_mark + 1):nrow(perc_change_df) - 1,] %>%
-  select((which(names(.) == toString(example_yq - 10)) + 1) : toString(example_yq))
 
+# All other values
+recent_values <- perc_change_df[(ten_year_mark + 1): end_of_row_mark,][[`example_q`]]
+  #select((which(names(.) == toString(example_yq - 10)) + 2) : toString(example_yq))
+
+# Applying approximation of final growth numbers on recent values
+forecast_growth = recent_values #c(replicate(length(recent_values), NA))
+for (i in 1:length(recent_values)){
+  for (j in 1:i){
+    forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
+  }
+}
+
+all_data = c(ancient_values, forecast_growth)
+
+#plot(all_data, type = "ol", lwd = 1)
 
 fitAR=function(Y,p,h){
   
