@@ -168,9 +168,27 @@ change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 
 ```{r advanced AR}
 
+example_q = "2014 Q1"
+example_yq = as.yearqtr(example_q)
+
+# Formatting dataframe of quarters and their estimated values
+working_df = RGDP_Data[, -c(1)] %>%
+  mutate_all(as.numeric)
+
+colnames(working_df) <- sapply(seq(as.Date(as.yearqtr("1965 Q4", format = "%Y Q%q")), by="quarter", length.out = ncol(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+rownames(working_df) <- sapply(seq(as.Date(as.yearqtr("1947 Q1", format = "%Y Q%q")), by="quarter", length.out = nrow(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+
+# Calculating growth rate of each quarter
+lagged_working_df = lag(working_df)
+perc_change_df = (100 * (working_df - lagged_working_df) / lagged_working_df)[-c(1),]
+
+# Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
+ten_year_mark = (example_yq - 10 - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4
 
 
-
+ancient_values <- perc_change_df[1:ten_year_mark,][[`example_q`]]
+recent_values <- perc_change_df[(ten_year_mark + 1):nrow(perc_change_df) - 1,] %>%
+  select((which(names(.) == toString(example_yq - 10)) + 1) : toString(example_yq))
 
 
 fitAR=function(Y,p,h){
