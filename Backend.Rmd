@@ -88,10 +88,10 @@ fitAR(test, 2, 2)
 ```
 
 
-### Advanced AR Model 
+### Preparing for Advanced AR Model 
 
 
-```{r advanced AR}
+```{r advanced AR prep}
 
 # calculating mean first revision percentage changes 
 
@@ -152,8 +152,7 @@ for (i in 0:40){
 lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
 revised_growth <- revised_growth[,-c(1)]
 
-# we're taking the average of the change in growth per revision 
-
+# We're taking the average of the change in growth per revision 
 change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
 
 change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
@@ -161,5 +160,46 @@ change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
 change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 
 
+```
+
+
+### Advanced AR Model 
+
+
+```{r advanced AR}
+
+
+
+
+
+
+fitAR=function(Y,p,h){
+  
+  #Inputs: Y- predicted variable,  p - AR order, h -forecast horizon
+  
+  aux=embed(Y,p+h) #create p lags + forecast horizon shift (=h option)
+  y=aux[,1] #  Y variable aligned/adjusted for missing data due to lags
+  X=as.matrix(aux[,-c(1:(ncol(Y)*h))]) # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)  
+
+    X.out=tail(aux,1)[1:ncol(X)] #retrieve last p observations 
+
+    model=lm(y~X) #estimate direct h-step AR(p) by OLS 
+    coef=coef(model) #extract coefficients
+
+  pred=c(1,X.out)%*%coef #make a forecast using the last few observations: a direct h-step forecast.
+  #note the addition of a constant to the test observation vector
+  
+  rmsfe=sqrt(sum(model$residuals^2)/nrow(X)) #get unadjusted rmsfe (ignoring estimation uncertainty)
+  
+  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) #save estimated AR regression, prediction, and estimated coefficients
+}
+
+test <- as.matrix(log(check$growth_rate))
+
+
+fitAR(test, 2, 2)
+
+
 
 ```
+
