@@ -110,20 +110,30 @@ initial_values <- diag(data_65q3_onwards)
 
 # extracting first revision values of all variables
 first_revision_data <- RGDP_Data[c(75:292), c(1:219)] %>% 
-  select(-c(1, 2))
+  select(-c(1, 2)) 
 
-# base dataset 
+# base dataset showing the GDP values across quarters 
 
-df <- RGDP_Data[c(75:292), c(1:219)] %>%
-  subset(select = -DATE) 
+GDP_across_q <- RGDP_Data[c(74:293), c(1:220)] %>%
+  subset(select = -DATE) %>%
+  mutate_all(as.numeric)
 
-colnames(df) <- NULL
+colnames(GDP_across_q) <- NULL
 
-df <- as.matrix(df)
+GDP_across_q <- as.matrix(GDP_across_q) 
 
-revised_values <- data.frame(matrix(NA, nrow = 218, ncol = 0))
+lagged_GDP_across_q <- lag(GDP_across_q)
 
-for (i in 1:40){
+df <- 100 * (GDP_across_q - lagged_GDP_across_q)/lagged_GDP_across_q 
+
+# Removing the first and last row since we had added those to compute the lag.
+df <- df[-c(1, 220),]
+
+# Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
+
+revised_growth <- data.frame(matrix(NA, nrow = 218, ncol = 0))
+
+for (i in 0:40){
   na_vector = c(replicate(218, NA)) 
   na_vector = as.numeric(na_vector)
   
@@ -131,11 +141,24 @@ for (i in 1:40){
   
   col_name = paste0("revision", i)
   
-  na_vector[1:(219-i)] = values[1:(219-i)]
-  revised_values[[`col_name`]] = na_vector
+  na_vector[1:(218-i)] = values[1:(218-i)]
+  revised_growth[[`col_name`]] = na_vector
   
   df <- df[,-c(1)]
 }
+
+
+# Now, we are looking into how the growth rates change due to revision. 
+lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
+revised_growth <- revised_growth[,-c(1)]
+
+# we're taking the average of the change in growth per revision 
+
+change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
+
+change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
+  
+change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 
 
 
