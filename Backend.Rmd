@@ -5,21 +5,27 @@
 library(tidyverse)
 library(ggplot2)
 library(zoo)
+library(forecast)
+library(xts)
 
 ```
+
+### Basic Cleaning & Processing
 
 ```{r test}
 
 library(readxl)
+
+# Reading the GDP data
 RGDP_Data <- read_excel("RGDP Data.xlsx")
 
-# extracting the most revised values/recent data
+# extracting the most revised values/recent data (2024 Q1) 
 latest_data <- RGDP_Data$ROUTPUT24Q1
 
 # creating a lag for all quarters
 lag(latest_data)
 
-
+# check is a dataset to validate whether the data is stationary 
 check <- data.frame(RGDP_Data$DATE, log(latest_data), lag(log(latest_data)))
 
 check <- check %>% 
@@ -27,8 +33,9 @@ check <- check %>%
            "Raw Data" = "log.latest_data.",
            "First Lag" = "lag.log.latest_data.."))
 
+# calculating growth rate of log(GDP) from one quarter to the next
 check <- check[-1,] %>% 
-  mutate(growth_rate = (`Raw Data` - `First Lag`)/`First Lag` * 100)
+  mutate(growth_rate = (log(`Raw Data`) - log(`First Lag`))/log(`First Lag`) * 100)
 
 # formatting the data variable in terms of year and quarters
 Dates <- gsub(":", " ", check$Date) 
@@ -37,80 +44,111 @@ check <- check %>%
   select(c(Time, growth_rate)) %>% 
   mutate(growth_rate = as.numeric(growth_rate))
 
+check_xts <- xts(check$growth_rate, check$Time) 
+
+plot(as.zoo(check_xts), 
+     plot.type = "single", 
+     col = c("darkred"),
+     lwd = 1,
+     xlab = "Date",
+     ylab = "Growth Rate",
+     main = "Quarterly Growth Rate of log(GDP)")
+
+# function that transform years to class 'yearqtr'
+YToYQTR <- function(years){
+  return(
+      sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
+  )
+}
+
+# recessions
+recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                2001, 2007:2008))
+# the COVID recession ended in April 2020 according to the Fed
+recessions_covid <- append(recessions, 
+                           c(as.yearqtr("2020 Q1"), 
+                             as.yearqtr("2020 Q2")))
+          
+# colour shading for recessions
+xblocks(time(as.zoo(check_xts)), 
+        c(time(check_xts) %in% recessions_covid), 
+        col = alpha("steelblue", alpha = 0.3))
+
+
 ## EXPLAIN EVERYTHING 
 # variance of initial years (prior to them changing to GDP) seems higher 
-plot(c(1:307), check$growth_rate, type = "l", lwd = 1)
-
-ggplot(check, aes(Time, growth_rate)) + 
-  geom_point() + 
-  geom_line()
-
-# add line to show where they changed computation method 
-# add line to show Covid as well 
-
 ```
+
 
 ### AR Function & Model 
 
 ```{r autoregression}
 
+# Using the basic AR model from lecture 
+# Inputs: Y - predicted variable, p - AR order, h - forecast horizon
+
 fitAR=function(Y,p,h){
   
-  #Inputs: Y- predicted variable,  p - AR order, h -forecast horizon
+  # create p lags + forecast horizon shift (=h option)
+  aux = embed(Y, p+h)
   
+  #  Y variable aligned/adjusted for missing data due to lags
+  y = aux[,1] 
   
-  aux=embed(Y,p+h) #create p lags + forecast horizon shift (=h option)
-  y=aux[,1] #  Y variable aligned/adjusted for missing data due to lags
-  X=as.matrix(aux[,-c(1:(ncol(Y)*h))]) # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)  
+  # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
+  X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
 
-    X.out=tail(aux,1)[1:ncol(X)] #retrieve last p observations 
+  # retrieve last p observations
+  X.out = tail(aux,1)[1:ncol(X)] 
 
+  # estimate direct h-step AR(p) by OLS 
+  model = lm(y~X) 
   
+  # extract coefficients
+  coef = coef(model) 
 
-    model=lm(y~X) #estimate direct h-step AR(p) by OLS 
-    coef=coef(model) #extract coefficients
-
+  #make a forecast using the last few observations: a direct h-step forecast.
+  pred = c(1,X.out)%*%coef 
   
-
-  pred=c(1,X.out)%*%coef #make a forecast using the last few observations: a direct h-step forecast.
   #note the addition of a constant to the test observation vector
   
-  rmsfe=sqrt(sum(model$residuals^2)/nrow(X)) #get unadjusted rmsfe (ignoring estimation uncertainty)
+  #get unadjusted rmsfe (ignoring estimation uncertainty)
+  rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
   
-  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) #save estimated AR regression, prediction, and estimated coefficients
+  #save estimated AR regression, prediction, and estimated coefficients
+  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) 
 }
 
-test <- as.matrix(log(check$growth_rate))
+
+# Creating a test dataset that comprises the growth_rate from the check dataset 
+
+test_AR <- as.matrix(check$growth_rate)
 
 
-fitAR(test, 2, 2)
+fitAR(test_AR, 2, 2)
 
 ```
 
 
 ### Preparing for Advanced AR Model 
 
+Our advanced AR model seeks to build on the above basic AR model from the lecture. We are not changing the model itself, but the data that is inputted into this model. The quarterly data undergoes monthly revisions for the first 10 years, leading to initial values being inaccurate. Furthermore, the data is also subject to seasonal revisions (for instance, due to changes in how the calculations are performed), which can lead to sudden jumps in quarterly growth rates. Through processes of transforming the data, we hope to be able to predict the final, revised, values of data based on the initial values provided This would make forecasts more accurate to the true value.
+
 
 ```{r advanced AR prep}
 
 # calculating mean first revision percentage changes 
 
-# extracting initial values of all variables
-# take pre-COVID data
+# extracting initial values of all variables from 1965 Q3 to 2019 Q4 (pre-covid)
+# 1965 Q4 onwards is when they first started revising data from the previous quarter 
+
 data_65q3_onwards <- RGDP_Data[c(75:292), c(1:219)]  %>% 
   subset(select = -DATE) 
 
+# convert the above data to a matrix for easier manipulation
 m1 <- as.matrix(data_65q3_onwards) 
 
 data_65q3_onwards <- matrix(m1, ncol = ncol(data_65q3_onwards), dimnames = NULL)
-
-# extracting initial values of all variables
-initial_values <- diag(data_65q3_onwards)
-
-
-# extracting first revision values of all variables
-first_revision_data <- RGDP_Data[c(75:292), c(1:219)] %>% 
-  select(-c(1, 2)) 
 
 # base dataset showing the GDP values across quarters 
 
@@ -124,7 +162,7 @@ GDP_across_q <- as.matrix(GDP_across_q)
 
 lagged_GDP_across_q <- lag(GDP_across_q)
 
-df <- 100 * (GDP_across_q - lagged_GDP_across_q)/lagged_GDP_across_q 
+df <- 100 * (log(GDP_across_q) - log(lagged_GDP_across_q))/log(lagged_GDP_across_q)
 
 # Removing the first and last row since we had added those to compute the lag.
 df <- df[-c(1, 220),]
@@ -148,7 +186,7 @@ for (i in 0:40){
 }
 
 
-# Now, we are looking into how the growth rates change due to revision. 
+# Now, we are looking into how the growth rates change due to revision
 lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
 revised_growth <- revised_growth[,-c(1)]
 
@@ -163,10 +201,13 @@ change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 ```
 
 
-### Advanced AR Model 
+
+## Testing 
 
 
-```{r advanced AR}
+### Inputs & Basic Manipulation 
+
+```{r input}
 
 example_q = "2014 Q1"
 example_yq = as.yearqtr(example_q)
@@ -176,11 +217,42 @@ working_df = RGDP_Data[, -c(1)] %>%
   mutate_all(as.numeric)
 
 colnames(working_df) <- sapply(seq(as.Date(as.yearqtr("1965 Q4", format = "%Y Q%q")), by="quarter", length.out = ncol(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+
 rownames(working_df) <- sapply(seq(as.Date(as.yearqtr("1947 Q1", format = "%Y Q%q")), by="quarter", length.out = nrow(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
 
 # Calculating growth rate of each quarter
 lagged_working_df = lag(working_df)
-perc_change_df = (100 * (working_df - lagged_working_df) / lagged_working_df)[-c(1),]
+perc_change_df = (100 * (log(working_df) - log(lagged_working_df)) / log(lagged_working_df))[-c(1),]
+
+```
+
+
+### Basic AR Model 
+
+```{r basic AR}
+
+end_of_row_mark = (example_yq - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4 - 1
+
+basic_values <- perc_change_df[1:end_of_row_mark,][[`example_q`]]
+
+test <- as.matrix(basic_values)
+
+basic_AR_model = fitAR(test, 2, 2)
+
+basic_example_forecast = basic_AR_model$pred
+basic_example_model = basic_AR_model$model
+basic_example_forecast
+
+AIC_basicAR = AIC(basic_AR_model$model)
+AIC_basicAR
+
+
+```
+
+
+### Advanced AR Model 
+
+```{r advanced AR}
 
 # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
 ten_year_mark = (example_yq - 10 - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4
@@ -190,11 +262,11 @@ end_of_row_mark = (example_yq - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4 - 
 ancient_values <- perc_change_df[1:ten_year_mark,][[`example_q`]]
 
 # All other values
-recent_values <- perc_change_df[(ten_year_mark + 1): end_of_row_mark,][[`example_q`]]
-  #select((which(names(.) == toString(example_yq - 10)) + 2) : toString(example_yq))
+recent_values <- perc_change_df[(ten_year_mark + 1):
+                                  end_of_row_mark,][[`example_q`]]
 
 # Applying approximation of final growth numbers on recent values
-forecast_growth = recent_values #c(replicate(length(recent_values), NA))
+forecast_growth = recent_values 
 for (i in 1:length(recent_values)){
   for (j in 1:i){
     forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
@@ -203,37 +275,20 @@ for (i in 1:length(recent_values)){
 
 all_data = c(ancient_values, forecast_growth)
 
-fitAR=function(Y,p,h){
-  
-  #Inputs: Y- predicted variable,  p - AR order, h -forecast horizon
-  
-  aux=embed(Y,p+h) #create p lags + forecast horizon shift (=h option)
-  y=aux[,1] #  Y variable aligned/adjusted for missing data due to lags
-  X=as.matrix(aux[,-c(1:(ncol(Y)*h))]) # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)  
 
-    X.out=tail(aux,1)[1:ncol(X)] #retrieve last p observations 
-
-    model=lm(y~X) #estimate direct h-step AR(p) by OLS 
-    coef=coef(model) #extract coefficients
-
-  pred=c(1,X.out)%*%coef #make a forecast using the last few observations: a direct h-step forecast.
-  #note the addition of a constant to the test observation vector
-  
-  rmsfe=sqrt(sum(model$residuals^2)/nrow(X)) #get unadjusted rmsfe (ignoring estimation uncertainty)
-  
-  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) #save estimated AR regression, prediction, and estimated coefficients
-}
-
-test2 <- as.matrix(log(all_data))
+test2 <- as.matrix(all_data)
 
 AR_fitted_model = fitAR(test2, 2, 2)
 
-example_forecast = AR_fitted_model$pred
-example_model = AR_fitted_model$model
-example_forecast
+advanced_example_forecast = AR_fitted_model$pred
+advanced_example_model = AR_fitted_model$model
+advanced_example_forecast
 
 plot(c(all_data), type = "l", lwd = 1)
-plot(c(all_data, example_forecast), type = "l", lwd = 1)
+plot(c(all_data, advanced_example_forecast), type = "l", lwd = 1)
+
+AIC_advancedAR = AIC(AR_fitted_model$model)
+AIC_advancedAR
 
 ```
 
