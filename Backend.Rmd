@@ -1,5 +1,4 @@
 
-
 ```{r libraries}
 
 library(tidyverse)
@@ -7,14 +6,13 @@ library(ggplot2)
 library(zoo)
 library(forecast)
 library(xts)
+library(readxl)
 
 ```
 
 ### Basic Cleaning & Processing
 
 ```{r test}
-
-library(readxl)
 
 # Reading the GDP data
 RGDP_Data <- read_excel("RGDP Data.xlsx")

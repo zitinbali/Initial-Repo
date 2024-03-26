@@ -5,11 +5,9 @@ library(dplyr)
 library(ggplot2)
 library(shinyWidgets)
 library(shinythemes)
+library(readxl)
 
 RGDP_Data <- read_excel("RGDP Data.xlsx")
-
-library(shiny)
-library(shinythemes)
 
 library(shiny)
 library(shinythemes)
