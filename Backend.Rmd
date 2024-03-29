@@ -198,6 +198,73 @@ change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 
 ```
 
+```{r advanced AR prep function}
+
+prep_func = function(dataset, row_range, col_range){
+  
+  # cut dataset into relevant ranges
+  
+  data_across_q <- dataset[row_range, col_range] %>%
+    subset(select = -DATE) %>%
+    mutate_all(as.numeric)
+  
+  colnames(data_across_q) <- NULL
+  
+  data_across_q <- as.matrix(data_across_q) 
+  
+  lagged_data_across_q <- lag(data_across_q)
+  
+  df <- 100 * (log(data_across_q) - log(lagged_data_across_q))/log(lagged_data_across_q)
+  
+  # Removing the first and last row since we had added those to compute the lag.
+  df <- df[-c(1, length(row_range)),]
+  
+  # Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
+  
+  revised_growth <- data.frame(matrix(NA, nrow = length(row_range) - 2, ncol = 0))
+  
+  for (i in 0:40){
+    na_vector = c(replicate(length(row_range) - 2, NA)) 
+    na_vector = as.numeric(na_vector)
+    
+    values <- diag(df)
+    
+    col_name = paste0("revision", i)
+    
+    na_vector[1:(length(row_range) - 2 -i)] = values[1:(length(row_range) - 2 -i)]
+    revised_growth[[`col_name`]] = na_vector
+    
+    df <- df[,-c(1)]
+  }
+  
+  
+  # Now, we are looking into how the growth rates change due to revision
+  lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
+  revised_growth <- revised_growth[,-c(1)]
+  
+  # We're taking the average of the change in growth per revision 
+  change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
+  
+  change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
+    
+  change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
+  
+  return(change_in_growth)
+}
+
+dataset <- RGDP_Data
+row_range <- c(74:293)
+col_range <- c(1:220)
+
+delta_growth <- prep_func(dataset, row_range, col_range)
+```
+
+```{r testing}
+
+a = c(1:220)
+length(a)
+```
+
 
 
 ## Testing 
