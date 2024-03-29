@@ -206,7 +206,7 @@ prep_func = function(dataset, row_range, col_range){
   # cut dataset into relevant ranges
   
   data_across_q <- dataset[row_range, col_range] %>%
-    subset(select = -DATE) %>%
+    #subset(select = -DATE) %>%
     mutate_all(as.numeric)
   
   colnames(data_across_q) <- NULL
@@ -256,7 +256,9 @@ prep_func = function(dataset, row_range, col_range){
 
 dataset <- RGDP_Data
 row_range <- c(74:293)
-col_range <- c(1:220)
+col_range <- c(2:220)
+
+a = RGDP_Data[c(74:293), c(2:220)]
 
 post_prep_gdp <- prep_func(dataset, row_range, col_range)
 post_prep_gdp_df <- post_prep_gdp$df
@@ -265,12 +267,27 @@ post_prep_gdp_delta = post_prep_gdp$delta
 
 ```{r ADL prep}
 
-# Housing starts
+# Housing Starts data only available from 1970 Apr onwards, is in monthly rather than quarterly
 
 hstarts <- read_excel("hstartsMvMd.xlsx")
 
-# Data only available from 1970 Apr onwards, is in monthly rather than quarterly
+# Row and column range from 1970 Apr to 2024 Feb (Values from 2024 Mar)
 
+#hstart_row_range <- c(279:926)
+#hstart_col_range <- c(29:675)
+
+# hstarts[hstart_row_range, hstart_col_range]
+
+# Accounting for covid, stopping at Mar 2020 values
+
+hstart_row_range <- c(279:879)
+hstart_col_range <- c(29:628)
+
+# hstarts[hstart_row_range, hstart_col_range]
+
+post_prep_hstart <- prep_func(hstarts, hstart_row_range, hstart_col_range)
+post_prep_hstart_df <- post_prep_hstart$df
+post_prep_hstart_delta <- post_prep_hstart$delta
 
 ```
 
