@@ -197,6 +197,7 @@ change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 
 
 ```
+This function takes in a dataset and splices it according the the relevant row and column ranges to form a square matrix (based on range of quarters with relevant information), and outputs a dataframe with the rows as the quarters and the columns as the revision number, with the values being the percentage change in the data during that revision. The delta returned is the average revision change across all years.
 
 ```{r advanced AR prep function}
 
@@ -237,6 +238,7 @@ prep_func = function(dataset, row_range, col_range){
     df <- df[,-c(1)]
   }
   
+  revised_growth_df <- revised_growth
   
   # Now, we are looking into how the growth rates change due to revision
   lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
@@ -249,20 +251,27 @@ prep_func = function(dataset, row_range, col_range){
     
   change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
   
-  return(change_in_growth)
+  return(list("df" = revised_growth_df, "delta" = change_in_growth))
 }
 
 dataset <- RGDP_Data
 row_range <- c(74:293)
 col_range <- c(1:220)
 
-delta_growth <- prep_func(dataset, row_range, col_range)
+post_prep_gdp <- prep_func(dataset, row_range, col_range)
+post_prep_gdp_df <- post_prep_gdp$df
+post_prep_gdp_delta = post_prep_gdp$delta
 ```
 
-```{r testing}
+```{r ADL prep}
 
-a = c(1:220)
-length(a)
+# Housing starts
+
+hstarts <- read_excel("hstartsMvMd.xlsx")
+
+# Data only available from 1970 Apr onwards, is in monthly rather than quarterly
+
+
 ```
 
 
