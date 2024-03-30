@@ -130,7 +130,7 @@ fitAR(test_AR, 2, 2)
 
 ### Preparing for Advanced AR Model 
 
-Our advanced AR model seeks to build on the above basic AR model from the lecture. We are not changing the model itself, but the data that is inputted into this model. The quarterly data undergoes monthly revisions for the first 10 years, leading to initial values being inaccurate. Furthermore, the data is also subject to seasonal revisions (for instance, due to changes in how the calculations are performed), which can lead to sudden jumps in quarterly growth rates. Through processes of transforming the data, we hope to be able to predict the final, revised, values of data based on the initial values provided This would make forecasts more accurate to the true value.
+Our advanced AR model seeks to build on the above basic AR model from the lecture. We are not changing the model itself, but the data that is inputted into this model. The quarterly data undergoes monthly revisions for the first 10 years, leading to initial values being inaccurate. Furthermore, the data is also subject to seasonal revisions (for instance, due to changes in how the calculations are performed), which can lead to sudden jumps in quarterly growth rates. Through processes of transforming the data, we hope to be able to predict the final, revised, values of data based on the initial values provided. This would make forecasts more accurate to the true value.
 
 
 ```{r advanced AR prep}
@@ -195,13 +195,15 @@ change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
   
 change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
 
-
 ```
+
 This function takes in a dataset and splices it according the the relevant row and column ranges to form a square matrix (based on range of quarters with relevant information), and outputs a dataframe with the rows as the quarters and the columns as the revision number, with the values being the percentage change in the data during that revision. The delta returned is the average revision change across all years.
 
 ```{r advanced AR prep function}
 
-prep_func = function(dataset, row_range, col_range){
+# n refers to the number of periods that sum up to 10 years for a given dataset. For instance, n = 40 for a dataset arranged by quarters, and n = 120 for a dataset arranged by months.
+
+prep_func = function(dataset, row_range, col_range, n){
   
   # cut dataset into relevant ranges
   
@@ -220,11 +222,11 @@ prep_func = function(dataset, row_range, col_range){
   # Removing the first and last row since we had added those to compute the lag.
   df <- df[-c(1, length(row_range)),]
   
-  # Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
+# Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
   
   revised_growth <- data.frame(matrix(NA, nrow = length(row_range) - 2, ncol = 0))
   
-  for (i in 0:40){
+  for (i in 0:n){
     na_vector = c(replicate(length(row_range) - 2, NA)) 
     na_vector = as.numeric(na_vector)
     
@@ -260,12 +262,13 @@ col_range <- c(2:220)
 
 a = RGDP_Data[c(74:293), c(2:220)]
 
-post_prep_gdp <- prep_func(dataset, row_range, col_range)
+post_prep_gdp <- prep_func(dataset, row_range, col_range, 40)
 post_prep_gdp_df <- post_prep_gdp$df
 post_prep_gdp_delta = post_prep_gdp$delta
 ```
 
-```{r ADL prep}
+
+```{r hstarts prep}
 
 # Housing Starts data only available from 1970 Apr onwards, is in monthly rather than quarterly
 
@@ -285,12 +288,13 @@ hstart_col_range <- c(29:628)
 
 # hstarts[hstart_row_range, hstart_col_range]
 
-post_prep_hstart <- prep_func(hstarts, hstart_row_range, hstart_col_range)
+post_prep_hstart <- prep_func(hstarts, hstart_row_range, hstart_col_range, 120)
 post_prep_hstart_df <- post_prep_hstart$df
 post_prep_hstart_delta <- post_prep_hstart$delta
 
-```
 
+
+```
 
 
 ## Testing 
@@ -303,6 +307,10 @@ post_prep_hstart_delta <- post_prep_hstart$delta
 example_q = "2014 Q1"
 example_yq = as.yearqtr(example_q)
 
+############
+## GDP 
+############
+
 # Formatting dataframe of quarters and their estimated values
 working_df = RGDP_Data[, -c(1)] %>%
   mutate_all(as.numeric)
@@ -314,6 +322,26 @@ rownames(working_df) <- sapply(seq(as.Date(as.yearqtr("1947 Q1", format = "%Y Q%
 # Calculating growth rate of each quarter
 lagged_working_df = lag(working_df)
 perc_change_df = (100 * (log(working_df) - log(lagged_working_df)) / log(lagged_working_df))[-c(1),]
+
+
+############
+## HStarts
+############
+
+# revised hstarts data 
+hstart_row_range <- c(279:879)
+hstart_col_range <- c(29:628)
+
+hstarts_revised <- hstarts[hstart_row_range, hstart_col_range] %>%
+    mutate_all(as.numeric)
+
+colnames(hstarts_revised) <- sapply(seq(as.Date(as.yearmon("1970 M04", format = "%Y M%m")), by="month", length.out = ncol(hstarts_revised)), function(x) format(as.yearmon(x), format = "%Y M%m"))
+
+rownames(hstarts_revised) <- sapply(seq(as.Date(as.yearmon("1970 M03", format = "%Y M%m")), by="month", length.out = nrow(hstarts_revised)), function(x) format(as.yearmon(x), format = "%Y M%m"))
+
+# Calculating growth rate of each quarter
+lagged_hstarts_revised = lag(hstarts_revised)
+perc_change_df_hstarts = (100 * (log(hstarts_revised) - log(lagged_hstarts_revised)) / log(hstarts_revised))[-c(1),]
 
 ```
 
@@ -364,10 +392,10 @@ for (i in 1:length(recent_values)){
   }
 }
 
-all_data = c(ancient_values, forecast_growth)
+all_GDP_data = c(ancient_values, forecast_growth)
 
 
-test2 <- as.matrix(all_data)
+test2 <- as.matrix(all_GDP_data)
 
 AR_fitted_model = fitAR(test2, 2, 2)
 
@@ -375,11 +403,92 @@ advanced_example_forecast = AR_fitted_model$pred
 advanced_example_model = AR_fitted_model$model
 advanced_example_forecast
 
-plot(c(all_data), type = "l", lwd = 1)
-plot(c(all_data, advanced_example_forecast), type = "l", lwd = 1)
+plot(c(all_GDP_data), type = "l", lwd = 1)
+plot(c(all_GDP_data, advanced_example_forecast), type = "l", lwd = 1)
 
 AIC_advancedAR = AIC(AR_fitted_model$model)
 AIC_advancedAR
 
 ```
+
+### ADL Model - Housing Starts 
+
+
+```{r ADL model}
+
+# adjusted GDP data 
+# all_GDP_data 
+
+example_q = "2014 Q1"
+example_yq = as.yearqtr(example_q)
+
+# function to convert q to specific format 
+QtoM = function(year_string){
+  year = substr(year_string, start = 1, stop = 4)
+  quarter = substr(year_string, start = 6, stop = 7)
+  if (quarter == "Q1"){
+    M = "M03"
+  } else if (quarter == "Q2"){
+    M = "M06"
+  } else if (quarter == "Q3"){
+    M = "M09"
+  } else if (quarter == "Q4"){
+    M = "M12"
+  }
+  output = paste(year, M)
+  
+  return(output)
+}
+
+example_mq = QtoM(example_q)
+# example_mq_format is in the yearmon format 
+example_mq_format = as.yearmon(example_mq, format = "%Y M%m")
+
+
+# Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
+ten_year_mark_m = round((example_mq_format - 10 - 
+                           as.yearmon("1970 M04", format = "%Y M%m")) * 12, 1)
+end_of_row_mark_m = round((example_mq_format - 
+                       as.yearmon("1970 M04", format = "%Y M%m")) * 12 - 1, 1)
+
+
+# Most recent values for start of time to 10 years before target date
+ancient_values_hstarts <-  perc_change_df_hstarts[1:ten_year_mark_m,][[`example_mq`]]
+
+# All other values
+recent_values_hstarts <- perc_change_df_hstarts[(ten_year_mark_m + 1):
+                                  end_of_row_mark_m,][[`example_mq`]]
+
+# Applying approximation of final growth numbers on recent values
+forecast_growth_hstarts = recent_values_hstarts 
+for (i in 1:length(recent_values_hstarts)){
+  for (j in 1:i){
+    forecast_growth_hstarts[i] = forecast_growth_hstarts[i] * (1 + (post_prep_hstart_delta[120 - j] / 100) )
+  }
+}
+
+all_hstarts_data = c(ancient_values_hstarts, forecast_growth_hstarts)
+
+# Why housing starts?
+#### SHOW A GRAPH 
+
+
+# Convert the GDP delta to a time series 
+GDPGrowth_ts <- ts(GDPGrowth, 
+                  start = c(1960, 1), 
+                  end = c(2013, 4), 
+                  frequency = 4)
+
+
+ADL1data <- ts.union(post_prep_gdp_df, TSpread_ts)
+
+
+
+
+
+
+
+
+```
+
 
