@@ -416,11 +416,33 @@ AIC_advancedAR
 
 ```{r ADL model}
 
-# adjusted GDP data 
-# all_GDP_data 
-
 example_q = "2014 Q1"
-example_yq = as.yearqtr(example_q)
+example_yq = as.yearqtr(example_q) + 1/4
+
+# prepping GDP data 
+
+ten_year_mark = (example_yq - 10 - as.yearqtr("1970 Q1", format = "%Y Q%q")) * 4
+end_of_row_mark = (example_yq - as.yearqtr("1970 Q1", format = "%Y Q%q")) * 4 - 1 
+
+# Most recent values for start of time to 10 years before target date
+ancient_values <- perc_change_df[1:ten_year_mark,][[`example_q`]]
+
+# All other values
+recent_values <- perc_change_df[(ten_year_mark + 1):
+                                  end_of_row_mark,][[`example_q`]]
+
+# Applying approximation of final growth numbers on recent values
+forecast_growth = recent_values 
+for (i in 1:length(recent_values)){
+  for (j in 1:i){
+    forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
+  }
+}
+
+all_GDP_data = c(ancient_values, forecast_growth)
+
+
+# prepping hstarts data 
 
 # function to convert q to specific format 
 QtoM = function(year_string){
@@ -442,7 +464,7 @@ QtoM = function(year_string){
 
 example_mq = QtoM(example_q)
 # example_mq_format is in the yearmon format 
-example_mq_format = as.yearmon(example_mq, format = "%Y M%m")
+example_mq_format = as.yearmon(example_mq, format = "%Y M%m") + 2/12
 
 
 # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
@@ -469,8 +491,19 @@ for (i in 1:length(recent_values_hstarts)){
 
 all_hstarts_data = c(ancient_values_hstarts, forecast_growth_hstarts)
 
+
+# adjusted GDP data = all_GDP_data 
+# adjusted hstarts data = all_hstarts_data
+
 # Why housing starts?
 #### SHOW A GRAPH 
+plot(as.zoo(check_xts), 
+     plot.type = "single", 
+     col = c("darkred"),
+     lwd = 1,
+     xlab = "Date",
+     ylab = "Growth Rate",
+     main = "Quarterly Growth Rate of log(GDP)")
 
 
 # Convert the GDP delta to a time series 
