@@ -7,6 +7,8 @@ library(zoo)
 library(forecast)
 library(xts)
 library(readxl)
+library(dynlm)
+library(lmtest)
 
 ```
 
@@ -276,23 +278,30 @@ hstarts <- read_excel("hstartsMvMd.xlsx")
 
 # Row and column range from 1970 Apr to 2024 Feb (Values from 2024 Mar)
 
-#hstart_row_range <- c(279:926)
-#hstart_col_range <- c(29:675)
+# Accounting for Covid, stopping at Mar 2020 values
 
-# hstarts[hstart_row_range, hstart_col_range]
+hstart_row_range <- c(279:878)
+hstart_col_range <- c(28:628)
 
-# Accounting for covid, stopping at Mar 2020 values
+hstarts_temp <- hstarts[hstart_row_range, hstart_col_range]
+hstarts_temp <- hstarts_temp %>% 
+  mutate_at(1:ncol(hstarts_temp), as.numeric)
 
-hstart_row_range <- c(279:879)
-hstart_col_range <- c(29:628)
+# isolate every third column 
+hstarts_temp <- hstarts_temp[, seq(from = 3, to = ncol(hstarts_temp), by = 3)]
+# sum up every 3 rows to find quarterly hstarts
+num_rep <- nrow(hstarts_temp)/3
+hstarts_temp <- rowsum(hstarts_temp, rep(1:num_rep,each=3))
 
-# hstarts[hstart_row_range, hstart_col_range]
+hstart_row_range <- c(1:nrow(hstarts_temp))
+hstart_col_range <- c(2:ncol(hstarts_temp))
 
-post_prep_hstart <- prep_func(hstarts, hstart_row_range, hstart_col_range, 120)
+b <- hstarts_temp[hstart_row_range, hstart_col_range]
+
+# starting data from 1970Q3 instead. the data actually starts from Q2, but we use Q2 to provide Q3's growth rate
+post_prep_hstart <- prep_func(hstarts_temp, hstart_row_range, hstart_col_range, 40)
 post_prep_hstart_df <- post_prep_hstart$df
 post_prep_hstart_delta <- post_prep_hstart$delta
-
-
 
 ```
 
@@ -329,15 +338,15 @@ perc_change_df = (100 * (log(working_df) - log(lagged_working_df)) / log(lagged_
 ############
 
 # revised hstarts data 
-hstart_row_range <- c(279:879)
-hstart_col_range <- c(29:628)
 
-hstarts_revised <- hstarts[hstart_row_range, hstart_col_range] %>%
-    mutate_all(as.numeric)
+hstart_row_range <- c(1:nrow(hstarts_temp))
+hstart_col_range <- c(2:ncol(hstarts_temp))
 
-colnames(hstarts_revised) <- sapply(seq(as.Date(as.yearmon("1970 M04", format = "%Y M%m")), by="month", length.out = ncol(hstarts_revised)), function(x) format(as.yearmon(x), format = "%Y M%m"))
+hstarts_revised <- hstarts_temp[hstart_row_range, hstart_col_range]
 
-rownames(hstarts_revised) <- sapply(seq(as.Date(as.yearmon("1970 M03", format = "%Y M%m")), by="month", length.out = nrow(hstarts_revised)), function(x) format(as.yearmon(x), format = "%Y M%m"))
+colnames(hstarts_revised) <- sapply(seq(as.Date(as.yearqtr("1970 Q3", format = "%Y Q%q")), by="quarter", length.out = ncol(hstarts_revised)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+
+rownames(hstarts_revised) <- sapply(seq(as.Date(as.yearqtr("1970 Q2", format = "%Y Q%q")), by="quarter", length.out = nrow(hstarts_revised)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
 
 # Calculating growth rate of each quarter
 lagged_hstarts_revised = lag(hstarts_revised)
@@ -418,11 +427,13 @@ AIC_advancedAR
 
 example_q = "2014 Q1"
 example_yq = as.yearqtr(example_q) + 1/4
+example_y = year(example_yq)
+example_q = quarter(example_yq) - 1
 
 # prepping GDP data 
 
-ten_year_mark = (example_yq - 10 - as.yearqtr("1970 Q1", format = "%Y Q%q")) * 4
-end_of_row_mark = (example_yq - as.yearqtr("1970 Q1", format = "%Y Q%q")) * 4 - 1 
+ten_year_mark = (example_yq - 10 - as.yearqtr("1970 Q3", format = "%Y Q%q")) * 4
+end_of_row_mark = (example_yq - as.yearqtr("1970 Q3", format = "%Y Q%q")) * 4 - 1 
 
 # Most recent values for start of time to 10 years before target date
 ancient_values <- perc_change_df[1:ten_year_mark,][[`example_q`]]
@@ -444,48 +455,18 @@ all_GDP_data = c(ancient_values, forecast_growth)
 
 # prepping hstarts data 
 
-# function to convert q to specific format 
-QtoM = function(year_string){
-  year = substr(year_string, start = 1, stop = 4)
-  quarter = substr(year_string, start = 6, stop = 7)
-  if (quarter == "Q1"){
-    M = "M03"
-  } else if (quarter == "Q2"){
-    M = "M06"
-  } else if (quarter == "Q3"){
-    M = "M09"
-  } else if (quarter == "Q4"){
-    M = "M12"
-  }
-  output = paste(year, M)
-  
-  return(output)
-}
-
-example_mq = QtoM(example_q)
-# example_mq_format is in the yearmon format 
-example_mq_format = as.yearmon(example_mq, format = "%Y M%m") + 2/12
-
-
-# Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
-ten_year_mark_m = round((example_mq_format - 10 - 
-                           as.yearmon("1970 M04", format = "%Y M%m")) * 12, 1)
-end_of_row_mark_m = round((example_mq_format - 
-                       as.yearmon("1970 M04", format = "%Y M%m")) * 12 - 1, 1)
-
-
 # Most recent values for start of time to 10 years before target date
-ancient_values_hstarts <-  perc_change_df_hstarts[1:ten_year_mark_m,][[`example_mq`]]
+ancient_values_hstarts <-  perc_change_df_hstarts[1:ten_year_mark,][[`example_q`]]
 
 # All other values
-recent_values_hstarts <- perc_change_df_hstarts[(ten_year_mark_m + 1):
-                                  end_of_row_mark_m,][[`example_mq`]]
+recent_values_hstarts <- perc_change_df_hstarts[(ten_year_mark + 1):
+                                  end_of_row_mark,][[`example_q`]]
 
 # Applying approximation of final growth numbers on recent values
 forecast_growth_hstarts = recent_values_hstarts 
 for (i in 1:length(recent_values_hstarts)){
   for (j in 1:i){
-    forecast_growth_hstarts[i] = forecast_growth_hstarts[i] * (1 + (post_prep_hstart_delta[120 - j] / 100) )
+    forecast_growth_hstarts[i] = forecast_growth_hstarts[i] * (1 + (post_prep_hstart_delta[40 - j] / 100) )
   }
 }
 
@@ -496,31 +477,40 @@ all_hstarts_data = c(ancient_values_hstarts, forecast_growth_hstarts)
 # adjusted hstarts data = all_hstarts_data
 
 # Why housing starts?
-#### SHOW A GRAPH 
-plot(as.zoo(check_xts), 
-     plot.type = "single", 
-     col = c("darkred"),
-     lwd = 1,
-     xlab = "Date",
-     ylab = "Growth Rate",
-     main = "Quarterly Growth Rate of log(GDP)")
-
 
 # Convert the GDP delta to a time series 
-GDPGrowth_ts <- ts(GDPGrowth, 
-                  start = c(1960, 1), 
-                  end = c(2013, 4), 
+GDPGrowth_ts <- ts(all_GDP_data, 
+                  start = c(1970, 3), 
+                  end = c(example_y, example_q), 
                   frequency = 4)
 
+hstartsGrowth_ts <- ts(all_hstarts_data, 
+                start = c(1970, 3), 
+                end = c(example_y, example_q), 
+                frequency = 4)
 
-ADL1data <- ts.union(post_prep_gdp_df, TSpread_ts)
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(hstartsGrowth_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "Percent per annum",
+     main = "Interest Rates")
 
+# doesn't seem to be much of a relationship 
 
+ADL1data <- ts.union(GDPGrowth_ts, hstartsGrowth_ts)
 
+# estimating the ADL(2,1) model of GDP growth
 
+GDPGR_ADL21 <- 
+  dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) +
+                       L(hstartsGrowth_ts), 
+                     start = c(1970, 3), end = c(example_y, example_q))
 
+ADL_coefficients <- GDPGR_ADL21$coefficients
 
-
+coeftest(GDPGR_ADL21)
 
 ```
 
