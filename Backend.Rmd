@@ -672,3 +672,17 @@ ADL_coefficients <- GDPGR_ADL21$coefficients
 coeftest(GDPGR_ADL21)
 
 ```
+
+
+### ARIMA Model
+
+```{r arima}
+
+output <- auto.arima(all_GDP_data)
+predict(output, n.ahead = 2)
+all_GDP_data
+
+```
+
+
+
