@@ -273,6 +273,17 @@ fred_hstarts <- read_excel("FRED Hstarts.xls", col_names = c("Date", "Spread")) 
 
 ```
 
+### FRED Consumer Sentiment Data 
+
+```{r fred hstarts prep}
+
+consent <- read_excel("FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+```
+
+
 
 ## Testing 
 
@@ -611,9 +622,50 @@ plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)),
 GDPGR_ADL21 <- 
   dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + 
                        L(GDPGrowth_ts, 3) + 
-                       L(tspread_ts) + L(tspread_ts, 2) + 
-                       L(tspread_ts, 3) + L(tspread_ts, 4),
-                     start = c(1976, 4), end = c(y, q))
+                       L(fred_hstarts_ts),
+                     start = c(1959, 1), end = c(y, q))
+
+ADL_coefficients <- GDPGR_ADL21$coefficients
+
+coeftest(GDPGR_ADL21)
+
+# HSTARTS VERY BAD.
+
+```
+
+
+### ADL Model - Consumer Sentiment
+
+```{r adl model fred hstarts}
+
+all_GDP_data = all_GDP_data[25: length(all_GDP_data)]
+
+
+GDPGrowth_ts <- ts(all_GDP_data, 
+                  start = c(1960, 1), 
+                  end = c(y, q), 
+                  frequency = 4)
+
+consent_ts <- ts(consent$Spread, 
+                start = c(1960, 1), 
+                end = c(y, q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Interest Rates")
+
+# estimating the ADL(2,1) model of GDP growth
+
+GDPGR_ADL21 <- 
+  dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + 
+                       L(GDPGrowth_ts, 3) + 
+                       L(consent_ts),
+                     start = c(1960, 1), end = c(y, q))
 
 ADL_coefficients <- GDPGR_ADL21$coefficients
 
