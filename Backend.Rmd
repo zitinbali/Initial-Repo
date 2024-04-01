@@ -263,6 +263,16 @@ tspread <- read_excel("FRED Treasury Spread.xls", col_names = c("Date", "Spread"
 
 ```
 
+### FRED Hstarts Data 
+
+```{r fred hstarts prep}
+
+fred_hstarts <- read_excel("FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+```
+
 
 ## Testing 
 
@@ -549,6 +559,64 @@ ADL_coefficients <- GDPGR_ADL21$coefficients
 
 coeftest(GDPGR_ADL21)
 
+```
 
+
+### ADL Model - FRED Hstarts
+
+```{r adl model fred hstarts}
+
+# Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
+ten_year_mark = (example_yq - 10 - as.yearqtr("1959 Q1", format = "%Y Q%q")) * 4
+end_of_row_mark = (example_yq - as.yearqtr("1959 Q1", format = "%Y Q%q")) * 4 - 1
+
+# Most recent values for start of time to 10 years before target date
+ancient_values <- perc_change_df[1:ten_year_mark,][[`example_q`]]
+
+# All other values
+recent_values <- perc_change_df[(ten_year_mark + 1):
+                                  end_of_row_mark,][[`example_q`]]
+
+# Applying approximation of final growth numbers on recent values
+forecast_growth = recent_values 
+for (i in 1:length(recent_values)){
+  for (j in 1:i){
+    forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
+  }
+}
+
+all_GDP_data = c(ancient_values, forecast_growth)
+
+
+GDPGrowth_ts <- ts(all_GDP_data, 
+                  start = c(1959, 1), 
+                  end = c(y, q), 
+                  frequency = 4)
+
+fred_hstarts_ts <- ts(fred_hstarts$Spread, 
+                start = c(1959, 1), 
+                end = c(y, q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Interest Rates")
+
+# estimating the ADL(2,1) model of GDP growth
+
+GDPGR_ADL21 <- 
+  dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + 
+                       L(GDPGrowth_ts, 3) + 
+                       L(tspread_ts) + L(tspread_ts, 2) + 
+                       L(tspread_ts, 3) + L(tspread_ts, 4),
+                     start = c(1976, 4), end = c(y, q))
+
+ADL_coefficients <- GDPGR_ADL21$coefficients
+
+coeftest(GDPGR_ADL21)
 
 ```
