@@ -269,6 +269,7 @@ post_prep_gdp_df <- post_prep_gdp$df
 post_prep_gdp_delta = post_prep_gdp$delta
 ```
 
+### Hstarts 
 
 ```{r hstarts prep}
 
@@ -302,6 +303,19 @@ b <- hstarts_temp[hstart_row_range, hstart_col_range]
 post_prep_hstart <- prep_func(hstarts_temp, hstart_row_range, hstart_col_range, 40)
 post_prep_hstart_df <- post_prep_hstart$df
 post_prep_hstart_delta <- post_prep_hstart$delta
+
+```
+
+### BAA-AAA Data 
+
+```{r baa-aaa prep}
+
+baa_aaa <- read_excel("FRED BAA-AAA Data.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+
+
 
 ```
 
@@ -423,7 +437,7 @@ AIC_advancedAR
 ### ADL Model - Housing Starts 
 
 
-```{r ADL model}
+```{r ADL model hstarts}
 
 example_q = "2014 Q1"
 example_yq = as.yearqtr(example_q) + 1/4
@@ -505,7 +519,7 @@ ADL1data <- ts.union(GDPGrowth_ts, hstartsGrowth_ts)
 
 GDPGR_ADL21 <- 
   dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) +
-                       L(hstartsGrowth_ts), 
+                       L(hstartsGrowth_ts) + L(hstartsGrowth_ts, 2) + L(hstartsGrowth_ts, 3), 
                      start = c(1970, 3), end = c(y, q))
 
 ADL_coefficients <- GDPGR_ADL21$coefficients
@@ -514,4 +528,43 @@ coeftest(GDPGR_ADL21)
 
 ```
 
+
+### ADL Model - BAA-AAA Spread 
+
+```{r adl model baa-aaa}
+
+baa_aaa <- baa_aaa[3:nrow(baa_aaa), ]
+
+baa_aaa_ts <- ts(baa_aaa$Spread, 
+                start = c(1970, 3), 
+                end = c(y, q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(baa_aaa_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Interest Rates")
+
+# doesn't seem to be much of a relationship 
+
+ADL2data <- ts.union(GDPGrowth_ts, baa_aaa_ts)
+
+# estimating the ADL(2,1) model of GDP growth
+
+GDPGR_ADL21 <- 
+  dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) +
+                       L(baa_aaa_ts) + L(baa_aaa_ts, 2) + 
+                       L(baa_aaa_ts, 3),
+                     start = c(1970, 3), end = c(y, q))
+
+ADL_coefficients <- GDPGR_ADL21$coefficients
+
+coeftest(GDPGR_ADL21)
+
+
+
+```
 
