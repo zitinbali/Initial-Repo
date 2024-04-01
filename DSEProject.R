@@ -30,10 +30,9 @@ ui <- navbarPage(
              chooseSliderSkin("Flat"),
              sidebarLayout(
                sidebarPanel(
-                 sliderInput('input_year', 'Input Year', 
-                             min = as.Date(as.yearqtr("1954 Q4")), 
-                             max = as.Date(as.yearqtr("2024 Q1")), 
-                             value = as.Date(as.yearqtr("1990 Q1"))),
+                 sliderTextInput('input_year', 'Input Year', 
+                                 choices = RGDP_Data$DATE,
+                                 selected = RGDP_Data$DATE[4]),
                  selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
                              choices = c("2", "3", "4"), 
                              selected = "2"),
@@ -56,6 +55,7 @@ ui <- navbarPage(
            )
   )
 )
+
 
 server <- function(input, output, session) {
   # Server logic goes here
