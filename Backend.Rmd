@@ -124,8 +124,10 @@ fitAR=function(Y,p,h){
 
 test_AR <- as.matrix(check$growth_rate)
 
+### for AIC selection ###
+num_lags = VARselect(check$growth_rate)$selection[[2]] #selected using growth rate data
 
-fitAR(test_AR, 2, 2)
+fitAR(test, num_lags, 2) #second arg replaced with x
 
 ```
 
