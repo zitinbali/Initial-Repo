@@ -135,70 +135,6 @@ fitAR(test_AR, 2, 2)
 Our advanced AR model seeks to build on the above basic AR model from the lecture. We are not changing the model itself, but the data that is inputted into this model. The quarterly data undergoes monthly revisions for the first 10 years, leading to initial values being inaccurate. Furthermore, the data is also subject to seasonal revisions (for instance, due to changes in how the calculations are performed), which can lead to sudden jumps in quarterly growth rates. Through processes of transforming the data, we hope to be able to predict the final, revised, values of data based on the initial values provided. This would make forecasts more accurate to the true value.
 
 
-```{r advanced AR prep}
-
-# calculating mean first revision percentage changes 
-
-# extracting initial values of all variables from 1965 Q3 to 2019 Q4 (pre-covid)
-# 1965 Q4 onwards is when they first started revising data from the previous quarter 
-
-data_65q3_onwards <- RGDP_Data[c(75:292), c(1:219)]  %>% 
-  subset(select = -DATE) 
-
-# convert the above data to a matrix for easier manipulation
-m1 <- as.matrix(data_65q3_onwards) 
-
-data_65q3_onwards <- matrix(m1, ncol = ncol(data_65q3_onwards), dimnames = NULL)
-
-# base dataset showing the GDP values across quarters 
-
-GDP_across_q <- RGDP_Data[c(74:293), c(1:220)] %>%
-  subset(select = -DATE) %>%
-  mutate_all(as.numeric)
-
-colnames(GDP_across_q) <- NULL
-
-GDP_across_q <- as.matrix(GDP_across_q) 
-
-lagged_GDP_across_q <- lag(GDP_across_q)
-
-df <- 100 * (log(GDP_across_q) - log(lagged_GDP_across_q))/log(lagged_GDP_across_q)
-
-# Removing the first and last row since we had added those to compute the lag.
-df <- df[-c(1, 220),]
-
-# Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
-
-revised_growth <- data.frame(matrix(NA, nrow = 218, ncol = 0))
-
-for (i in 0:40){
-  na_vector = c(replicate(218, NA)) 
-  na_vector = as.numeric(na_vector)
-  
-  values <- diag(df)
-  
-  col_name = paste0("revision", i)
-  
-  na_vector[1:(218-i)] = values[1:(218-i)]
-  revised_growth[[`col_name`]] = na_vector
-  
-  df <- df[,-c(1)]
-}
-
-
-# Now, we are looking into how the growth rates change due to revision
-lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
-revised_growth <- revised_growth[,-c(1)]
-
-# We're taking the average of the change in growth per revision 
-change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
-
-change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
-  
-change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
-
-```
-
 This function takes in a dataset and splices it according the the relevant row and column ranges to form a square matrix (based on range of quarters with relevant information), and outputs a dataframe with the rows as the quarters and the columns as the revision number, with the values being the percentage change in the data during that revision. The delta returned is the average revision change across all years.
 
 ```{r advanced AR prep function}
@@ -267,6 +203,7 @@ a = RGDP_Data[c(74:293), c(2:220)]
 post_prep_gdp <- prep_func(dataset, row_range, col_range, 40)
 post_prep_gdp_df <- post_prep_gdp$df
 post_prep_gdp_delta = post_prep_gdp$delta
+
 ```
 
 ### Hstarts 
@@ -314,8 +251,15 @@ baa_aaa <- read_excel("FRED BAA-AAA Data.xls", col_names = c("Date", "Spread")) 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+```
 
+### Treasury Spread Data 
 
+```{r tspread prep}
+
+tspread <- read_excel("FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
 
 ```
 
@@ -556,6 +500,7 @@ ADL2data <- ts.union(GDPGrowth_ts, baa_aaa_ts)
 
 GDPGR_ADL21 <- 
   dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) +
+                       L(GDPGrowth_ts, 3) + 
                        L(baa_aaa_ts) + L(baa_aaa_ts, 2) + 
                        L(baa_aaa_ts, 3),
                      start = c(1970, 3), end = c(y, q))
@@ -564,7 +509,46 @@ ADL_coefficients <- GDPGR_ADL21$coefficients
 
 coeftest(GDPGR_ADL21)
 
+```
+
+
+### ADL Model - Treasury Spread 
+
+```{r adl model tspread}
+
+all_GDP_data <- all_GDP_data[25: length(all_GDP_data)]
+
+GDPGrowth_ts <- ts(all_GDP_data, 
+                  start = c(1976, 4), 
+                  end = c(y, q), 
+                  frequency = 4)
+
+tspread_ts <- ts(tspread$Spread, 
+                start = c(1976, 4), 
+                end = c(y, q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(tspread_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Interest Rates")
+
+# estimating the ADL(2,1) model of GDP growth
+
+GDPGR_ADL21 <- 
+  dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + 
+                       L(GDPGrowth_ts, 3) + 
+                       L(tspread_ts) + L(tspread_ts, 2) + 
+                       L(tspread_ts, 3) + L(tspread_ts, 4),
+                     start = c(1976, 4), end = c(y, q))
+
+ADL_coefficients <- GDPGR_ADL21$coefficients
+
+coeftest(GDPGR_ADL21)
+
 
 
 ```
-
