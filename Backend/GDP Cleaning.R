@@ -1,6 +1,6 @@
 
 #####################
-#### BASIC CLEANING
+#### BASIC ANALYSIS
 #####################
 
 # load libraries
@@ -76,6 +76,24 @@ xblocks(time(as.zoo(check_xts)),
 
 
 
+#####################
+#### BASIC CLEANING
+#####################
+
+
+# Formatting dataframe of quarters and their estimated values
+working_df = RGDP_Data[, -c(1)] %>%
+  mutate_all(as.numeric)
+
+colnames(working_df) <- sapply(seq(as.Date(as.yearqtr("1965 Q4", format = "%Y Q%q")), by="quarter", length.out = ncol(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+
+rownames(working_df) <- sapply(seq(as.Date(as.yearqtr("1947 Q1", format = "%Y Q%q")), by="quarter", length.out = nrow(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+
+# Calculating growth rate of each quarter
+lagged_working_df = lag(working_df)
+perc_change_df = (100 * (working_df - lagged_working_df) / lagged_working_df)[-c(1),]
+
+
 
 #####################
 #### ADVANCED AR
@@ -84,12 +102,12 @@ xblocks(time(as.zoo(check_xts)),
 
 # n refers to the number of periods that sum up to 10 years for a given dataset. For instance, n = 40 for a dataset arranged by quarters, and n = 120 for a dataset arranged by months.
 
-prep_func = function(dataset, row_range, col_range, n){
+prep_func = function(dataset, n){
+  
+  nrow_dataset = nrow(dataset)
   
   # cut dataset into relevant ranges
-  
-  data_across_q <- dataset[row_range, col_range] %>%
-    #subset(select = -DATE) %>%
+  data_across_q <- dataset %>%
     mutate_all(as.numeric)
   
   colnames(data_across_q) <- NULL
@@ -101,21 +119,21 @@ prep_func = function(dataset, row_range, col_range, n){
   df <- 100 * (data_across_q - lagged_data_across_q)/(lagged_data_across_q)
   
   # Removing the first and last row since we had added those to compute the lag.
-  df <- df[-c(1, length(row_range)),]
+  df <- df[-c(1, nrow_dataset),]
   
   # Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
   
-  revised_growth <- data.frame(matrix(NA, nrow = length(row_range) - 2, ncol = 0))
+  revised_growth <- data.frame(matrix(NA, nrow = nrow_dataset - 2, ncol = 0))
   
   for (i in 0:n){
-    na_vector = c(replicate(length(row_range) - 2, NA)) 
+    na_vector = c(replicate(nrow_dataset - 2, NA)) 
     na_vector = as.numeric(na_vector)
     
     values <- diag(df)
     
     col_name = paste0("revision", i)
     
-    na_vector[1:(length(row_range) - 2 -i)] = values[1:(length(row_range) - 2 -i)]
+    na_vector[1:(nrow_dataset - 2 -i)] = values[1:(nrow_dataset - 2 -i)]
     revised_growth[[`col_name`]] = na_vector
     
     df <- df[,-c(1)]
@@ -137,15 +155,8 @@ prep_func = function(dataset, row_range, col_range, n){
   return(list("df" = revised_growth_df, "delta" = change_in_growth))
 }
 
-dataset <- RGDP_Data
-row_range <- c(74:293)
-col_range <- c(2:220)
 
-a = RGDP_Data[c(74:293), c(2:220)]
 
-post_prep_gdp <- prep_func(dataset, row_range, col_range, 40)
-post_prep_gdp_df <- post_prep_gdp$df
-post_prep_gdp_delta = post_prep_gdp$delta
 
 
 #####################
@@ -153,13 +164,6 @@ post_prep_gdp_delta = post_prep_gdp$delta
 #### FUNC
 #####################
 
-row_start = "1947 Q1"
-row_end = "2023 Q4"
-col_start = "1965 Q4"
-col_end = "2024 Q1"
-window_start = as.yearqtr("1970 Q4")
-window_end = as.yearqtr("2014 Q4")
-  
 data_splice = function(data, row_start, row_end, col_start, col_end, 
                        window_start, window_end){
   
@@ -179,12 +183,54 @@ data_splice = function(data, row_start, row_end, col_start, col_end,
   col_start_slice = (window_start - col_start)*4
   col_last_slice = ncol_data - (col_end - window_end)*4
   
-  output <- data[(row_start_slice+1):row_last_slice, 
-                 (col_start_slice+2):col_last_slice]
+  output <- data[row_start_slice:row_last_slice, 
+                 (col_start_slice+3):(col_last_slice + 1)]
   
   return (output)
 }
 
+
+
+
+#####################
+#### REVISING 
+#### VALUES FUNC
+#####################
+
+row_start = "1947 Q1"
+row_end = "2023 Q4"
+col_start = "1965 Q4"
+col_end = "2024 Q1"
+window_start = "1970 Q4"
+window_end = "2014 Q4"
+
+revise_values = function(data, delta, window_end){
+
+  window_end_yq = as.yearqtr(window_end)
+  
+  # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
+  ten_year_mark = (window_end_yq - 10 - as.yearqtr("1947 Q1", format = "%Y Q%q"))* 4
+  end_of_row_mark = (window_end_yq - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4 - 1
+  
+  # Most recent values for start of time to 10 years before target date
+  ancient_values <- data[1:ten_year_mark,][[`window_end`]]
+  
+  # All other values
+  recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`window_end`]]
+  
+  # Applying approximation of final growth numbers on recent values
+  forecast_growth = recent_values 
+  for (i in 1:length(recent_values)){
+    for (j in 1:i){
+      forecast_growth[i] = forecast_growth[i] * (1 + (delta[40 - j] / 100) )
+    }
+  }
+  
+  revised_data = c(ancient_values, forecast_growth)
+  
+  return (revised_data)
+  
+}
 
 
 

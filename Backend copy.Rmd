@@ -633,7 +633,7 @@ coeftest(GDPGR_ADL21)
 
 ### ADL Model - Consumer Sentiment
 
-```{r adl model fred hstarts}
+```{r adl model consent}
 
 all_GDP_data = all_GDP_data[25: length(all_GDP_data)]
 
@@ -677,7 +677,6 @@ coeftest(GDPGR_ADL21)
 
 output <- auto.arima(all_GDP_data)
 predict(output, n.ahead = 2)
-
 
 ```
 
