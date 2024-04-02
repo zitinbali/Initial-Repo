@@ -1,0 +1,152 @@
+
+#####################
+#### BASIC CLEANING
+#####################
+
+# load libraries
+
+library(tidyverse)
+library(ggplot2)
+library(zoo)
+library(forecast)
+library(xts)
+library(readxl)
+library(dynlm)
+library(lmtest)
+
+# reading the GDP data
+RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
+
+# extracting the most revised values/recent data (2024 Q1) 
+latest_data <- RGDP_Data$ROUTPUT24Q1
+
+# creating a lag for all quarters
+lag(latest_data)
+
+# check is a dataset to validate whether the data is stationary 
+check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
+
+check <- check %>% 
+  rename(c("Date" = "RGDP_Data.DATE",
+           "Raw Data" = "X.latest_data.",
+           "First Lag" = "lag.latest_data."))
+
+# calculating growth rate of GDP from one quarter to the next
+check <- check[-1,] %>% 
+  mutate(growth_rate = (`Raw Data` - `First Lag`)/(`First Lag`) * 100)
+
+# formatting the data variable in terms of year and quarters
+Dates <- gsub(":", " ", check$Date) 
+check <- check %>% 
+  mutate(Time = as.yearqtr(Dates)) %>% 
+  select(c(Time, growth_rate)) %>% 
+  mutate(growth_rate = as.numeric(growth_rate))
+
+check_xts <- xts(check$growth_rate, check$Time) 
+
+plot(as.zoo(check_xts), 
+     plot.type = "single", 
+     col = c("darkred"),
+     lwd = 1,
+     xlab = "Date",
+     ylab = "Growth Rate",
+     main = "Quarterly Growth Rate of GDP")
+
+# function that transform years to class 'yearqtr'
+YToYQTR <- function(years){
+  return(
+    sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
+  )
+}
+
+# recessions
+recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                        2001, 2007:2008))
+# the COVID recession ended in April 2020 according to the Fed
+recessions_covid <- append(recessions, 
+                           c(as.yearqtr("2020 Q1"), 
+                             as.yearqtr("2020 Q2")))
+
+# colour shading for recessions
+xblocks(time(as.zoo(check_xts)), 
+        c(time(check_xts) %in% recessions_covid), 
+        col = alpha("steelblue", alpha = 0.3))
+
+# Variance is higher in the earlier years prior to the GDP calculation methodology being changed 
+
+
+
+
+#####################
+#### ADVANCED AR
+#### MODEL FUNC
+#####################
+
+# n refers to the number of periods that sum up to 10 years for a given dataset. For instance, n = 40 for a dataset arranged by quarters, and n = 120 for a dataset arranged by months.
+
+prep_func = function(dataset, row_range, col_range, n){
+  
+  # cut dataset into relevant ranges
+  
+  data_across_q <- dataset[row_range, col_range] %>%
+    #subset(select = -DATE) %>%
+    mutate_all(as.numeric)
+  
+  colnames(data_across_q) <- NULL
+  
+  data_across_q <- as.matrix(data_across_q) 
+  
+  lagged_data_across_q <- lag(data_across_q)
+  
+  df <- 100 * (data_across_q - lagged_data_across_q)/(lagged_data_across_q)
+  
+  # Removing the first and last row since we had added those to compute the lag.
+  df <- df[-c(1, length(row_range)),]
+  
+  # Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
+  
+  revised_growth <- data.frame(matrix(NA, nrow = length(row_range) - 2, ncol = 0))
+  
+  for (i in 0:n){
+    na_vector = c(replicate(length(row_range) - 2, NA)) 
+    na_vector = as.numeric(na_vector)
+    
+    values <- diag(df)
+    
+    col_name = paste0("revision", i)
+    
+    na_vector[1:(length(row_range) - 2 -i)] = values[1:(length(row_range) - 2 -i)]
+    revised_growth[[`col_name`]] = na_vector
+    
+    df <- df[,-c(1)]
+  }
+  
+  revised_growth_df <- revised_growth
+  
+  # Now, we are looking into how the growth rates change due to revision
+  lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
+  revised_growth <- revised_growth[,-c(1)]
+  
+  # We're taking the average of the change in growth per revision 
+  change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
+  
+  change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
+  
+  change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
+  
+  return(list("df" = revised_growth_df, "delta" = change_in_growth))
+}
+
+dataset <- RGDP_Data
+row_range <- c(74:293)
+col_range <- c(2:220)
+
+a = RGDP_Data[c(74:293), c(2:220)]
+
+post_prep_gdp <- prep_func(dataset, row_range, col_range, 40)
+post_prep_gdp_df <- post_prep_gdp$df
+post_prep_gdp_delta = post_prep_gdp$delta
+
+
+
+

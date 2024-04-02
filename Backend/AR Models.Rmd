@@ -1,0 +1,54 @@
+
+```{r import, warning = FALSE, results= "hide", echo = FALSE}
+
+source("GDP Cleaning.R")
+
+```
+
+### AR Model 
+```{r autoregression}
+
+# Using the basic AR model from lecture 
+# Inputs: Y - predicted variable, p - AR order, h - forecast horizon
+
+fitAR=function(Y,p,h){
+  
+  # create p lags + forecast horizon shift (=h option)
+  aux = embed(Y, p+h)
+  
+  #  Y variable aligned/adjusted for missing data due to lags
+  y = aux[,1] 
+  
+  # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
+  X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
+
+  # retrieve last p observations
+  X.out = tail(aux,1)[1:ncol(X)] 
+
+  # estimate direct h-step AR(p) by OLS 
+  model = lm(y~X) 
+  
+  # extract coefficients
+  coef = coef(model) 
+
+  #make a forecast using the last few observations: a direct h-step forecast.
+  pred = c(1,X.out)%*%coef 
+  
+  #note the addition of a constant to the test observation vector
+  
+  #get unadjusted rmsfe (ignoring estimation uncertainty)
+  rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
+  
+  #save estimated AR regression, prediction, and estimated coefficients
+  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) 
+}
+
+
+# Creating a test dataset that comprises the growth_rate from the check dataset 
+
+test_AR <- as.matrix(check$growth_rate)
+
+
+fitAR(test_AR, 2, 2)
+
+```
