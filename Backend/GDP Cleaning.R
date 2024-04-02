@@ -148,5 +148,44 @@ post_prep_gdp_df <- post_prep_gdp$df
 post_prep_gdp_delta = post_prep_gdp$delta
 
 
+#####################
+#### DATA SPLICING
+#### FUNC
+#####################
+
+row_start = "1947 Q1"
+row_end = "2023 Q4"
+col_start = "1965 Q4"
+col_end = "2024 Q1"
+window_start = as.yearqtr("1970 Q4")
+window_end = as.yearqtr("2014 Q4")
+  
+data_splice = function(data, row_start, row_end, col_start, col_end, 
+                       window_start, window_end){
+  
+  ncol_data = ncol(data)
+  nrow_data = nrow(data)
+  
+  row_start = as.yearqtr(row_start)
+  row_end = as.yearqtr(row_end)
+  col_start = as.yearqtr(col_start)
+  col_end = as.yearqtr(col_end)
+  window_start = as.yearqtr(window_start)
+  window_end = as.yearqtr(window_end)
+  
+  row_start_slice = (window_start - row_start)*4
+  row_last_slice = nrow_data - (row_end - window_end)*4
+  
+  col_start_slice = (window_start - col_start)*4
+  col_last_slice = ncol_data - (col_end - window_end)*4
+  
+  output <- data[(row_start_slice+1):row_last_slice, 
+                 (col_start_slice+2):col_last_slice]
+  
+  return (output)
+}
+
+
+
 
 

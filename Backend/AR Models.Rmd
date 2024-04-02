@@ -5,8 +5,9 @@ source("GDP Cleaning.R")
 
 ```
 
-### AR Model 
-```{r autoregression}
+### AR Function 
+
+```{r AR function}
 
 # Using the basic AR model from lecture 
 # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
@@ -43,12 +44,54 @@ fitAR=function(Y,p,h){
   return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) 
 }
 
+```
 
-# Creating a test dataset that comprises the growth_rate from the check dataset 
+### Inputs
 
-test_AR <- as.matrix(check$growth_rate)
+```{r inputs}
+
+example_startq = "1974 Q2"
+example_endq = "2013 Q4"
+example_startyq = as.yearqtr(example_startq)
+example_endyq = as.yearqtr(example_endq)
+
+example_fhorizon = as.numeric("1")
+
+```
 
 
-fitAR(test_AR, 2, 2)
+### Basic AR Model 
+
+```{r AR Model 1}
+
+# Creating a test dataset that comprises the growth_rate from the check dataset
+
+start_rownum = which(grepl(example_startyq, check$Time))
+end_rownum = which(grepl(example_endyq, check$Time))
+
+basic_AR_input <- check[start_rownum:end_rownum, ] %>% 
+  select(growth_rate) %>% 
+  as.matrix()
+
+p_optimal = 4
+h = example_fhorizon
+
+basic_AR_output <- fitAR(basic_AR_input, p_optimal, example_fhorizon)
+
+ar1_prediction = basic_AR_output$pred
+ar1_rmsfe = basic_AR_output$rmsfe
+
+```
+
+
+### Advanced AR Model 
+
+```{r Advanced AR model}
+
+test <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", "2024 Q1",
+                    example_startyq, example_endyq)
+
+
+
 
 ```
