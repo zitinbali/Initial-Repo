@@ -3,16 +3,15 @@ library(ggplot2)
 library(zoo)
 library(dplyr)
 library(ggplot2)
+library(shiny)
 library(shinyWidgets)
 library(shinythemes)
 library(readxl)
 #install.packages("AICcmodavg")
 library(AICcmodavg)
 
-RGDP_Data <- read_excel("RGDP Data.xlsx")
 
-library(shiny)
-library(shinythemes)
+RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
 ui <- navbarPage(
   theme = shinythemes::shinytheme('flatly'),
@@ -51,10 +50,12 @@ ui <- navbarPage(
                mainPanel(
                  tabsetPanel(
                    tabPanel("Model 1", plotOutput("model1"),
-                            tableOutput("aic_table")),
-                   tabPanel("Model 2", plotOutput("model2")),
+                            tableOutput("aic_table1")),
+                   tabPanel("Model 2", plotOutput("model2"),
+                            tableOutput("aic_table2")),
                    tabPanel("Model 3", plotOutput("model3"),
-                          textOutput("best_model"))
+                            tableOutput("aic_table3"),
+                            textOutput("best_model"))
                )
              )
            )
@@ -62,27 +63,9 @@ ui <- navbarPage(
   )
 )
 
-
-server <- function(input, output, session) {
-  # Server logic goes here
-}
-
-shinyApp(ui = ui, server = server)
-
-
-server <- function(input, output, session) {
-  # Server logic goes here
-}
-
-shinyApp(ui = ui, server = server)
-
-
 server <- function(input, output, session) {
   
   ### Basic Cleaning & Processing
-  
-  # Reading the GDP data
-  RGDP_Data <- read_excel("RGDP Data.xlsx")
   
   # extracting the most revised values/recent data (2024 Q1) 
   latest_data <- RGDP_Data$ROUTPUT24Q1
@@ -139,12 +122,6 @@ server <- function(input, output, session) {
           c(time(check_xts) %in% recessions_covid), 
           col = alpha("steelblue", alpha = 0.3))
   
-  
-  ## EXPLAIN EVERYTHING 
-  # variance of initial years (prior to them changing to GDP) seems higher 
-  
-  #######################################
-  
   ### AR Function & Model 
   
   # Using the basic AR model from lecture 
@@ -183,24 +160,6 @@ server <- function(input, output, session) {
     return(model)
   }
   
-  fitAR=function(Y,p,h){
-    
-    #Inputs: Y- predicted variable,  p - AR order, h -forecast horizon
-    aux=embed(Y,p+h) #create p lags + forecast horizon shift (=h option)
-    y=aux[,1] #  Y variable aligned/adjusted for missing data due to lags
-    X=as.matrix(aux[,-c(1:(ncol(Y)*h))]) # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)  
-    
-    X.out=tail(aux,1)[1:ncol(X)] #retrieve last p observations 
-    model=lm(y~X) #estimate direct h-step AR(p) by OLS 
-    coef=coef(model) #extract coefficients
-    pred=c(1,X.out)%*%coef #make a forecast using the last few observations: a direct h-step forecast.
-    #note the addition of a constant to the test observation vector
-    
-    rmsfe=sqrt(sum(model$residuals^2)/nrow(X)) #get unadjusted rmsfe (ignoring estimation uncertainty)
-    return(model)
-    #return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) #save estimated AR regression, prediction, and estimated coefficients
-  }
-  
   ## prepping data for model 1
   test <- as.matrix(check$growth_rate)
   
@@ -211,9 +170,24 @@ server <- function(input, output, session) {
   output$model1 <- renderPlot({
     plot(fitAR(test, 2, 2))
   })
+
+  output$aic_table1 <- renderTable({
+    aic[,c(1, 3)]
+  })
   
-  # Render AIC table
-  output$aic_table <- renderTable({
+  output$model2 <- renderPlot({
+    plot(fitAR(test, 2, 2))
+  })
+  
+  output$aic_table2 <- renderTable({
+    aic[,c(1, 3)]
+  })
+  
+  output$model3 <- renderPlot({
+    plot(fitAR(test, 2, 2))
+  })
+  
+  output$aic_table3 <- renderTable({
     aic[,c(1, 3)]
   })
   
