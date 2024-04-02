@@ -1,5 +1,5 @@
 
-```{r libraries}
+```{r libraries, warning = FALSE}
 
 library(tidyverse)
 library(ggplot2)
@@ -16,7 +16,7 @@ library(lmtest)
 
 ```{r test}
 
-# Reading the GDP data
+# reading the GDP data
 RGDP_Data <- read_excel("RGDP Data.xlsx")
 
 # extracting the most revised values/recent data (2024 Q1) 
@@ -26,14 +26,14 @@ latest_data <- RGDP_Data$ROUTPUT24Q1
 lag(latest_data)
 
 # check is a dataset to validate whether the data is stationary 
-check <- data.frame(RGDP_Data$DATE, log(latest_data), lag(log(latest_data)))
+check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
 
 check <- check %>% 
   rename(c("Date" = "RGDP_Data.DATE",
-           "Raw Data" = "log.latest_data.",
-           "First Lag" = "lag.log.latest_data.."))
+           "Raw Data" = "X.latest_data.",
+           "First Lag" = "lag.latest_data."))
 
-# calculating growth rate of log(GDP) from one quarter to the next
+# calculating growth rate of GDP from one quarter to the next
 check <- check[-1,] %>% 
   mutate(growth_rate = (log(`Raw Data`) - log(`First Lag`))/log(`First Lag`) * 100)
 
@@ -376,7 +376,7 @@ recent_values <- perc_change_df[(ten_year_mark + 1):
 forecast_growth = recent_values 
 for (i in 1:length(recent_values)){
   for (j in 1:i){
-    forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
+    forecast_growth[i] = forecast_growth[i] * (1 + (post_prep_gdp_delta[40 - j] / 100) )
   }
 }
 
@@ -425,7 +425,7 @@ recent_values <- perc_change_df[(ten_year_mark + 1):
 forecast_growth = recent_values 
 for (i in 1:length(recent_values)){
   for (j in 1:i){
-    forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
+    forecast_growth[i] = forecast_growth[i] * (1 + (post_prep_gdp_delta[40 - j] / 100) )
   }
 }
 
@@ -592,7 +592,7 @@ recent_values <- perc_change_df[(ten_year_mark + 1):
 forecast_growth = recent_values 
 for (i in 1:length(recent_values)){
   for (j in 1:i){
-    forecast_growth[i] = forecast_growth[i] * (1 + (change_in_growth[40 - j] / 100) )
+    forecast_growth[i] = forecast_growth[i] * (1 + (post_prep_gdp_delta[40 - j] / 100) )
   }
 }
 
@@ -680,7 +680,7 @@ coeftest(GDPGR_ADL21)
 
 output <- auto.arima(all_GDP_data)
 predict(output, n.ahead = 2)
-all_GDP_data
+
 
 ```
 
