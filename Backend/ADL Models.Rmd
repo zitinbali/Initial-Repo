@@ -32,6 +32,15 @@ GDPGrowth_ts <- ts(all_GDP_data,
                   end = c(end_y, end_q), 
                   frequency = 4)
 
+# extract data from TS object for AR selection
+temp = matrix(coredata(GDPGrowth_ts), ncol = 1)
+
+# AR order selection for GDP growth rate
+models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+  
+aic <- aictab(cand.set = models, modnames = paste0('p=', 1:4)) 
+
+# AIC picks AR(4) for GDP Growth 
 ```
 
 
@@ -96,6 +105,16 @@ BAA_AAA_coefficients <- ADL_BAA_AAA33$coefficients
 
 coeftest(ADL_BAA_AAA33)
 
+# extract data from TS object for AR selection
+temp = matrix(coredata(baa_aaa_ts), ncol = 1)
+
+# AR order selection for BAA-AAA spread 
+models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+  
+aic <- aictab(cand.set = models)
+
+# AIC picks AR(4) for BAA-AAA spread 
+
 # THE ADL MODELS DO NOT HAVE A BUILT IN PRED FUNCTION
 
 ```
@@ -144,6 +163,16 @@ tspread_coefficients <- ADL_tspread34$coefficients
 
 coeftest(ADL_tspread34)
 
+# extract data from TS object for AR selection
+temp = matrix(coredata(tspread_ts), ncol = 1)
+
+# AR order selection for Treasury spread
+models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+  
+aic <- aictab(cand.set = models)
+
+# AIC picks AR(3) for Treasury spread 
+
 ```
 
 
@@ -187,6 +216,16 @@ ADL_fred_hstarts31 <-
 fred_hstarts_coefficients <- ADL_fred_hstarts31$coefficients
 
 coeftest(ADL_fred_hstarts31)
+
+# extract data from TS object for AR selection
+temp = matrix(coredata(fred_hstarts_ts), ncol = 1)
+
+# AR order selection for Hstarts
+models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+  
+aic <- aictab(cand.set = models)
+
+# AIC picks AR(4) for Hstarts
 
 # HSTARTS VERY BAD.
 
@@ -233,6 +272,16 @@ ADL_consent31 <-
 consent_coefficients <- ADL_consent31$coefficients
 
 coeftest(ADL_consent31)
+
+# extract data from TS object for AR selection
+temp = matrix(coredata(consent_ts), ncol = 1)
+
+# AR order selection for consumer sentiment
+models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+  
+aic <- aictab(cand.set = models)
+
+# AIC picks AR(4) for consumer sentiment
 
 
 ```
