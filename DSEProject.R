@@ -31,7 +31,7 @@ ui <- navbarPage(
              chooseSliderSkin("Flat"),
              sidebarLayout(
                sidebarPanel(
-                 sliderTextInput('input_year', 'Input Year', 
+                 sliderTextInput('year', 'Input Year', 
                                  choices = RGDP_Data$DATE,
                                  selected = RGDP_Data$DATE[4]),
                  selectInput('lags', 'Select number of lags', 
@@ -94,14 +94,6 @@ server <- function(input, output, session) {
   
   check_xts <- xts(check$growth_rate, check$Time) 
   
-  plot(as.zoo(check_xts), 
-       plot.type = "single", 
-       col = c("darkred"),
-       lwd = 1,
-       xlab = "Date",
-       ylab = "Growth Rate",
-       main = "Quarterly Growth Rate of log(GDP)")
-  
   # function that transform years to class 'yearqtr'
   YToYQTR <- function(years){
     return(
@@ -109,24 +101,11 @@ server <- function(input, output, session) {
     )
   }
   
-  # recessions
-  recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                          2001, 2007:2008))
-  # the COVID recession ended in April 2020 according to the Fed
-  recessions_covid <- append(recessions, 
-                             c(as.yearqtr("2020 Q1"), 
-                               as.yearqtr("2020 Q2")))
-  
-  # colour shading for recessions
-  xblocks(time(as.zoo(check_xts)), 
-          c(time(check_xts) %in% recessions_covid), 
-          col = alpha("steelblue", alpha = 0.3))
-  
-  ### AR Function & Model 
+### AR Function & Model 
   
   # Using the basic AR model from lecture 
   # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
-  
+  ##fitAR function for calculating aic across p number of lags for aic table
   fitAR=function(Y,p,h){
     
     # create p lags + forecast horizon shift (=h option)
@@ -156,27 +135,186 @@ server <- function(input, output, session) {
     rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
     
     #save estimated AR regression, prediction, and estimated coefficients
-    #return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) 
     return(model)
   }
   
+  ##fitAR_preds for predictions at each step along forecast horizon h for line graph
+  fitAR_preds = function(Y, p, h) {
+    
+    # create p lags + forecast horizon shift (=h option)
+    aux = embed(Y, p + h)
+    
+    # Y variable aligned/adjusted for missing data due to lags
+    y = aux[, 1] 
+    
+    # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
+    X = as.matrix(aux[, -c(1:(ncol(Y) * h))])
+    
+    # retrieve last p observations
+    X.out = tail(aux, 1)[1:ncol(X)] 
+    
+    # store predictions for each horizon
+    preds = numeric(h)
+    
+    # estimate h-step AR(p) by OLS 
+    for (i in 1:h) {
+      # Use only the available data for each horizon
+      model = lm(y ~ X[, 1:(ncol(X) - i + 1)]) 
+      coef = coef(model) 
+      
+      # Make forecast using the last few observations for the specific horizon
+      pred = X.out[1:tail(X.out, i)] %*% coef 
+      preds[i] = pred
+    }
+    
+    # Get unadjusted RMSFE (ignoring estimation uncertainty)
+    rmsfe = sqrt(sum(model$residuals^2) / nrow(X)) 
+    
+    # Save estimated AR regression, predictions, and estimated coefficients
+    return(preds)
+  }
+  
+  
   ## prepping data for model 1
+  latest_data <- RGDP_Data$ROUTPUT24Q1
+  
+  # creating a lag for all quarters
+  lag(latest_data)
+  
+  # check is a dataset to validate whether the data is stationary 
+  check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
+  
+  check <- check %>% 
+    rename(c("Date" = "RGDP_Data.DATE",
+             "Raw Data" = "X.latest_data.",
+             "First Lag" = "lag.latest_data."))
+  
+  # calculating growth rate of GDP from one quarter to the next
+  check <- check[-1,] %>% 
+    mutate(growth_rate = (`Raw Data` - `First Lag`)/(`First Lag`) * 100)
+  
+  
+  ## Output model 1
+output$model1 <- renderPlot({
+  # formatting the data variable in terms of year and quarters
+  Dates <- gsub(":", " ", check$Date) 
+  check <- check %>%
+    mutate(Time = as.yearqtr(Dates)) %>%
+    filter(Time <= input$year) %>% 
+    select(Time, growth_rate) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
+    
+  check_xts <- xts(check$growth_rate, check$Time) 
   test <- as.matrix(check$growth_rate)
   
-  models <- lapply(1:4, function(p) fitAR(test, p, 2))
+  predictions <- check %>% 
+    filter(Time > input$year) %>% 
+    mutate(growth_rate = fitAR_preds(test, as.numeric(input$lags), as.numeric(input$forecast_horizon))) %>% 
+    select(Time, growth_rate)
+  
+  # function that transform years to class 'yearqtr'
+  YToYQTR <- function(years){
+    return(
+      sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
+    )
+  }
+  
+  # recessions
+  recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                          2001, 2007:2008))
+  # the COVID recession ended in April 2020 according to the Fed
+  recessions_covid <- append(recessions, 
+                             c(as.yearqtr("2020 Q1"), 
+                               as.yearqtr("2020 Q2")))
+  
+
+  
+  ##models <- lapply(1:4, function(p) fitAR(test, p, 2))
   
   aic <- aictab(cand.set = models, modnames = paste0('p=', 1:4))
   
-  output$model1 <- renderPlot({
-    plot(fitAR(test, 2, 2))
+    # Merge the two time series into a single zoo object
+    merged_data <- merge(as.zoo(check_xts), as.zoo(predictions))
+    
+    # Plot the merged data
+    print(plot(merged_data, 
+         plot.type = "single", 
+         col = c("darkred", "darkblue"),
+         lwd = 1,
+         xlab = "Date",
+         ylab = "Growth Rate",
+         main = "Quarterly Growth Rate of GDP"))
+    
+    # colour shading for recessions
+    xblocks(time(as.zoo(check_xts)), 
+            c(time(check_xts) %in% recessions_covid), 
+            col = alpha("steelblue", alpha = 0.3))
   })
+
 
   output$aic_table1 <- renderTable({
     aic[,c(1, 3)]
   })
   
   output$model2 <- renderPlot({
-    plot(fitAR(test, 2, 2))
+    latest_data <- RGDP_Data$ROUTPUT24Q1
+    
+    # creating a lag for all quarters
+    lag(latest_data)
+    
+    # check is a dataset to validate whether the data is stationary 
+    check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
+    
+    check <- check %>% 
+      rename(c("Date" = "RGDP_Data.DATE",
+               "Raw Data" = "X.latest_data.",
+               "First Lag" = "lag.latest_data."))
+    
+    # calculating growth rate of GDP from one quarter to the next
+    check <- check[-1,] %>% 
+      mutate(growth_rate = (`Raw Data` - `First Lag`)/(`First Lag`) * 100)
+    
+    # formatting the data variable in terms of year and quarters
+    Dates <- gsub(":", " ", check$Date) 
+    check <- check %>% 
+      mutate(Time = as.yearqtr(Dates)) %>% 
+      select(c(Time, growth_rate)) %>% 
+      mutate(growth_rate = as.numeric(growth_rate))
+    
+    check_xts <- xts(check$growth_rate, check$Time) ##APPEND PREDICTIONS HERE
+    
+    # Merge the two time series into a single zoo object
+    merged_data <- merge(as.zoo(check_xts), as.zoo(predictions))
+    
+    # Plot the merged data
+    plot(merged_data, 
+         plot.type = "single", 
+         col = c("darkred", "darkblue"),
+         lwd = 1,
+         xlab = "Date",
+         ylab = "Growth Rate",
+         main = "Quarterly Growth Rate of GDP")
+    
+    
+    # function that transform years to class 'yearqtr'
+    YToYQTR <- function(years){
+      return(
+        sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
+      )
+    }
+    
+    # recessions
+    recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                            2001, 2007:2008))
+    # the COVID recession ended in April 2020 according to the Fed
+    recessions_covid <- append(recessions, 
+                               c(as.yearqtr("2020 Q1"), 
+                                 as.yearqtr("2020 Q2")))
+    
+    # colour shading for recessions
+    xblocks(time(as.zoo(check_xts)), 
+            c(time(check_xts) %in% recessions_covid), 
+            col = alpha("steelblue", alpha = 0.3))
   })
   
   output$aic_table2 <- renderTable({
@@ -184,7 +322,59 @@ server <- function(input, output, session) {
   })
   
   output$model3 <- renderPlot({
-    plot(fitAR(test, 2, 2))
+    latest_data <- RGDP_Data$ROUTPUT24Q1
+    
+    # creating a lag for all quarters
+    lag(latest_data)
+    
+    # check is a dataset to validate whether the data is stationary 
+    check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
+    
+    check <- check %>% 
+      rename(c("Date" = "RGDP_Data.DATE",
+               "Raw Data" = "X.latest_data.",
+               "First Lag" = "lag.latest_data."))
+    
+    # calculating growth rate of GDP from one quarter to the next
+    check <- check[-1,] %>% 
+      mutate(growth_rate = (`Raw Data` - `First Lag`)/(`First Lag`) * 100)
+    
+    # formatting the data variable in terms of year and quarters
+    Dates <- gsub(":", " ", check$Date) 
+    check <- check %>% 
+      mutate(Time = as.yearqtr(Dates)) %>% 
+      select(c(Time, growth_rate)) %>% 
+      mutate(growth_rate = as.numeric(growth_rate))
+    
+    check_xts <- xts(check$growth_rate, check$Time) 
+    
+    plot(as.zoo(check_xts), 
+         plot.type = "single", 
+         col = c("darkred"),
+         lwd = 1,
+         xlab = "Date",
+         ylab = "Growth Rate",
+         main = "Quarterly Growth Rate of GDP")
+    
+    # function that transform years to class 'yearqtr'
+    YToYQTR <- function(years){
+      return(
+        sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
+      )
+    }
+    
+    # recessions
+    recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                            2001, 2007:2008))
+    # the COVID recession ended in April 2020 according to the Fed
+    recessions_covid <- append(recessions, 
+                               c(as.yearqtr("2020 Q1"), 
+                                 as.yearqtr("2020 Q2")))
+    
+    # colour shading for recessions
+    xblocks(time(as.zoo(check_xts)), 
+            c(time(check_xts) %in% recessions_covid), 
+            col = alpha("steelblue", alpha = 0.3))
   })
   
   output$aic_table3 <- renderTable({
