@@ -38,7 +38,7 @@ GDPGrowth_coredata = matrix(coredata(GDPGrowth_ts), ncol = 1)
 # AR order selection for GDP growth rate
 models <- lapply(1:4, function(p) fitAR(GDPGrowth_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models) 
+aic <- aictab(cand.set = models, modnames = paste0('p=',1:4)) 
 
 best_lags <- as.integer(str_sub(aic[1,1], -1))
 
@@ -308,7 +308,7 @@ consent_selected <- models[[best_lags]]$call
 models <- list()
 
 # Define the base formula
-base_formula <- lm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + L(GDPGrowth_ts, 4))
+base_formula <- dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + L(GDPGrowth_ts, 4))
 
 # Loop to construct models with increasing lag terms for consent_ts
 for (i in 0:4) {
@@ -329,10 +329,6 @@ for(i in 0:4){
   base_formula <- update(base_formula, y ~ X + L(BAA_AAA_coredata,i+1))
   models[[i+1]] <- base_formula
 }
-
-
-
-
   
 aic <- aictab(cand.set = models)
 
