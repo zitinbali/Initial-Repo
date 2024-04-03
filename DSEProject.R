@@ -105,6 +105,8 @@ server <- function(input, output, session) {
   
   # Using the basic AR model from lecture 
   # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
+  
+  
   ##fitAR function for calculating aic across p number of lags for aic table
   fitAR=function(Y,p,h){
     
@@ -129,51 +131,24 @@ server <- function(input, output, session) {
     #make a forecast using the last few observations: a direct h-step forecast.
     pred = c(1,X.out)%*%coef 
     
-    #note the addition of a constant to the test observation vector
-    
-    #get unadjusted rmsfe (ignoring estimation uncertainty)
-    rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
-    
-    #save estimated AR regression, prediction, and estimated coefficients
-    return(model)
-  }
-  
-  ##fitAR_preds for predictions at each step along forecast horizon h for line graph
-  fitAR_preds = function(Y, p, h) {
-    
-    # create p lags + forecast horizon shift (=h option)
-    aux = embed(Y, p + h)
-    
-    # Y variable aligned/adjusted for missing data due to lags
-    y = aux[, 1] 
-    
-    # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
-    X = as.matrix(aux[, -c(1:(ncol(Y) * h))])
-    
-    # retrieve last p observations
-    X.out = tail(aux, 1)[1:ncol(X)] 
-    
-    # store predictions for each horizon
-    preds = numeric(h)
-    
-    # estimate h-step AR(p) by OLS 
-    for (i in 1:h) {
-      # Use only the available data for each horizon
-      model = lm(y ~ X[, 1:(ncol(X) - i + 1)]) 
-      coef = coef(model) 
-      
-      # Make forecast using the last few observations for the specific horizon
-      pred = X.out[1:tail(X.out, i)] %*% coef 
-      preds[i] = pred
-    }
-    
     # Get unadjusted RMSFE (ignoring estimation uncertainty)
     rmsfe = sqrt(sum(model$residuals^2) / nrow(X)) 
     
     # Save estimated AR regression, predictions, and estimated coefficients
-    return(preds)
+    return(list("model" = model, "pred" = pred)) 
   }
   
+  test <- as.matrix(check$growth_rate)
+  
+  ##fitAR_preds for predictions at each step along forecast horizon h for line graph
+  fitAR_preds <- function(Y, p, h) {
+    preds = numeric(h)
+    for(i in 1:h){
+      #test_AR <- as.matrix(check$growth_rate)
+      preds[i] = fitAR(test_AR, 2, i)$pred  ##2 is placeholder for input$lags
+    }
+    return(preds)
+  }
   
   ## prepping data for model 1
   latest_data <- RGDP_Data$ROUTPUT24Q1
@@ -209,8 +184,8 @@ output$model1 <- renderPlot({
   
   predictions <- check %>% 
     filter(Time > input$year) %>% 
-    mutate(growth_rate = fitAR_preds(test, as.numeric(input$lags), as.numeric(input$forecast_horizon))) %>% 
-    select(Time, growth_rate)
+    head(n = 2) %>% 
+    mutate(new_growth_rate = as.vector(fitAR_preds(test, 2, 2)))
   
   # function that transform years to class 'yearqtr'
   YToYQTR <- function(years){
@@ -227,11 +202,9 @@ output$model1 <- renderPlot({
                              c(as.yearqtr("2020 Q1"), 
                                as.yearqtr("2020 Q2")))
   
-
-  
   ##models <- lapply(1:4, function(p) fitAR(test, p, 2))
   
-  aic <- aictab(cand.set = models, modnames = paste0('p=', 1:4))
+  aic <- aictab(cand.set = models, modnames = paste0('p=', 1:as.numeric(input$forecast_horizon)))
   
     # Merge the two time series into a single zoo object
     merged_data <- merge(as.zoo(check_xts), as.zoo(predictions))
@@ -281,7 +254,7 @@ output$model1 <- renderPlot({
       select(c(Time, growth_rate)) %>% 
       mutate(growth_rate = as.numeric(growth_rate))
     
-    check_xts <- xts(check$growth_rate, check$Time) ##APPEND PREDICTIONS HERE
+    check_xts <- xts(check$growth_rate, check$Time)
     
     # Merge the two time series into a single zoo object
     merged_data <- merge(as.zoo(check_xts), as.zoo(predictions))
