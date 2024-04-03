@@ -130,9 +130,7 @@ prep_func = function(dataset, n){
     na_vector = as.numeric(na_vector)
     
     values <- diag(df)
-    
     col_name = paste0("revision", i)
-    
     na_vector[1:(nrow_dataset - 2 -i)] = values[1:(nrow_dataset - 2 -i)]
     revised_growth[[`col_name`]] = na_vector
     
@@ -165,7 +163,7 @@ prep_func = function(dataset, n){
 #####################
 
 data_splice = function(data, row_start, row_end, col_start, col_end, 
-                       window_start, window_end){
+                       window_start, window_end, n, m){
   
   ncol_data = ncol(data)
   nrow_data = nrow(data)
@@ -183,8 +181,8 @@ data_splice = function(data, row_start, row_end, col_start, col_end,
   col_start_slice = (window_start - col_start)*4
   col_last_slice = ncol_data - (col_end - window_end)*4
   
-  output <- data[row_start_slice:row_last_slice, 
-                 (col_start_slice+3):(col_last_slice + 1)]
+  output <- data[(row_start_slice + m):row_last_slice, 
+                 (col_start_slice+n):(col_last_slice + 1)]
   
   return (output)
 }
@@ -201,28 +199,31 @@ row_start = "1947 Q1"
 row_end = "2023 Q4"
 col_start = "1965 Q4"
 col_end = "2024 Q1"
-window_start = "1970 Q4"
+window_start = "2004 Q3"
 window_end = "2014 Q4"
 
-revise_values = function(data, delta, window_end){
+revise_values = function(data, delta, window_start, window_end){
 
+  window_start_yq = as.yearqtr(window_start)
   window_end_yq = as.yearqtr(window_end)
   
   # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
-  ten_year_mark = (window_end_yq - 10 - as.yearqtr("1947 Q1", format = "%Y Q%q"))* 4
-  end_of_row_mark = (window_end_yq - as.yearqtr("1947 Q1", format = "%Y Q%q")) * 4 - 1
+  ten_year_mark = (window_end_yq - 10 - window_start_yq)*4 + 1
+  end_of_row_mark = (window_end_yq - window_start_yq)*4 + 1
+  
+  end_qtr = as.character(window_end_yq + 1/4)
   
   # Most recent values for start of time to 10 years before target date
-  ancient_values <- data[1:ten_year_mark,][[`window_end`]]
+  ancient_values <- data[1:ten_year_mark,][[`end_qtr`]]
   
   # All other values
-  recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`window_end`]]
+  recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`end_qtr`]]
   
   # Applying approximation of final growth numbers on recent values
   forecast_growth = recent_values 
   for (i in 1:length(recent_values)){
     for (j in 1:i){
-      forecast_growth[i] = forecast_growth[i] * (1 + (delta[40 - j] / 100) )
+      forecast_growth[i] = forecast_growth[i] * (1 + (delta[41 - j] / 100) )
     }
   }
   
