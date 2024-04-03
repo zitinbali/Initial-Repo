@@ -33,13 +33,16 @@ GDPGrowth_ts <- ts(all_GDP_data,
                   frequency = 4)
 
 # extract data from TS object for AR selection
-temp = matrix(coredata(GDPGrowth_ts), ncol = 1)
+GDPGrowth_coredata = matrix(coredata(GDPGrowth_ts), ncol = 1)
 
 # AR order selection for GDP growth rate
-models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+models <- lapply(1:4, function(p) fitAR(GDPGrowth_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models, modnames = paste0('p=', 1:4)) 
+aic <- aictab(cand.set = models) 
 
+best_lags <- as.integer(str_sub(aic[1,1], -1))
+
+GDPGrowth_selected <- models[[best_lags]]
 # AIC picks AR(4) for GDP Growth 
 ```
 
@@ -106,13 +109,16 @@ BAA_AAA_coefficients <- ADL_BAA_AAA33$coefficients
 coeftest(ADL_BAA_AAA33)
 
 # extract data from TS object for AR selection
-temp = matrix(coredata(baa_aaa_ts), ncol = 1)
+BAA_AAA_coredata = matrix(coredata(baa_aaa_ts), ncol = 1)
 
 # AR order selection for BAA-AAA spread 
-models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+models <- lapply(1:4, function(p) fitAR(BAA_AAA_coredata, p, 2)$model)
   
 aic <- aictab(cand.set = models)
 
+best_lags <- as.integer(str_sub(aic[1,1], -1))
+
+BAA_AAA_selected <- models[[best_lags]]$call
 # AIC picks AR(4) for BAA-AAA spread 
 
 # THE ADL MODELS DO NOT HAVE A BUILT IN PRED FUNCTION
@@ -164,13 +170,16 @@ tspread_coefficients <- ADL_tspread34$coefficients
 coeftest(ADL_tspread34)
 
 # extract data from TS object for AR selection
-temp = matrix(coredata(tspread_ts), ncol = 1)
+tspread_coredata = matrix(coredata(tspread_ts), ncol = 1)
 
 # AR order selection for Treasury spread
-models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+models <- lapply(1:4, function(p) fitAR(tspread_coredata, p, 2)$model)
   
 aic <- aictab(cand.set = models)
 
+best_lags <- as.integer(str_sub(aic[1,1], -1))
+
+tspread_selected <- models[[best_lags]]$call
 # AIC picks AR(3) for Treasury spread 
 
 ```
@@ -218,13 +227,16 @@ fred_hstarts_coefficients <- ADL_fred_hstarts31$coefficients
 coeftest(ADL_fred_hstarts31)
 
 # extract data from TS object for AR selection
-temp = matrix(coredata(fred_hstarts_ts), ncol = 1)
+fred_hstarts_coredata = matrix(coredata(fred_hstarts_ts), ncol = 1)
 
 # AR order selection for Hstarts
-models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+models <- lapply(1:4, function(p) fitAR(fred_hstarts_coredata, p, 2)$model)
   
 aic <- aictab(cand.set = models)
 
+best_lags <- as.integer(str_sub(aic[1,1], -1))
+
+fred_hstarts_selected <- models[[best_lags]]$call
 # AIC picks AR(4) for Hstarts
 
 # HSTARTS VERY BAD.
@@ -274,15 +286,69 @@ consent_coefficients <- ADL_consent31$coefficients
 coeftest(ADL_consent31)
 
 # extract data from TS object for AR selection
-temp = matrix(coredata(consent_ts), ncol = 1)
+consent_coredata = matrix(coredata(consent_ts), ncol = 1)
 
 # AR order selection for consumer sentiment
-models <- lapply(1:4, function(p) fitAR(temp, p, 2)$model)
+models <- lapply(1:4, function(p) fitAR(consent_coredata, p, 2)$model)
   
 aic <- aictab(cand.set = models)
 
+best_lags <- as.integer(str_sub(aic[1,1], -1))
+
+consent_selected <- models[[best_lags]]$call
 # AIC picks AR(4) for consumer sentiment
 
 
 ```
 
+# ADL Combined Model selection
+```{r adl model combined}
+# compare all variables with 4 lags of GDP growth rate 
+#method 1
+models <- list()
+
+# Define the base formula
+base_formula <- lm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + L(GDPGrowth_ts, 4))
+
+# Loop to construct models with increasing lag terms for consent_ts
+for (i in 0:4) {
+  # Construct the formula dynamically
+  formula_string <- paste("GDPGrowth_ts ~", paste0("L(GDPGrowth_ts,", 1:4, ")", collapse = " + "), "+", paste0("L(consent_ts,", 1:i, ")", collapse = " + "))
+  formula <- as.formula(formula_string)
+  
+  # Fit the model using lm() and add it to the list of models
+  models[[i + 1]] <- update(base_formula, formula)
+}
+###################
+#method 2
+base_formula =  GDPGrowth_selected
+
+models <- list()
+
+for(i in 0:4){
+  base_formula <- update(base_formula, y ~ X + L(BAA_AAA_coredata,i+1))
+  models[[i+1]] <- base_formula
+}
+
+
+
+
+  
+aic <- aictab(cand.set = models)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
