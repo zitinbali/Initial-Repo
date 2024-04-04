@@ -7,6 +7,7 @@ library(shiny)
 library(shinyWidgets)
 library(shinythemes)
 library(readxl)
+library(xts)
 #install.packages("AICcmodavg")
 library(AICcmodavg)
 
@@ -308,6 +309,30 @@ output$model1 <- renderPlot({
             c(time(check_xts) %in% recessions_covid), 
             col = alpha("steelblue", alpha = 0.3))
   })
+  
+  output$model2 <- renderPlot({
+    plot(as.zoo(check_xts), 
+         plot.type = "single", 
+         col = c("darkred"),
+         lwd = 1,
+         xlab = "Date",
+         ylab = "Growth Rate",
+         main = "Quarterly Growth Rate of log(GDP)")
+    
+    # recessions
+    recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                            2001, 2007:2008))
+    # the COVID recession ended in April 2020 according to the Fed
+    recessions_covid <- append(recessions, 
+                               c(as.yearqtr("2020 Q1"), 
+                                 as.yearqtr("2020 Q2")))
+    
+    # colour shading for recessions
+    xblocks(time(as.zoo(check_xts)), 
+            c(time(check_xts) %in% recessions_covid), 
+            col = alpha("steelblue", alpha = 0.3))
+  })
+  
   
   output$aic_table3 <- renderTable({
     aic[,c(1, 3)]
