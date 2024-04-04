@@ -1,3 +1,16 @@
+---
+title: "frontend"
+output: html_document
+date: "2024-04-04"
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
 library(tidyverse)
 library(ggplot2)
 library(zoo)
@@ -8,14 +21,19 @@ library(shinyWidgets)
 library(shinythemes)
 library(readxl)
 library(xts)
+#install.packages("AICcmodavg")
 library(AICcmodavg)
-library(fresh)
+```
 
+
+## UI
+```{r} 
+#
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
 ui <- navbarPage(
   theme = shinythemes::shinytheme('flatly'),
-  title = "GDP Growth Rate Predictor",
+  title = "Comparing Models",
   fluid = TRUE,
   tags$style(
     HTML("
@@ -25,46 +43,88 @@ ui <- navbarPage(
       }
     ")
   ),
-  wellPanel("", value = "models", icon = NULL,
+  tabPanel("", value = "models", icon = NULL,
            fluidPage(
-             #titlePanel("Comparing Models"),
-             chooseSliderSkin("Modern"),
-               wellPanel(
+             titlePanel("Comparing Models"),
+             chooseSliderSkin("Flat"),
+             sidebarLayout(
+               sidebarPanel(
                  sliderTextInput('year', 'Input Year', 
                                  choices = RGDP_Data$DATE,
                                  selected = RGDP_Data$DATE[100]),
-                 #selectInput('lags', 'Select number of lags', 
-                             #choices = c("1", "2", "3", "4"), 
-                             #selected = "2"),
+                 selectInput('lags', 'Select number of lags', 
+                             choices = c("1", "2", "3", "4"), 
+                             selected = "2"),
                  selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
                              choices = c("2", "3", "4"), 
-                             selected = "2", width = '40%'),
-                 selectInput("model_selection", "Model Selection",
+                             selected = "2"),
+                 checkboxGroupInput("combined_forecast", "Combined Forecast", 
                                     choices = list("AR Model" = 1, 
-                                                   "Revised AR model" = 2,
-                                                   "ADL" = 3, 
-                                                   "Combined model" = 4),
-                                    selected = 1, width = '40%'),
+                                                   "Advance AR Model" = 2, 
+                                                   "Model 3" = 3),
+                                    selected = 1),
                  actionButton("show_prediction", "Show Prediction")
                ),
                mainPanel(
-                 width = 14,
-                 wellPanel(
                  tabsetPanel(
                    tabPanel("Model 1", plotOutput("model1"),
-                            textOutput("desc1")),
+                            tableOutput("aic_table1")),
                    tabPanel("Model 2", plotOutput("model2"),
-                            textOutput("desc2")),
+                            tableOutput("aic_table2")),
                    tabPanel("Model 3", plotOutput("model3"),
-                            textOutput("desc3"))
+                            tableOutput("aic_table3"),
+                            textOutput("best_model"))
                )
              )
            )
-        )
+           )
   )
 )
 
+```
+
+
+
+
+##SERVER
+```{r}
 server <- function(input, output, session) {
+  
+  ### Basic Cleaning & Processing
+  
+  # extracting the most revised values/recent data (2024 Q1) 
+  latest_data <- RGDP_Data$ROUTPUT24Q1
+  
+  # creating a lag for all quarters
+  lag(latest_data)
+  
+  # check is a dataset to validate whether the data is stationary 
+  check <- data.frame(RGDP_Data$DATE, log(latest_data), lag(log(latest_data)))
+  
+  check <- check %>% 
+    rename(c("Date" = "RGDP_Data.DATE",
+             "Raw Data" = "log.latest_data.",
+             "First Lag" = "lag.log.latest_data.."))
+  
+  # calculating growth rate of log(GDP) from one quarter to the next
+  check <- check[-1,] %>% 
+    mutate(growth_rate = (log(`Raw Data`) - log(`First Lag`))/log(`First Lag`) * 100)
+  
+  # formatting the data variable in terms of year and quarters
+  Dates <- gsub(":", " ", check$Date) 
+  check <- check %>% 
+    mutate(Time = as.yearqtr(Dates)) %>% 
+    select(c(Time, growth_rate)) %>% 
+    mutate(growth_rate = as.numeric(growth_rate))
+  
+  check_xts <- xts(check$growth_rate, check$Time) 
+  
+  # function that transform years to class 'yearqtr'
+  YToYQTR <- function(years){
+    return(
+      sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
+    )
+  }
   
 ### AR Function & Model 
   
@@ -105,37 +165,29 @@ server <- function(input, output, session) {
   
   test <- as.matrix(check$growth_rate)
   
+  
+  
+  
   ##fitAR_preds for predictions at each step along forecast horizon h for line graph
   fitAR_preds <- function(Y, p, h) {
     preds = numeric(h)
     for(i in 1:h){
       #test_AR <- as.matrix(check$growth_rate)
-      preds[i] = fitAR(test, 2, i)$pred  ##2 is placeholder for input$lags
+      preds[i] = fitAR(test_AR, 2, i)$pred  ##2 is placeholder for input$lags
     }
     return(preds)
   }
   
   ## Output model 1
 output$model1 <- renderPlot({
-  # formatting the data variable in terms of year and quarters
-  #Dates <- gsub(":", " ", check$Date) 
-  training <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
-    filter(Time <= as.yearqtr("1970 Q1")) %>% #change to start year and end year inputs
-    select(Time, growth_rate) %>%
-    mutate(growth_rate = as.numeric(growth_rate))
-    
-  training_xts <- xts(training$growth_rate, training$Time) 
-  #check_xts <- xts(check$growth_rate, check$Time) 
   test <- as.matrix(check$growth_rate)
   #print(c(fitAR_preds(test, 2, 2)))
   
   predictions <- check %>% 
-    mutate(Time = as.yearqtr(Dates)) %>%
-    filter(Time > as.yearqtr("1970 Q1")) %>% 
+    filter(Time > "1980 Q1") %>% 
     #filter(Time > gsub(":", " ", input$year)) %>% 
     head(n = 2) %>%
-    mutate(new_growth_rate = c(fitAR_preds(test, 3, 2)))
+    mutate(new_growth_rate = mean(fitAR_preds(test, 2, 2)))
     
   # function that transform years to class 'yearqtr'
   YToYQTR <- function(years){
@@ -152,39 +204,54 @@ output$model1 <- renderPlot({
                              c(as.yearqtr("2020 Q1"), 
                                as.yearqtr("2020 Q2")))
   
+  # Calculate AIC values manually
+  aic_values <- sapply(models, function(model) {
+    n <- length(model$residuals)
+    k <- length(model$coefficients) + 1  # Number of parameters including intercept
+    RSS <- sum(model$residuals^2)
+    AIC <- n * log(RSS/n) + 2 * k
+    return(AIC)
+  })
+  
+  # Combine AIC values with model names
+  aic <- data.frame(Model = paste0('p=', 1:2), AIC = aic_values)
+  
+  
+  #models <- lapply(1:2, function(p) fitAR(test, p, 2))
+  
+  #aic <- aictab(cand.set = models, modnames = paste0('p=', 1:2))
+  #aic <- aictab(cand.set = fitAR(test, as.numeric(input$lags), as.numeric(input$forecast_horizon)[[1]]), modnames = paste0('p=', 1:as.numeric(input$forecast_horizon)))
 
-    # Separate predictions into actual and predicted dataframes for plotting
-    actual_test_values = predictions %>% 
-      select(Time, growth_rate) 
-    actual_test_values_xts <- xts(actual_test_values$growth_rate, actual_test_values$Time)
-    
-    predicted_test_values = predictions %>% 
-      select(Time, new_growth_rate) %>% 
-      rename("growth_rate" = "new_growth_rate")
-    predicted_test_values_xts <- xts(predicted_test_values$growth_rate, predicted_test_values$Time)
-    
-        # Merge the two time series into a single zoo object
-    merged_data <- merge(as.zoo(training_xts), as.zoo(predicted_test_values_xts))
+    # Merge the two time series into a single zoo object
+    merged_data <- merge(as.zoo(check_xts), as.zoo(predictions))
     
     # Plot the merged data
-    plot(merged_data, 
+    print(plot(merged_data, 
          plot.type = "single", 
          col = c("darkred", "darkblue"),
          lwd = 1,
          xlab = "Date",
          ylab = "Growth Rate",
-         main = "Quarterly Growth Rate of GDP")
-  
+         #xlim = c(check$Time[1], check$Time[-1]),
+         main = "Quarterly Growth Rate of GDP"))
+    
     # colour shading for recessions
     xblocks(time(as.zoo(check_xts)), 
             c(time(check_xts) %in% recessions_covid), 
             col = alpha("steelblue", alpha = 0.3))
   })
 
+
+  output$aic_table1 <- renderTable({
+    aic[,c(1, 3)]
+  })
   
   output$model2 <- renderPlot({
   })
   
+  output$aic_table2 <- renderTable({
+    aic[,c(1, 3)]
+  })
   
   output$model3 <- renderPlot({
     latest_data <- RGDP_Data$ROUTPUT24Q1
@@ -266,7 +333,16 @@ output$model1 <- renderPlot({
   })
   
   
-}
+  output$aic_table3 <- renderTable({
+    aic[,c(1, 3)]
+  })
   
+  # Render the best model
+  output$best_model <- renderText({
+    paste("The best model given this data is")
+  })
+}
 
 shinyApp(ui = ui, server = server)
+
+
