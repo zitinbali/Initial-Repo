@@ -32,10 +32,7 @@ ui <- navbarPage(
                wellPanel(
                  sliderTextInput('year', 'Input Year', 
                                  choices = RGDP_Data$DATE,
-                                 selected = RGDP_Data$DATE[100]),
-                 #selectInput('lags', 'Select number of lags', 
-                             #choices = c("1", "2", "3", "4"), 
-                             #selected = "2"),
+                                  selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
                  selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
                              choices = c("2", "3", "4"), 
                              selected = "2", width = '40%'),
