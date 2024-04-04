@@ -34,7 +34,7 @@ ui <- navbarPage(
                sidebarPanel(
                  sliderTextInput('year', 'Input Year', 
                                  choices = RGDP_Data$DATE,
-                                 selected = RGDP_Data$DATE[100]),
+                                 selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
                  selectInput('lags', 'Select number of lags', 
                              choices = c("1", "2", "3", "4"), 
                              selected = "2"),
