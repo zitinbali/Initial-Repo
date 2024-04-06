@@ -25,40 +25,85 @@ ui <- navbarPage(
       }
     ")
   ),
-  wellPanel("", value = "models", icon = NULL,
-           fluidPage(
-             #titlePanel("Comparing Models"),
-             chooseSliderSkin("Modern"),
-               wellPanel(
-                 sliderTextInput('year', 'Input Year', 
-                                 choices = RGDP_Data$DATE,
-                                  selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
-                 selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
-                             choices = c("2", "3", "4"), 
-                             selected = "2", width = '40%'),
-                 selectInput("model_selection", "Model Selection",
-                                    choices = list("AR Model" = 1, 
-                                                   "Revised AR model" = 2,
-                                                   "ADL" = 3, 
-                                                   "Combined model" = 4),
-                                    selected = 1, width = '40%'),
-                 actionButton("show_prediction", "Show Prediction")
-               ),
-               mainPanel(
-                 width = 14,
-                 wellPanel(
-                 tabsetPanel(
-                   tabPanel("Model 1", plotOutput("model1"),
-                            textOutput("desc1")),
-                   tabPanel("Model 2", plotOutput("model2"),
-                            textOutput("desc2")),
-                   tabPanel("Model 3", plotOutput("model3"),
-                            textOutput("desc3"))
-               )
-             )
+  tabPanel("Comparing Revised Values",
+           icon = icon("calculator"),
+           wellPanel("", value = "models", icon = NULL,
+                     fluidPage(
+                       #titlePanel("Comparing Models"),
+                       chooseSliderSkin("Modern"),
+                       wellPanel(
+                         sliderTextInput('year', 'Input Year', 
+                                         choices = RGDP_Data$DATE,
+                                         selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
+                         selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
+                                     choices = c("2", "3", "4"), 
+                                     selected = "2", width = '40%'),
+                         selectInput("model_selection", "Model Selection",
+                                     choices = list("AR Model" = 1, 
+                                                    "Revised AR model" = 2,
+                                                    "ADL" = 3, 
+                                                    "Combined model" = 4),
+                                     selected = 1, width = '40%'),
+                         actionButton("show_prediction", "Show Prediction")
+                       ),
+                       mainPanel(
+                         width = 14,
+                         wellPanel(
+                           tabsetPanel(
+                             tabPanel("Model 1", plotOutput("model1"),
+                                      textOutput("desc1")),
+                             tabPanel("Model 2", plotOutput("model2"),
+                                      textOutput("desc2"))
+                           )
+                         )
+                       )
+                     )
            )
-        )
+  ),
+  tabPanel("Analysing Predictive Ability",
+           icon = icon("chart-line"),
+           wellPanel("", value = "models", icon = NULL,
+                     fluidPage(
+                       #titlePanel("Comparing Models"),
+                       chooseSliderSkin("Modern"),
+                       wellPanel(
+                         sliderTextInput('year', 'Input Year', 
+                                         choices = RGDP_Data$DATE,
+                                         selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
+                         selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
+                                     choices = c("2", "3", "4"), 
+                                     selected = "2", width = '40%'),
+                         selectInput("model_selection", "Model Selection",
+                                     choices = list("AR Model" = 1, 
+                                                    "Revised AR model" = 2,
+                                                    "ADL" = 3, 
+                                                    "Combined model" = 4),
+                                     selected = 1, width = '40%'),
+                         actionButton("show_prediction", "Show Prediction")
+                       ),
+                       mainPanel(
+                         width = 14,
+                         wellPanel(
+                           tabsetPanel(
+                             tabPanel("Model 3", plotOutput("model3"),
+                                      textOutput("desc3")),
+                             tabPanel("Model 4", plotOutput("model4"),
+                                      textOutput("desc1")),
+                             tabPanel("Model 5", plotOutput("model5"),
+                                      textOutput("desc2"))
+                           )
+                         )
+                       )
+                     )
+           )
+  ),
+  navbarMenu("More",                  ## leaving this here in case we want to use it
+               tabPanel("Summary"),
+               "----",
+               "Section header",
+               tabPanel("Table")
   )
+  
 )
 
 server <- function(input, output, session) {
