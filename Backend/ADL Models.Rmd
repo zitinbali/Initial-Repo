@@ -303,6 +303,7 @@ coeftest(ADL_consent31)
 # ADL Combined Model selection
 
 ```{r prep for AIC selection}
+
 df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
 
 # List of variables
@@ -363,6 +364,7 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 ```
 
 ```{r combined ADL without AR}
+
 AICselection_without_AR <- function(df, variables) {
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
   base_formula <- "GDPGrowth_ts ~ "
@@ -402,6 +404,7 @@ AICselection_without_AR(df, variables)
 ```
 
 ```{r combined ADL with AR}
+
 AICselection_with_AR <- function(df, variables) {
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
   base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
@@ -438,4 +441,5 @@ AICselection_with_AR <- function(df, variables) {
 }
 
 AICselection_with_AR(df, variables)
+
 ```
