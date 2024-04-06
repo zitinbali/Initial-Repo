@@ -307,7 +307,9 @@ df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasur
 
 # List of variables
 variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts")
+n <- length(variables)
 
+# formula to find best number of lags given a variable
 find_best_lag <- function(data, response, variable, max_lags) {
   best_aic <- Inf
   best_lag <- 0
@@ -331,75 +333,109 @@ find_best_lag <- function(data, response, variable, max_lags) {
   return(best_lag)
 }
 
+# function to generate a base formula to add on more variables later
 generate_base_formula <- function(variable, lag){
-  formula <- as.formula(paste("GDPGrowth_ts ~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + ")))
+  formula <- paste("GDPGrowth_ts ~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + "))
   return(formula)
 }
 
-generate_formula_string <- function(base, variable, lag){
-  formula_string <- paste("GDPGrowth_ts ~", 
-                          paste0("L(", base, ",", 1:base_best_lag, ")", collapse = " + "), "+", 
-                          paste0("L(", variable, ",", 1:lag, ")", collapse = " + "))
-  formula <- as.formula(formula_string)
-  return(formula)
-}
+# function to extend the base formula 
+extend_formula <- function(formula_str, new_variable, num_lags) {
 
+  formula_components <- strsplit(formula_str, "~")[[1]] # Split the formula string into its components
+  response_var <- trimws(formula_components[1])         # Extract the left-hand side (response variable)
+  explanatory_vars <- trimws(formula_components[2])     # Extract the right-hand side (explanatory variables)
+  
+  if (grepl(paste0("\\b", new_variable, "\\b"), explanatory_vars)) {  # Check if the new variable already exists
+    return(formula_str)  
+  }
+  
+  new_var_lags <- paste0("L(", new_variable, ", ", 1:num_lags, ")")   # Construct the part for the new variable and lags
+  
+  if (explanatory_vars == "") {
+    new_formula <- paste(response_var, "~", paste(new_var_lags, collapse = " + "), sep = " ")
+    return(new_formula)
+  }
+  
+  new_formula <- paste(response_var, "~", explanatory_vars, "+", paste(new_var_lags, collapse = " + "), sep = " ")
+  return(new_formula)
+}
 ```
 
 ```{r combined ADL without AR}
-AICselection <- function(variable){
-  base_best_lag = find_best_lag(df, "GDPGrowth_ts", variable, 4)
-  base_formula = generate_base_formula(variable, base_best_lag)
-  for(i in 1:3){
-    var <- variables[i+1]
-    best_aic <- AIC(dynlm(base_formula))
-    best_lag = 0
-    for(lag in 1:4){
-      formula_string <- generate_formula_string(variable, var, lag)
-      formula = update(base_formula, as.formula(formula_string))
-      model = dynlm(formula, data = df)
-      aic = AIC(model)
-      if (aic < best_aic) {
-        best_aic = aic
-        best_lag = lag
+AICselection_without_AR <- function(df, variables) {
+  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
+  base_formula <- "GDPGrowth_ts ~ "
+  best_var <- 1
+  
+  while (best_var != 0) {
+    best_aic <- Inf
+    best_lag <- 0
+    best_var <- 0
+    
+    for (i in seq_along(variables)) {
+      var <- variables[i]
+      
+      for (lag in 1:4) {
+        formula <- as.formula(extend_formula(base_formula, var, lag))
+        model <- dynlm(formula, data = df)
+        aic <- AIC(model)
+        
+        if (aic < best_aic) {
+          best_aic <- aic
+          best_lag <- lag
+          best_var <- i
+        }
       }
     }
-    if(best_lag != 0){
-        formula_string <- generate_formula_string(variable, var, best_lag)
-        base_formula <- update(base_formula, as.formula(formula_string))
+    
+    if (best_lag != 0) {
+      base_formula <- extend_formula(base_formula, variables[[best_var]], best_lag)
+      variables <- variables[-best_var]
     }
   }
+  
   return(base_formula)
 }
 
-AICselection("baa_aaa_ts")
+AICselection_without_AR(df, variables)
 ```
 
 ```{r combined ADL with AR}
-AICselection <- function(variable){
-  base_best_lag = find_best_lag(df, "GDPGrowth_ts", variable, 4)
-  base_formula = generate_base_formula(variable, base_best_lag)
-  for(i in 1:4){
-    var <- variables[i]
-    best_aic <- AIC(dynlm(base_formula))
-    best_lag = 0
-    for(lag in 1:4){
-      formula_string <- generate_formula_string(variable, var, lag)
-      formula = update(base_formula, as.formula(formula_string))
-      model = dynlm(formula, data = df)
-      aic = AIC(model)
-      if (aic < best_aic) {
-        best_aic = aic
-        best_lag = lag
+AICselection_with_AR <- function(df, variables) {
+  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
+  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
+  best_var <- 1
+  
+  while (best_var != 0) {
+    best_aic <- AIC(dynlm(as.formula(base_formula), data = df))
+    best_lag <- 0
+    best_var <- 0
+    
+    for (i in seq_along(variables)) {
+      var <- variables[i]
+      
+      for (lag in 1:4) {
+        formula <- as.formula(extend_formula(base_formula, var, lag))
+        model <- dynlm(formula, data = df)
+        aic <- AIC(model)
+        
+        if (aic < best_aic) {
+          best_aic <- aic
+          best_lag <- lag
+          best_var <- i
+        }
       }
     }
-    if(best_lag != 0){
-        formula_string <- generate_formula_string(variable, var, best_lag)
-        base_formula <- update(base_formula, as.formula(formula_string))
+    
+    if (best_lag != 0) {
+      base_formula <- extend_formula(base_formula, variables[[best_var]], best_lag)
+      variables <- variables[-best_var]
     }
   }
+  
   return(base_formula)
 }
 
-AICselection("GDPGrowth_ts")
+AICselection_with_AR(df, variables)
 ```
