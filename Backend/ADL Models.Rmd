@@ -31,20 +31,6 @@ GDPGrowth_ts <- ts(all_GDP_data,
                   start = c(start_y, start_q), 
                   end = c(end_y, end_q), 
                   frequency = 4)
-
-# extract data from TS object for AR selection
-#GDPGrowth_coredata = matrix(coredata(GDPGrowth_ts), ncol = 1)
-
-# AR order selection for GDP growth rate
-#models <- lapply(1:4, function(p) fitAR(GDPGrowth_coredata, p, 2)$model)
-  
-#aic <- aictab(cand.set = models, modnames = paste0('p=',1:4)) 
-
-#best_lags <- as.integer(str_sub(aic[1,1], -1))
-
-#GDPGrowth_selected <- models[[best_lags]]
-
-# AIC picks AR(4) for GDP Growth 
 ```
 
 
@@ -127,8 +113,21 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 # Function for individual ADL Model
 ```{r}
 AICselection_indv <- function(df, variable) {
-  best_lag <- find_best_lag(df, "GDPGrowth_ts", variable, 4)
-  formula <- extend_formula("GDPGrowth_ts ~ ", variable, best_lag)
+  df <- data.frame(GDPGrowth_ts, variable)
+  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
+  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
+  best_aic <- AIC(dynlm(as.formula(base_formula)))
+  for (lag in 1:4) {
+        formula <- as.formula(extend_formula(base_formula, variable, lag))
+        model <- dynlm(formula, data = df)
+        aic <- AIC(model)
+        
+        if (aic < best_aic) {
+          best_aic <- aic
+          best_lag <- lag
+        }
+  }
+  formula <- extend_formula(base_formula, variable, best_lag)
   return(formula)
 }
 ```
