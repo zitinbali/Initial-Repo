@@ -33,16 +33,17 @@ GDPGrowth_ts <- ts(all_GDP_data,
                   frequency = 4)
 
 # extract data from TS object for AR selection
-GDPGrowth_coredata = matrix(coredata(GDPGrowth_ts), ncol = 1)
+#GDPGrowth_coredata = matrix(coredata(GDPGrowth_ts), ncol = 1)
 
 # AR order selection for GDP growth rate
-models <- lapply(1:4, function(p) fitAR(GDPGrowth_coredata, p, 2)$model)
+#models <- lapply(1:4, function(p) fitAR(GDPGrowth_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models, modnames = paste0('p=',1:4)) 
+#aic <- aictab(cand.set = models, modnames = paste0('p=',1:4)) 
 
-best_lags <- as.integer(str_sub(aic[1,1], -1))
+#best_lags <- as.integer(str_sub(aic[1,1], -1))
 
-GDPGrowth_selected <- models[[best_lags]]
+#GDPGrowth_selected <- models[[best_lags]]
+
 # AIC picks AR(4) for GDP Growth 
 ```
 
@@ -109,16 +110,16 @@ BAA_AAA_coefficients <- ADL_BAA_AAA33$coefficients
 coeftest(ADL_BAA_AAA33)
 
 # extract data from TS object for AR selection
-BAA_AAA_coredata = matrix(coredata(baa_aaa_ts), ncol = 1)
+#BAA_AAA_coredata = matrix(coredata(baa_aaa_ts), ncol = 1)
 
 # AR order selection for BAA-AAA spread 
-models <- lapply(1:4, function(p) fitAR(BAA_AAA_coredata, p, 2)$model)
+#models <- lapply(1:4, function(p) fitAR(BAA_AAA_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models)
+#aic <- aictab(cand.set = models)
 
-best_lags <- as.integer(str_sub(aic[1,1], -1))
+#best_lags <- as.integer(str_sub(aic[1,1], -1))
 
-BAA_AAA_selected <- models[[best_lags]]$call
+#BAA_AAA_selected <- models[[best_lags]]$call
 # AIC picks AR(4) for BAA-AAA spread 
 
 # THE ADL MODELS DO NOT HAVE A BUILT IN PRED FUNCTION
@@ -170,16 +171,16 @@ tspread_coefficients <- ADL_tspread34$coefficients
 coeftest(ADL_tspread34)
 
 # extract data from TS object for AR selection
-tspread_coredata = matrix(coredata(tspread_ts), ncol = 1)
+#tspread_coredata = matrix(coredata(tspread_ts), ncol = 1)
 
 # AR order selection for Treasury spread
-models <- lapply(1:4, function(p) fitAR(tspread_coredata, p, 2)$model)
+#models <- lapply(1:4, function(p) fitAR(tspread_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models)
+#aic <- aictab(cand.set = models)
 
-best_lags <- as.integer(str_sub(aic[1,1], -1))
+#best_lags <- as.integer(str_sub(aic[1,1], -1))
 
-tspread_selected <- models[[best_lags]]$call
+#tspread_selected <- models[[best_lags]]$call
 # AIC picks AR(3) for Treasury spread 
 
 ```
@@ -227,16 +228,16 @@ fred_hstarts_coefficients <- ADL_fred_hstarts31$coefficients
 coeftest(ADL_fred_hstarts31)
 
 # extract data from TS object for AR selection
-fred_hstarts_coredata = matrix(coredata(fred_hstarts_ts), ncol = 1)
+#fred_hstarts_coredata = matrix(coredata(fred_hstarts_ts), ncol = 1)
 
 # AR order selection for Hstarts
-models <- lapply(1:4, function(p) fitAR(fred_hstarts_coredata, p, 2)$model)
+#models <- lapply(1:4, function(p) fitAR(fred_hstarts_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models)
+#aic <- aictab(cand.set = models)
 
-best_lags <- as.integer(str_sub(aic[1,1], -1))
+#best_lags <- as.integer(str_sub(aic[1,1], -1))
 
-fred_hstarts_selected <- models[[best_lags]]$call
+#fred_hstarts_selected <- models[[best_lags]]$call
 # AIC picks AR(4) for Hstarts
 
 # HSTARTS VERY BAD.
@@ -286,65 +287,155 @@ consent_coefficients <- ADL_consent31$coefficients
 coeftest(ADL_consent31)
 
 # extract data from TS object for AR selection
-consent_coredata = matrix(coredata(consent_ts), ncol = 1)
+#consent_coredata = matrix(coredata(consent_ts), ncol = 1)
 
 # AR order selection for consumer sentiment
-models <- lapply(1:4, function(p) fitAR(consent_coredata, p, 2)$model)
+#models <- lapply(1:4, function(p) fitAR(consent_coredata, p, 2)$model)
   
-aic <- aictab(cand.set = models)
+#aic <- aictab(cand.set = models)
 
-best_lags <- as.integer(str_sub(aic[1,1], -1))
+#best_lags <- as.integer(str_sub(aic[1,1], -1))
 
-consent_selected <- models[[best_lags]]$call
+#consent_selected <- models[[best_lags]]$call
 # AIC picks AR(4) for consumer sentiment
-
-
 ```
 
 # ADL Combined Model selection
-```{r adl model combined}
-# compare all variables with 4 lags of GDP growth rate 
-#method 1
-models <- list()
 
-# Define the base formula
-base_formula <- dynlm(GDPGrowth_ts ~ L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + L(GDPGrowth_ts, 4))
+```{r prep for AIC selection}
+df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
 
-# Loop to construct models with increasing lag terms for consent_ts
-for (i in 0:4) {
-  # Construct the formula dynamically
-  formula_string <- paste("GDPGrowth_ts ~", paste0("L(GDPGrowth_ts,", 1:4, ")", collapse = " + "), "+", paste0("L(consent_ts,", 1:i, ")", collapse = " + "))
-  formula <- as.formula(formula_string)
+# List of variables
+variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts")
+n <- length(variables)
+
+# formula to find best number of lags given a variable
+find_best_lag <- function(data, response, variable, max_lags) {
+  best_aic <- Inf
+  best_lag <- 0
   
-  # Fit the model using lm() and add it to the list of models
-  models[[i + 1]] <- update(base_formula, formula)
+  for (lag in 1:max_lags) {
+    # Build the model formula
+    formula <- as.formula(paste(response, "~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + ")))
+    
+    # Fit the model
+    model <- dynlm(formula, data = data)
+    
+    # Calculate AIC
+    aic <- AIC(model)
+    
+    # Update best lag if AIC improves
+    if (aic < best_aic) {
+      best_aic <- aic
+      best_lag <- lag
+    }
+  }
+  return(best_lag)
 }
-###################
-#method 2
-base_formula =  GDPGrowth_selected
 
-models <- list()
-
-for(i in 0:4){
-  base_formula <- update(base_formula, y ~ X + L(BAA_AAA_coredata,i+1))
-  models[[i+1]] <- base_formula
+# function to generate a base formula to add on more variables later
+generate_base_formula <- function(variable, lag){
+  formula <- paste("GDPGrowth_ts ~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + "))
+  return(formula)
 }
+
+# function to extend the base formula 
+extend_formula <- function(formula_str, new_variable, num_lags) {
+
+  formula_components <- strsplit(formula_str, "~")[[1]] # Split the formula string into its components
+  response_var <- trimws(formula_components[1])         # Extract the left-hand side (response variable)
+  explanatory_vars <- trimws(formula_components[2])     # Extract the right-hand side (explanatory variables)
   
-aic <- aictab(cand.set = models)
+  if (grepl(paste0("\\b", new_variable, "\\b"), explanatory_vars)) {  # Check if the new variable already exists
+    return(formula_str)  
+  }
+  
+  new_var_lags <- paste0("L(", new_variable, ", ", 1:num_lags, ")")   # Construct the part for the new variable and lags
+  
+  if (explanatory_vars == "") {
+    new_formula <- paste(response_var, "~", paste(new_var_lags, collapse = " + "), sep = " ")
+    return(new_formula)
+  }
+  
+  new_formula <- paste(response_var, "~", explanatory_vars, "+", paste(new_var_lags, collapse = " + "), sep = " ")
+  return(new_formula)
+}
+```
 
+```{r combined ADL without AR}
+AICselection_without_AR <- function(df, variables) {
+  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
+  base_formula <- "GDPGrowth_ts ~ "
+  best_var <- 1
+  
+  while (best_var != 0) {
+    best_aic <- Inf
+    best_lag <- 0
+    best_var <- 0
+    
+    for (i in seq_along(variables)) {
+      var <- variables[i]
+      
+      for (lag in 1:4) {
+        formula <- as.formula(extend_formula(base_formula, var, lag))
+        model <- dynlm(formula, data = df)
+        aic <- AIC(model)
+        
+        if (aic < best_aic) {
+          best_aic <- aic
+          best_lag <- lag
+          best_var <- i
+        }
+      }
+    }
+    
+    if (best_lag != 0) {
+      base_formula <- extend_formula(base_formula, variables[[best_var]], best_lag)
+      variables <- variables[-best_var]
+    }
+  }
+  
+  return(base_formula)
+}
 
+AICselection_without_AR(df, variables)
+```
 
+```{r combined ADL with AR}
+AICselection_with_AR <- function(df, variables) {
+  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
+  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
+  best_var <- 1
+  
+  while (best_var != 0) {
+    best_aic <- AIC(dynlm(as.formula(base_formula), data = df))
+    best_lag <- 0
+    best_var <- 0
+    
+    for (i in seq_along(variables)) {
+      var <- variables[i]
+      
+      for (lag in 1:4) {
+        formula <- as.formula(extend_formula(base_formula, var, lag))
+        model <- dynlm(formula, data = df)
+        aic <- AIC(model)
+        
+        if (aic < best_aic) {
+          best_aic <- aic
+          best_lag <- lag
+          best_var <- i
+        }
+      }
+    }
+    
+    if (best_lag != 0) {
+      base_formula <- extend_formula(base_formula, variables[[best_var]], best_lag)
+      variables <- variables[-best_var]
+    }
+  }
+  
+  return(base_formula)
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+AICselection_with_AR(df, variables)
 ```
