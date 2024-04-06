@@ -63,248 +63,9 @@ ADL_splice <- function(data, window_start, window_end){
 
 ```
 
-
-# ADL Model - BAA-AAA Spread 
-
-```{r adl model baa-aaa}
-
-baa_aaa <- read_excel("../Data/FRED BAA-AAA Data.xls", 
-                      col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
-  
-baa_aaa_ts <- ts(baa_aaa$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(baa_aaa_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "BAA-AAA Spread & GDP Growth over Time")
-
-legend("topright", 
-       legend = c("GDP Growth", "BAA-AAA Spread"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
-
-# THE NUMBER OF ADL MODELS IS CURRENTLY HARD CODED
-
-# estimating the ADL(3,3) model of GDP growth
-
-ADL_BAA_AAA33 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
-          L(baa_aaa_ts),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-BAA_AAA_coefficients <- ADL_BAA_AAA33$coefficients
-
-coeftest(ADL_BAA_AAA33)
-
-# extract data from TS object for AR selection
-#BAA_AAA_coredata = matrix(coredata(baa_aaa_ts), ncol = 1)
-
-# AR order selection for BAA-AAA spread 
-#models <- lapply(1:4, function(p) fitAR(BAA_AAA_coredata, p, 2)$model)
-  
-#aic <- aictab(cand.set = models)
-
-#best_lags <- as.integer(str_sub(aic[1,1], -1))
-
-#BAA_AAA_selected <- models[[best_lags]]$call
-# AIC picks AR(4) for BAA-AAA spread 
-
-# THE ADL MODELS DO NOT HAVE A BUILT IN PRED FUNCTION
-
-```
-
-
-# ADL Model - Treasury Spread 
-
-```{r adl model treasury}
-
-tspread <- read_excel("../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-# NOTE: tspread is only from 1976 Q4 onward, so we can't accept forecast horizons earlier, at least not for this ADL model
-
-tspread <- ADL_splice(tspread, example_startyq, example_endyq)
-
-tspread_ts <- ts(tspread$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(tspread_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Treasury Spread & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Treasury Spread"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
-
-# estimating the ADL(3,4) model of GDP growth
-
-ADL_tspread34 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + 
-          L(tspread_ts),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-tspread_coefficients <- ADL_tspread34$coefficients
-
-coeftest(ADL_tspread34)
-
-# extract data from TS object for AR selection
-#tspread_coredata = matrix(coredata(tspread_ts), ncol = 1)
-
-# AR order selection for Treasury spread
-#models <- lapply(1:4, function(p) fitAR(tspread_coredata, p, 2)$model)
-  
-#aic <- aictab(cand.set = models)
-
-#best_lags <- as.integer(str_sub(aic[1,1], -1))
-
-#tspread_selected <- models[[best_lags]]$call
-# AIC picks AR(3) for Treasury spread 
-
-```
-
-
-# ADL Model - FRED Hstarts
-
-```{r adl model fred hstarts}
-
-fred_hstarts <- read_excel("../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-fred_hstarts <- ADL_splice(fred_hstarts, example_startyq, example_endyq)
-
-fred_hstarts_ts <- ts(fred_hstarts$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Housing Starts & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Housing Starts"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
-
-# estimating the ADL(3,4) model of GDP growth
-
-ADL_fred_hstarts31 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
-          L(fred_hstarts_ts),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-fred_hstarts_coefficients <- ADL_fred_hstarts31$coefficients
-
-coeftest(ADL_fred_hstarts31)
-
-# extract data from TS object for AR selection
-#fred_hstarts_coredata = matrix(coredata(fred_hstarts_ts), ncol = 1)
-
-# AR order selection for Hstarts
-#models <- lapply(1:4, function(p) fitAR(fred_hstarts_coredata, p, 2)$model)
-  
-#aic <- aictab(cand.set = models)
-
-#best_lags <- as.integer(str_sub(aic[1,1], -1))
-
-#fred_hstarts_selected <- models[[best_lags]]$call
-# AIC picks AR(4) for Hstarts
-
-# HSTARTS VERY BAD.
-
-```
-
-
-# ADL Model - Consumer Sentiment
-
-```{r adl model consent}
-
-consent <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-consent <- ADL_splice(consent, example_startyq, example_endyq)
-
-consent_ts <- ts(consent$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Consumer Sentiment & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Consumer Sentiment"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
-
-# estimating the ADL(3,1) model of GDP growth
-
-ADL_consent31 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
-          L(consent_ts),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-consent_coefficients <- ADL_consent31$coefficients
-
-coeftest(ADL_consent31)
-
-# extract data from TS object for AR selection
-#consent_coredata = matrix(coredata(consent_ts), ncol = 1)
-
-# AR order selection for consumer sentiment
-#models <- lapply(1:4, function(p) fitAR(consent_coredata, p, 2)$model)
-  
-#aic <- aictab(cand.set = models)
-
-#best_lags <- as.integer(str_sub(aic[1,1], -1))
-
-#consent_selected <- models[[best_lags]]$call
-# AIC picks AR(4) for consumer sentiment
-```
-
-# ADL Combined Model selection
+# Functions for AIC selection
 
 ```{r prep for AIC selection}
-
-df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
 
 # List of variables
 variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts")
@@ -363,7 +124,208 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 }
 ```
 
+# Function for individual ADL Model
+```{r}
+AICselection_indv <- function(df, variable) {
+  best_lag <- find_best_lag(df, "GDPGrowth_ts", variable, 4)
+  formula <- extend_formula("GDPGrowth_ts ~ ", variable, best_lag)
+  return(formula)
+}
+```
+
+# ADL Model - BAA-AAA Spread 
+
+```{r adl model baa-aaa}
+
+baa_aaa <- read_excel("../Data/FRED BAA-AAA Data.xls", 
+                      col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+  
+baa_aaa_ts <- ts(baa_aaa$Spread, 
+                start = c(start_y, start_q), 
+                end = c(end_y, end_q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(baa_aaa_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "BAA-AAA Spread & GDP Growth over Time")
+
+legend("topright", 
+       legend = c("GDP Growth", "BAA-AAA Spread"),
+       col = c("darkred", "steelblue"),
+       lwd = c(1, 1),
+       cex = 0.5)
+
+# THE NUMBER OF ADL MODELS IS CURRENTLY HARD CODED
+
+# estimating the ADL(3,3) model of GDP growth
+
+ADL_BAA_AAA33 <- 
+  dynlm(GDPGrowth_ts ~ 
+          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
+          L(baa_aaa_ts),
+          start = c(start_y, start_q), 
+          end = c(end_y, end_q))
+
+BAA_AAA_coefficients <- ADL_BAA_AAA33$coefficients
+
+coeftest(ADL_BAA_AAA33)
+
+AICselection_indv(baa_aaa_ts, "baa_aaa_ts")
+
+```
+
+
+# ADL Model - Treasury Spread 
+
+```{r adl model treasury}
+
+tspread <- read_excel("../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+# NOTE: tspread is only from 1976 Q4 onward, so we can't accept forecast horizons earlier, at least not for this ADL model
+
+tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+
+tspread_ts <- ts(tspread$Spread, 
+                start = c(start_y, start_q), 
+                end = c(end_y, end_q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(tspread_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Treasury Spread & GDP Growth over Time")
+legend("topright", 
+       legend = c("GDP Growth", "Treasury Spread"),
+       col = c("darkred", "steelblue"),
+       lwd = c(1, 1),
+       cex = 0.5)
+
+# estimating the ADL(3,4) model of GDP growth
+
+ADL_tspread34 <- 
+  dynlm(GDPGrowth_ts ~ 
+          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + 
+          L(tspread_ts),
+          start = c(start_y, start_q), 
+          end = c(end_y, end_q))
+
+tspread_coefficients <- ADL_tspread34$coefficients
+
+coeftest(ADL_tspread34)
+
+AICselection_indv(tspread_ts, "tspread_ts")
+
+```
+
+
+# ADL Model - FRED Hstarts
+
+```{r adl model fred hstarts}
+
+fred_hstarts <- read_excel("../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+fred_hstarts <- ADL_splice(fred_hstarts, example_startyq, example_endyq)
+
+fred_hstarts_ts <- ts(fred_hstarts$Spread, 
+                start = c(start_y, start_q), 
+                end = c(end_y, end_q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Housing Starts & GDP Growth over Time")
+legend("topright", 
+       legend = c("GDP Growth", "Housing Starts"),
+       col = c("darkred", "steelblue"),
+       lwd = c(1, 1),
+       cex = 0.5)
+
+# estimating the ADL(3,4) model of GDP growth
+
+ADL_fred_hstarts31 <- 
+  dynlm(GDPGrowth_ts ~ 
+          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
+          L(fred_hstarts_ts),
+          start = c(start_y, start_q), 
+          end = c(end_y, end_q))
+
+fred_hstarts_coefficients <- ADL_fred_hstarts31$coefficients
+
+coeftest(ADL_fred_hstarts31)
+
+AICselection_indv(fred_hstarts_ts, "fred_hstarts_ts")
+
+```
+
+
+# ADL Model - Consumer Sentiment
+
+```{r adl model consent}
+
+consent <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+consent <- ADL_splice(consent, example_startyq, example_endyq)
+
+consent_ts <- ts(consent$Spread, 
+                start = c(start_y, start_q), 
+                end = c(end_y, end_q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Consumer Sentiment & GDP Growth over Time")
+legend("topright", 
+       legend = c("GDP Growth", "Consumer Sentiment"),
+       col = c("darkred", "steelblue"),
+       lwd = c(1, 1),
+       cex = 0.5)
+
+# estimating the ADL(3,1) model of GDP growth
+
+ADL_consent31 <- 
+  dynlm(GDPGrowth_ts ~ 
+          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
+          L(consent_ts),
+          start = c(start_y, start_q), 
+          end = c(end_y, end_q))
+
+consent_coefficients <- ADL_consent31$coefficients
+
+coeftest(ADL_consent31)
+
+AICselection_indv(consent_ts, "consent_ts")
+```
+
+# ADL Combined Model selection
+
 ```{r combined ADL without AR}
+
+df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
 
 AICselection_without_AR <- function(df, variables) {
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
@@ -403,7 +365,10 @@ AICselection_without_AR <- function(df, variables) {
 AICselection_without_AR(df, variables)
 ```
 
+
 ```{r combined ADL with AR}
+
+df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
 
 AICselection_with_AR <- function(df, variables) {
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
