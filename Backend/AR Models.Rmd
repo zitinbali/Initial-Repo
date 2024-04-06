@@ -13,7 +13,7 @@ source("inputs.R")
 # Using the basic AR model from lecture 
 # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
 
-fitAR=function(Y,p,h){
+fitAR=function(Y,p,h, dum){
   
   # create p lags + forecast horizon shift (=h option)
   aux = embed(Y, p+h)
@@ -26,12 +26,15 @@ fitAR=function(Y,p,h){
 
   # retrieve last p observations
   X.out = tail(aux,1)[1:ncol(X)] 
+  
+  # cutting dummy to shape
+  dum = tail(dum, length(y))
 
   # estimate direct h-step AR(p) by OLS 
-  model = lm(y~X) 
+  model = lm(y~X+dum) 
   
   # extract coefficients
-  coef = coef(model) 
+  coef = coef(model)[1:(ncol(X)+1)]
 
   #make a forecast using the last few observations: a direct h-step forecast.
   pred = c(1,X.out)%*%coef 
@@ -63,7 +66,7 @@ basic_AR_input <- check[start_rownum:end_rownum, ] %>%
 p_optimal = 4
 h = example_fhorizon
 
-basic_AR_output <- fitAR(basic_AR_input, p_optimal, example_fhorizon)
+basic_AR_output <- fitAR(basic_AR_input, p_optimal, example_fhorizon, covid_dummy)
 
 ar1_prediction = basic_AR_output$pred
 ar1_rmsfe = basic_AR_output$rmsfe
@@ -96,9 +99,9 @@ all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta,
 advanced_AR_input <- as.matrix(all_GDP_data)
 
 
-advanced_AR_output <- fitAR(advanced_AR_input, p_optimal, example_fhorizon)
+advanced_AR_output <- fitAR(advanced_AR_input, p_optimal, example_fhorizon, covid_dummy)
 
 ar2_prediction = advanced_AR_output$pred
-ar2_msfe = advanced_AR_output$msfe
+ar2_rmsfe = advanced_AR_output$msfe
 
 ```
