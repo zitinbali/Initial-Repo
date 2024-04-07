@@ -13,6 +13,8 @@ library(xts)
 library(readxl)
 library(dynlm)
 library(lmtest)
+library(stringr)
+library(broom)
 
 # reading the GDP data
 RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
