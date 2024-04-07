@@ -54,11 +54,15 @@ ADL_splice <- function(data, window_start, window_end){
 ```{r prep for AIC selection}
 
 # List of variables
+
+####################################################
+# COMMENT: ADD VARIABLES TO INPUTS FOR MODULARITY 
+####################################################
 variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts")
 n <- length(variables)
 
 # formula to find best number of lags given a variable
-find_best_lag <- function(data, response, variable, max_lags) {
+find_best_lag <- function(df, response, variable, max_lags) {
   best_aic <- Inf
   best_lag <- 0
   
@@ -67,7 +71,7 @@ find_best_lag <- function(data, response, variable, max_lags) {
     formula <- as.formula(paste(response, "~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + ")))
     
     # Fit the model
-    model <- dynlm(formula, data = data)
+    model <- dynlm(formula, df)
     
     # Calculate AIC
     aic <- AIC(model)
@@ -82,8 +86,10 @@ find_best_lag <- function(data, response, variable, max_lags) {
 }
 
 # function to generate a base formula to add on more variables later
-generate_base_formula <- function(variable, lag){
-  formula <- paste("GDPGrowth_ts ~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + "))
+# Y_name is the name of the Y variable in string format e.g. GDPgrowth_ts 
+generate_base_formula <- function(variable, lag, Y_name){
+  start_string = paste(Y_name, " ~", sep = "")
+  formula <- paste(start_string, paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + "))
   return(formula)
 }
 
@@ -114,10 +120,12 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 
 ```{r}
 
-AICselection_indv <- function(Y_dataframe, variable) {
+# Y_name is the name of the Y variable in string format e.g. GDPgrowth_ts 
+
+AICselection_indv <- function(Y_dataframe, variable, Y_name) {
   df <- data.frame(Y_dataframe, variable)
-  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
-  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
+  base_best_lag <- find_best_lag(df, Y_name, Y_name, 4)
+  base_formula <- generate_base_formula(Y_name, base_best_lag, Y_name)
   best_aic <- AIC(dynlm(as.formula(base_formula)))
   for (lag in 1:4) {
         formula <- as.formula(extend_formula(base_formula, variable, lag))
@@ -148,8 +156,8 @@ test <-
 
 
 # input model is the dynlm model churned out based on AIC selector 
-
-pval_selection_indv <- function(model){
+# y_name is the name of the y variable in string format e.g. GDPgrowth_ts 
+pval_selection_indv <- function(model, y_name){
   coeftest <- coeftest(model)
   tidy_coeftest <- broom::tidy(coeftest) %>% 
     filter(p.value <= 0.10) %>% 
@@ -170,7 +178,8 @@ pval_selection_indv <- function(model){
     }
   }
   
-  model_string = paste("GDPGrowth_ts ~ ", lag_string)
+  model_start = paste(y_name, " ~ ", sep = "")
+  model_string = paste(model_start, lag_string)
   
   return(model_string)
 }
@@ -251,14 +260,14 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   X_df <- as.data.frame(X_dataframe)
   
   # Formula recommended by AIC selector
-  selectors_AIC <- AICselection_indv(X_dataframe, X_string)
+  selectors_AIC <- AICselection_indv(X_dataframe, X_string, Y_string)
   # model based on AIC selection
   model_AIC <- dynlm(as.formula(selectors_AIC),
         start = c(start_y, start_q), 
         end = c(end_y, end_q))
     
   # Formula recommended by p-value selector
-  selectors_p <- pval_selection_indv(model_AIC)
+  selectors_p <- pval_selection_indv(model_AIC, Y_string)
   model_p <- dynlm(as.formula(selectors_p),
                      start = c(start_y, start_q), 
                      end = c(end_y, end_q))
@@ -276,33 +285,38 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
       # replace the NA in the last row with the prediction above
       GDP_df[nrow(GDP_df), "x"] <- pred
       
-      GDPGrowth_ts <- ts(GDP_df, 
+      gdp_ts <- ts(GDP_df, 
                   start = c(start_y, start_q), 
                   end = c(end_y, end_q), 
                   frequency = 4)
       
+      print("WORKS")
+      
       # Formula recommended by AIC selector
-      selectors_AIC_local <- AICselection_indv(GDPGrowth_ts, X_string)
+      selectors_AIC_local <- AICselection_indv(gdp_ts, X_string, "gdp_ts")
+      
+      print(selectors_AIC_local)
 
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
             start = c(start_y, start_q), 
             end = c(end_y, end_q))
+      
+      print(i)
+      #print(coeftest(model_AIC_local))
         
       # Formula recommended by p-value selector
-      selectors_p_local <- pval_selection_indv(model_AIC_local)
+      selectors_p_local <- pval_selection_indv(model_AIC_local, "gdp_ts")
       
-      print(pval_selection_indv(model_AIC_local))
+      print(pval_selection_indv(model_AIC_local, "gdp_ts"))
       
       model_p_local <- dynlm(as.formula(selectors_p_local),
                          start = c(start_y, start_q), 
                          end = c(end_y, end_q))
-      print("help 4")
-      pred <- ADL_predict_1(GDPGrowth_ts, X_dataframe, Y_string, X_string,
+      
+      pred <- ADL_predict_1(gdp_ts, X_dataframe, Y_string, X_string,
                             selectors_p_local, model_p_local$coefficients)
       
-      #print(i)
-      #print(selectors_p)
       #print(pred)
   
     }
@@ -355,7 +369,7 @@ ADL_BAA_AAA <-
 BAA_AAA_selectors_AIC <- AICselection_indv(GDPGrowth_ts, "baa_aaa_ts")
 
 # model further narrowed down based on p-values
-BAA_AAA_selectors_p <- pval_selection_indv(ADL_BAA_AAA)
+BAA_AAA_selectors_p <- pval_selection_indv(ADL_BAA_AAA, "GDPGrowth_ts")
 
 ADL_BAA_AAA_f <- dynlm(as.formula(BAA_AAA_selectors_p),
                        start = c(start_y, start_q), 
@@ -566,7 +580,7 @@ df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasur
 
 AICselection_with_AR <- function(df, variables) {
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
-  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
+  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag, )
   best_var <- 1
   
   while (best_var != 0) {
