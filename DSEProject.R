@@ -2,7 +2,6 @@ library(tidyverse)
 library(ggplot2)
 library(zoo)
 library(dplyr)
-library(ggplot2)
 library(shiny)
 library(shinyWidgets)
 library(shinythemes)
@@ -10,6 +9,7 @@ library(readxl)
 library(xts)
 library(AICcmodavg)
 library(fresh)
+library(RColorBrewer)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
@@ -25,16 +25,14 @@ ui <- navbarPage(
       }
     ")
   ),
-  tabPanel("Comparing Revised Values",
-           icon = icon("calculator"),
            wellPanel("", value = "models", icon = NULL,
                      fluidPage(
-                       #titlePanel("Comparing Models"),
-                       chooseSliderSkin("Modern"),
+                       chooseSliderSkin("Shiny"),
                        wellPanel(
-                         sliderTextInput('year', 'Input Year', 
+                         sliderTextInput('year', 'Input time period', 
                                          choices = RGDP_Data$DATE,
                                          selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
+                         #add in from_max to indicate start of test window
                          selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
                                      choices = c("2", "3", "4"), 
                                      selected = "2", width = '40%'),
@@ -48,63 +46,37 @@ ui <- navbarPage(
                        ),
                        mainPanel(
                          width = 14,
-                         wellPanel(
-                           tabsetPanel(
-                             tabPanel("Model 1", plotOutput("model1"),
-                                      textOutput("desc1")),
-                             tabPanel("Model 2", plotOutput("model2"),
-                                      textOutput("desc2"))
+                         tabsetPanel(
+                           tabPanel("Comparing Revised Values",
+                                    icon = icon("calculator"),
+                           wellPanel(
+                             tabsetPanel(
+                               tabPanel("Model 1", plotOutput("model1"),
+                                        textOutput("desc1")),
+                               tabPanel("Model 2", plotOutput("model2"),
+                                        textOutput("desc2"))
                            )
+                           )
+                         ),
+                         tabPanel("Analysing Predictive Ability",
+                                  icon = icon("chart-line"),
+                                  wellPanel(
+                                    tabsetPanel(
+                                      tabPanel("Model 3", plotOutput("model3"),
+                                               textOutput("desc3")),
+                                      tabPanel("Model 4", plotOutput("model4"),
+                                               textOutput("desc4")),
+                                      tabPanel("Model 5", plotOutput("model5"),
+                                               textOutput("desc5"))
+                                    )
+                                  )
                          )
                        )
                      )
            )
   ),
-  tabPanel("Analysing Predictive Ability",
-           icon = icon("chart-line"),
-           wellPanel("", value = "models", icon = NULL,
-                     fluidPage(
-                       #titlePanel("Comparing Models"),
-                       chooseSliderSkin("Modern"),
-                       wellPanel(
-                         sliderTextInput('year', 'Input Year', 
-                                         choices = RGDP_Data$DATE,
-                                         selected = c(RGDP_Data$DATE[100], RGDP_Data$DATE[120])),
-                         selectInput('forecast_horizon', 'Select Forecast Horizon (Number of Quarters ahead)', 
-                                     choices = c("2", "3", "4"), 
-                                     selected = "2", width = '40%'),
-                         selectInput("model_selection", "Model Selection",
-                                     choices = list("AR Model" = 1, 
-                                                    "Revised AR model" = 2,
-                                                    "ADL" = 3, 
-                                                    "Combined model" = 4),
-                                     selected = 1, width = '40%'),
-                         actionButton("show_prediction", "Show Prediction")
-                       ),
-                       mainPanel(
-                         width = 14,
-                         wellPanel(
-                           tabsetPanel(
-                             tabPanel("Model 3", plotOutput("model3"),
-                                      textOutput("desc3")),
-                             tabPanel("Model 4", plotOutput("model4"),
-                                      textOutput("desc1")),
-                             tabPanel("Model 5", plotOutput("model5"),
-                                      textOutput("desc2"))
-                           )
-                         )
-                       )
-                     )
-           )
-  ),
-  navbarMenu("More",                  ## leaving this here in case we want to use it
-               tabPanel("Summary"),
-               "----",
-               "Section header",
-               tabPanel("Table")
-  )
-  
 )
+  
 
 server <- function(input, output, session) {
   
@@ -142,7 +114,7 @@ server <- function(input, output, session) {
     rmsfe = sqrt(sum(model$residuals^2) / nrow(X)) 
     
     # Save estimated AR regression, predictions, and estimated coefficients
-    return(list("model" = model, "pred" = pred)) 
+    return(list("model" = model, "pred" = pred, "coefs" = coef)) 
   }
   
   test <- as.matrix(check$growth_rate)
@@ -165,11 +137,12 @@ output$model1 <- renderPlot({
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time <= as.yearqtr("1970 Q1")) %>% #change to start year and end year inputs
     select(Time, growth_rate) %>%
-    mutate(growth_rate = as.numeric(growth_rate))
+    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    mutate(category = 1) 
     
-  training_xts <- xts(training$growth_rate, training$Time) 
+  #training_xts <- xts(training$growth_rate, training$Time) 
   #check_xts <- xts(check$growth_rate, check$Time) 
-  test <- as.matrix(check$growth_rate)
+  #test <- as.matrix(check$growth_rate)
   #print(c(fitAR_preds(test, 2, 2)))
   
   predictions <- check %>% 
@@ -178,49 +151,37 @@ output$model1 <- renderPlot({
     #filter(Time > gsub(":", " ", input$year)) %>% 
     head(n = 2) %>%
     mutate(new_growth_rate = c(fitAR_preds(test, 3, 2)))
-    
-  # function that transform years to class 'yearqtr'
-  YToYQTR <- function(years){
-    return(
-      sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
-    )
-  }
-  
-  # recessions
-  recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                          2001, 2007:2008))
-  # the COVID recession ended in April 2020 according to the Fed
-  recessions_covid <- append(recessions, 
-                             c(as.yearqtr("2020 Q1"), 
-                               as.yearqtr("2020 Q2")))
-  
 
     # Separate predictions into actual and predicted dataframes for plotting
-    actual_test_values = predictions %>% 
-      select(Time, growth_rate) 
-    actual_test_values_xts <- xts(actual_test_values$growth_rate, actual_test_values$Time)
+    actual_test_values <- predictions %>% 
+      select(Time, growth_rate) %>%
+      mutate(category = 2)
+
+    #actual_test_values_xts <- xts(actual_test_values$growth_rate, actual_test_values$Time)
     
-    predicted_test_values = predictions %>% 
+    predicted_test_values <- predictions %>% 
       select(Time, new_growth_rate) %>% 
+      mutate(category = 3) %>% 
       rename("growth_rate" = "new_growth_rate")
-    predicted_test_values_xts <- xts(predicted_test_values$growth_rate, predicted_test_values$Time)
     
-        # Merge the two time series into a single zoo object
-    merged_data <- merge(as.zoo(training_xts), as.zoo(predicted_test_values_xts))
+    original_data <- rbind(training, actual_test_values)
+    predicted_data <- rbind(training, predicted_test_values)
     
-    # Plot the merged data
-    plot(merged_data, 
-         plot.type = "single", 
-         col = c("darkred", "darkblue"),
-         lwd = 1,
-         xlab = "Date",
-         ylab = "Growth Rate",
-         main = "Quarterly Growth Rate of GDP")
-  
-    # colour shading for recessions
-    xblocks(time(as.zoo(check_xts)), 
-            c(time(check_xts) %in% recessions_covid), 
-            col = alpha("steelblue", alpha = 0.3))
+    model_1 <- ggplot() +
+      geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
+      geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
+      scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#FB5917"), 
+                             limits = c(1, 3), guide = "none") +
+      #geom_rect(data = recessions, aes(x = yearqtr()), fill = "steelblue", alpha = 0.3) +  addin recession rectangles
+      geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
+      geom_vline(xintercept = 1970-1, linetype = "solid", color = "blue") + #change x to end of input time horizon
+      labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP") +
+      theme_minimal() +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+            panel.grid = element_blank(),
+            panel.border = element_blank(),  # Remove panel border
+            axis.line = element_line(color = "black"))
+    plot(model_1)
   })
 
   
