@@ -110,8 +110,10 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 }
 ```
 
-# Function for individual ADL Model
+# Functions for individual ADL Model
+
 ```{r}
+
 AICselection_indv <- function(df, variable) {
   df <- data.frame(GDPGrowth_ts, variable)
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
@@ -130,7 +132,104 @@ AICselection_indv <- function(df, variable) {
   formula <- extend_formula(base_formula, variable, best_lag)
   return(formula)
 }
+
 ```
+
+```{r}
+
+# input model is the dynlm model churned out based on AIC selector 
+
+pval_selection_indv <- function(model){
+  coeftest <- coeftest(model)
+  tidy_coeftest <- broom::tidy(coeftest) %>% 
+    filter(p.value <= 0.10) %>% 
+    select(term)
+  
+  if (sum(str_detect(tidy_coeftest$term, '(Intercept)')) > 0){
+    # Intercept is significant; so remove it from the rows 
+    tidy_coeftest = tidy_coeftest[-1,]
+  }
+  
+  if (nrow(tidy_coeftest) == 0){
+    lag_string = ""
+  } else{
+    lag_string = tidy_coeftest[[1]][1]
+    
+    for (i in 2:nrow(tidy_coeftest)){
+      lag_string = paste(lag_string, tidy_coeftest[[1]][i], sep = " + ")
+    }
+  }
+  
+  model_string = paste("GDPGrowth_ts ~ ", lag_string)
+  
+  return(model_string)
+}
+
+# note that the output is a string
+
+
+```
+
+# Function for calculating predictions
+
+```{r predictors}
+
+ADL_predict <- function(Y_dataframe, X_dataframe, selectors, coefficients,
+                        f_horizon){
+  
+  Y_string <- as.character(substitute(Y_dataframe))
+  X_string <- as.character(substitute(X_dataframe))
+  
+  # the predictor might not be included at all 
+  
+  input_string <- as.character(selectors)
+  Y_lags <- str_count(input_string, Y_string) - 1
+  X_lags <- str_count(input_string, X_string) 
+  
+  pred = coefficients[[1]]
+  
+  if (Y_lags == 0){
+    if (X_lags == 0){
+      # if Y_lags = 0 and X_lags = 0
+      pred = pred
+      print(pred)
+    } 
+    else {
+      # if Y_lags = 0 and X_lags != 0
+      for (i in 1:X_lags){
+        coeff_n = 1 + Y_lags + i
+        temp = (tail(X_dataframe, n = i)[1]) * coefficients[[coeff_n]]
+        pred = pred + temp
+      }
+    }
+  } else if (X_lags == 0){
+    # if Y_lags != 0 and X_lags = 0
+    for (j in 1:Y_lags){
+      coeff_n = 1 + j
+      temp = (tail(Y_dataframe, n = j)[1]) * coefficients[[coeff_n]]
+      pred = pred + temp
+    }
+  } else {
+    # if Y_lags != 0 and X_lags != 0 
+      for (p in 1:Y_lags){
+        coeff_n = 1 + p
+        temp = (tail(Y_dataframe, n = p)[1]) * coefficients[[coeff_n]]
+        pred = pred + temp
+      }
+      for (q in 1:X_lags){
+        coeff_n = 1 + Y_lags + q
+        temp = (tail(X_dataframe, n = q)[1]) * coefficients[[coeff_n]]
+        pred = pred + temp
+      }
+    }
+  
+  return(pred)
+}
+
+
+```
+
+
 
 # ADL Model - BAA-AAA Spread 
 
@@ -162,22 +261,29 @@ legend("topright",
        lwd = c(1, 1),
        cex = 0.5)
 
-# THE NUMBER OF ADL MODELS IS CURRENTLY HARD CODED
-
-# estimating the ADL(3,3) model of GDP growth
-
-ADL_BAA_AAA33 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
-          L(baa_aaa_ts),
+# model based on AIC selection
+ADL_BAA_AAA <- 
+  dynlm(as.formula(AICselection_indv(baa_aaa_ts, "baa_aaa_ts")),
           start = c(start_y, start_q), 
           end = c(end_y, end_q))
 
-BAA_AAA_coefficients <- ADL_BAA_AAA33$coefficients
+BAA_AAA_selectors_AIC <- AICselection_indv(baa_aaa_ts, "baa_aaa_ts")
 
-coeftest(ADL_BAA_AAA33)
+# model further narrowed down based on p-values
+BAA_AAA_selectors_p <- pval_selection_indv(ADL_BAA_AAA)
 
-AICselection_indv(baa_aaa_ts, "baa_aaa_ts")
+ADL_BAA_AAA_f <- dynlm(as.formula(BAA_AAA_selectors_p),
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q))
+
+
+pred_2021q1_AIC_only <- ADL_predict(GDPGrowth_ts, baa_aaa_ts, BAA_AAA_selectors_AIC,
+                                    ADL_BAA_AAA$coefficients, 4)
+pred_2021q1_p_val <- ADL_predict(GDPGrowth_ts, baa_aaa_ts, BAA_AAA_selectors_p,
+                                    ADL_BAA_AAA_f$coefficients, 4)
+print(pred_2021q1_AIC_only)
+print(pred_2021q1_p_val)
+# true value is 1.28 for reference
 
 ```
 
@@ -217,7 +323,7 @@ legend("topright",
 ADL_tspread34 <- 
   dynlm(GDPGrowth_ts ~ 
           L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + 
-          L(tspread_ts),
+          L(tspread_ts) + L(tspread_ts, 2),
           start = c(start_y, start_q), 
           end = c(end_y, end_q))
 
