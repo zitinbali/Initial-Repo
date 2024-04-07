@@ -1,11 +1,11 @@
 example_startq = "1980 Q4"
-example_endq = "2020 Q4"
+example_endq = "2018 Q4"
 example_startyq = as.yearqtr(example_startq)
 example_endyq = as.yearqtr(example_endq)
 
 
 
-example_fhorizon = as.numeric("4")
+example_fhorizon = as.numeric("1")
 
 start_y = as.numeric(year(example_startyq))
 end_y = as.numeric(year(example_endyq))

@@ -314,17 +314,12 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
       
       pred <- ADL_predict_1(gdp_ts, X_dataframe, "gdp_ts", X_string,
                             selectors_p_local, model_p_local$coefficients)
-      
-      print(i)
-      print(pred)
   
     }
   }
   
   return (pred)
 }
-
-ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 4)
 
 ```
 
@@ -359,31 +354,11 @@ legend("topright",
        lwd = c(1, 1),
        cex = 0.5)
 
-# model based on AIC selection
-ADL_BAA_AAA <- 
-  dynlm(as.formula(AICselection_indv(GDPGrowth_ts, "baa_aaa_ts", "GDPGrowth_ts")),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-BAA_AAA_selectors_AIC <- AICselection_indv(GDPGrowth_ts, "baa_aaa_ts", "GDPGrowth_ts")
-
-# model further narrowed down based on p-values
-BAA_AAA_selectors_p <- pval_selection_indv(ADL_BAA_AAA, "GDPGrowth_ts")
-
-ADL_BAA_AAA_f <- dynlm(as.formula(BAA_AAA_selectors_p),
-                       start = c(start_y, start_q), 
-                       end = c(end_y, end_q))
-
-
-pred_2021q1_AIC_only <- ADL_predict_1(GDPGrowth_ts, baa_aaa_ts, 
-                                      "GDPGrowth_ts", "baa_aaa_ts",
-                                      BAA_AAA_selectors_AIC, ADL_BAA_AAA$coefficients)
-pred_2021q1_p_val <- ADL_predict_1(GDPGrowth_ts, baa_aaa_ts, 
-                                   "GDPGrowth_ts", "baa_aaa_ts",
-                                   BAA_AAA_selectors_p, ADL_BAA_AAA_f$coefficients)
-print(pred_2021q1_AIC_only)
-print(pred_2021q1_p_val)
-# true value is 1.28 for reference
+BAA_AAA_prediction <- ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, example_fhorizon)
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 1)
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 2)
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 3)
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 4)
 
 ```
 
@@ -418,20 +393,11 @@ legend("topright",
        lwd = c(1, 1),
        cex = 0.5)
 
-# estimating the ADL(3,4) model of GDP growth
-
-ADL_tspread34 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) + 
-          L(tspread_ts) + L(tspread_ts, 2),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-tspread_coefficients <- ADL_tspread34$coefficients
-
-coeftest(ADL_tspread34)
-
-AICselection_indv(tspread_ts, "tspread_ts")
+tspread_prediction <- ADL_predict_all(GDPGrowth_ts, tspread_ts, example_fhorizon)
+ADL_predict_all(GDPGrowth_ts, tspread_ts, 1)
+ADL_predict_all(GDPGrowth_ts, tspread_ts, 2)
+ADL_predict_all(GDPGrowth_ts, tspread_ts, 3)
+ADL_predict_all(GDPGrowth_ts, tspread_ts, 4)
 
 ```
 
@@ -464,20 +430,11 @@ legend("topright",
        lwd = c(1, 1),
        cex = 0.5)
 
-# estimating the ADL(3,4) model of GDP growth
-
-ADL_fred_hstarts31 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
-          L(fred_hstarts_ts),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-fred_hstarts_coefficients <- ADL_fred_hstarts31$coefficients
-
-coeftest(ADL_fred_hstarts31)
-
-AICselection_indv(fred_hstarts_ts, "fred_hstarts_ts")
+hstarts_prediction <- ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, example_fhorizon)
+ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, 1)
+ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, 2)
+ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, 3)
+ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, 4)
 
 ```
 
@@ -510,20 +467,12 @@ legend("topright",
        lwd = c(1, 1),
        cex = 0.5)
 
-# estimating the ADL(3,1) model of GDP growth
+consent_prediction <- ADL_predict_all(GDPGrowth_ts, consent_ts, example_fhorizon)
+ADL_predict_all(GDPGrowth_ts, consent_ts, 1)
+ADL_predict_all(GDPGrowth_ts, consent_ts, 2)
+ADL_predict_all(GDPGrowth_ts, consent_ts, 3)
+ADL_predict_all(GDPGrowth_ts, consent_ts, 4)
 
-ADL_consent31 <- 
-  dynlm(GDPGrowth_ts ~ 
-          L(GDPGrowth_ts) + L(GDPGrowth_ts, 2) + L(GDPGrowth_ts, 3) +
-          L(consent_ts),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-consent_coefficients <- ADL_consent31$coefficients
-
-coeftest(ADL_consent31)
-
-AICselection_indv(consent_ts, "consent_ts")
 ```
 
 # ADL Combined Model selection
@@ -568,6 +517,7 @@ AICselection_without_AR <- function(df, variables) {
 }
 
 AICselection_without_AR(df, variables)
+
 ```
 
 
@@ -610,6 +560,6 @@ AICselection_with_AR <- function(df, variables) {
   return(base_formula)
 }
 
-AICselection_with_AR(df, variables)
+AICselection_with_AR(df, variables, "GDPGrowth_ts")
 
 ```
