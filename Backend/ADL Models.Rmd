@@ -110,7 +110,7 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 }
 ```
 
-# Functions for individual ADL Model
+# Functions for individual ADL Model - aic selector
 
 ```{r}
 
@@ -134,6 +134,8 @@ AICselection_indv <- function(Y_dataframe, variable) {
 }
 
 ```
+
+# Functions for individual ADL Model - p value selector
 
 ```{r}
 
