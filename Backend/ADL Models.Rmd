@@ -114,8 +114,8 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 
 ```{r}
 
-AICselection_indv <- function(df, variable) {
-  df <- data.frame(GDPGrowth_ts, variable)
+AICselection_indv <- function(Y_dataframe, variable) {
+  df <- data.frame(Y_dataframe, variable)
   base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
   base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag)
   best_aic <- AIC(dynlm(as.formula(base_formula)))
@@ -170,19 +170,15 @@ pval_selection_indv <- function(model){
 
 ```
 
-# Function for calculating predictions
+# Function for calculating next quarter prediction
 
-```{r predictors}
+```{r next quarter}
 
-ADL_predict <- function(Y_dataframe, X_dataframe, selectors, coefficients,
-                        f_horizon){
-  
-  Y_string <- as.character(substitute(Y_dataframe))
-  X_string <- as.character(substitute(X_dataframe))
-  
-  # the predictor might not be included at all 
+ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
+                          selectors, coefficients){
   
   input_string <- as.character(selectors)
+  
   Y_lags <- str_count(input_string, Y_string) - 1
   X_lags <- str_count(input_string, X_string) 
   
@@ -230,6 +226,77 @@ ADL_predict <- function(Y_dataframe, X_dataframe, selectors, coefficients,
 ```
 
 
+# Function for calculating predictions for all time horizons
+
+```{r predict all horizons}
+
+ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
+  
+  # extracting the names of the dataframes in string format
+  Y_string <- as.character(substitute(Y_dataframe))
+  X_string <- as.character(substitute(X_dataframe))
+  
+  # converting from time series class to dataframe for future use
+  GDP_df <- as.data.frame(Y_dataframe)
+  X_df <- as.data.frame(X_dataframe)
+  
+  # Formula recommended by AIC selector
+  selectors_AIC <- AICselection_indv(X_dataframe, X_string)
+  # model based on AIC selection
+  model_AIC <- dynlm(as.formula(selectors_AIC),
+        start = c(start_y, start_q), 
+        end = c(end_y, end_q))
+    
+  # Formula recommended by p-value selector
+  selectors_p <- pval_selection_indv(model_AIC)
+  model_p <- dynlm(as.formula(selectors_p),
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q))
+    
+  pred <- ADL_predict_1(Y_dataframe, X_dataframe, Y_string, X_string,
+                        selectors_p, model_p$coefficients)
+  
+  if (f_horizon == 1){
+    pred = pred
+  } 
+  else {
+    for (i in 2:f_horizon){
+      # shifting all Y values up by a quarter
+      GDP_df <- lead(GDP_df, 1)
+      # replace the NA in the last row with the prediction above
+      GDP_df[nrow(GDP_df), "x"] <- pred
+      
+      GDPGrowth_ts <- ts(GDP_df, 
+                  start = c(start_y, start_q), 
+                  end = c(end_y, end_q), 
+                  frequency = 4)
+      
+      # Formula recommended by AIC selector
+      selectors_AIC <- AICselection_indv(Y_dataframe, X_string)
+      # model based on AIC selection
+      model_AIC <- dynlm(as.formula(selectors_AIC),
+            start = c(start_y, start_q), 
+            end = c(end_y, end_q))
+        
+      # Formula recommended by p-value selector
+      selectors_p <- pval_selection_indv(model_AIC)
+      model_p <- dynlm(as.formula(selectors_p),
+                         start = c(start_y, start_q), 
+                         end = c(end_y, end_q))
+        
+      pred <- ADL_predict_1(Y_dataframe, X_dataframe, Y_string, X_string,
+                            selectors_p, model_p$coefficients)
+      
+    }
+  }
+  
+  print(GDP_df)
+  return (pred)
+}
+
+
+```
+
 
 # ADL Model - BAA-AAA Spread 
 
@@ -263,11 +330,11 @@ legend("topright",
 
 # model based on AIC selection
 ADL_BAA_AAA <- 
-  dynlm(as.formula(AICselection_indv(baa_aaa_ts, "baa_aaa_ts")),
+  dynlm(as.formula(AICselection_indv(GDPGrowth_ts, "baa_aaa_ts")),
           start = c(start_y, start_q), 
           end = c(end_y, end_q))
 
-BAA_AAA_selectors_AIC <- AICselection_indv(baa_aaa_ts, "baa_aaa_ts")
+BAA_AAA_selectors_AIC <- AICselection_indv(GDPGrowth_ts, "baa_aaa_ts")
 
 # model further narrowed down based on p-values
 BAA_AAA_selectors_p <- pval_selection_indv(ADL_BAA_AAA)
@@ -277,13 +344,17 @@ ADL_BAA_AAA_f <- dynlm(as.formula(BAA_AAA_selectors_p),
                        end = c(end_y, end_q))
 
 
-pred_2021q1_AIC_only <- ADL_predict(GDPGrowth_ts, baa_aaa_ts, BAA_AAA_selectors_AIC,
-                                    ADL_BAA_AAA$coefficients, 4)
-pred_2021q1_p_val <- ADL_predict(GDPGrowth_ts, baa_aaa_ts, BAA_AAA_selectors_p,
-                                    ADL_BAA_AAA_f$coefficients, 4)
+pred_2021q1_AIC_only <- ADL_predict_1(GDPGrowth_ts, baa_aaa_ts, 
+                                      "GDPGrowth_ts", "baa_aaa_ts",
+                                      BAA_AAA_selectors_AIC, ADL_BAA_AAA$coefficients)
+pred_2021q1_p_val <- ADL_predict_1(GDPGrowth_ts, baa_aaa_ts, 
+                                   "GDPGrowth_ts", "baa_aaa_ts",
+                                   BAA_AAA_selectors_p, ADL_BAA_AAA_f$coefficients)
 print(pred_2021q1_AIC_only)
 print(pred_2021q1_p_val)
 # true value is 1.28 for reference
+
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 4)
 
 ```
 
