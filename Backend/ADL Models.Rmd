@@ -137,6 +137,14 @@ AICselection_indv <- function(Y_dataframe, variable) {
 
 ```{r}
 
+test_AICselectors <- "GDPGrowth_ts ~ L(GDPGrowth_ts,1) + L(GDPGrowth_ts,2) + L(GDPGrowth_ts,3) + L(GDPGrowth_ts,4) + L(baa_aaa_ts, 1) + L(baa_aaa_ts, 2)"
+
+test <- 
+  dynlm(as.formula(test_AICselectors),
+          start = c(start_y, start_q), 
+          end = c(end_y, end_q))
+
+
 # input model is the dynlm model churned out based on AIC selector 
 
 pval_selection_indv <- function(model){
@@ -235,7 +243,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   # extracting the names of the dataframes in string format
   Y_string <- as.character(substitute(Y_dataframe))
   X_string <- as.character(substitute(X_dataframe))
-  
+
   # converting from time series class to dataframe for future use
   GDP_df <- as.data.frame(Y_dataframe)
   X_df <- as.data.frame(X_dataframe)
@@ -272,28 +280,36 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
                   frequency = 4)
       
       # Formula recommended by AIC selector
-      selectors_AIC <- AICselection_indv(Y_dataframe, X_string)
+      selectors_AIC_local <- AICselection_indv(GDPGrowth_ts, X_string)
+
       # model based on AIC selection
-      model_AIC <- dynlm(as.formula(selectors_AIC),
+      model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
             start = c(start_y, start_q), 
             end = c(end_y, end_q))
         
       # Formula recommended by p-value selector
-      selectors_p <- pval_selection_indv(model_AIC)
-      model_p <- dynlm(as.formula(selectors_p),
+      selectors_p_local <- pval_selection_indv(model_AIC_local)
+      
+      print(pval_selection_indv(model_AIC_local))
+      
+      model_p_local <- dynlm(as.formula(selectors_p_local),
                          start = c(start_y, start_q), 
                          end = c(end_y, end_q))
-        
-      pred <- ADL_predict_1(Y_dataframe, X_dataframe, Y_string, X_string,
-                            selectors_p, model_p$coefficients)
+      print("help 4")
+      pred <- ADL_predict_1(GDPGrowth_ts, X_dataframe, Y_string, X_string,
+                            selectors_p_local, model_p_local$coefficients)
       
+      #print(i)
+      #print(selectors_p)
+      #print(pred)
+  
     }
   }
   
-  print(GDP_df)
   return (pred)
 }
 
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 4)
 
 ```
 
