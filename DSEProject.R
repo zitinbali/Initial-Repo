@@ -28,7 +28,7 @@ ui <- navbarPage(
   ),
            wellPanel("", value = "models", icon = NULL,
                      fluidPage(
-                       chooseSliderSkin("Shiny"),
+                       chooseSliderSkin("Flat", color = "#787D99"),
                        wellPanel(
                          sliderTextInput('year', 'Input time period', 
                                          choices = RGDP_Data$DATE[120:length(RGDP_Data$DATE)], #starting from 1976 Q4, the earliest start date all datasets have in common
