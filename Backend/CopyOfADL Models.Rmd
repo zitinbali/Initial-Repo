@@ -262,8 +262,8 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   X_string <- as.character(substitute(X_dataframe))
 
   # converting from time series class to dataframe for future use
-  GDP_df <- as.data.frame(Y_dataframe)
-  X_df <- as.data.frame(X_dataframe)
+  GDP_df <- as.matrix(Y_dataframe)
+  X_df <- as.matrix(X_dataframe)
   
   # Formula recommended by AIC selector
   selectors_AIC <- AICselection_indv(Y_dataframe, X_string, Y_string)
@@ -281,21 +281,34 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   pred <- ADL_predict_1(Y_dataframe, X_dataframe, Y_string, X_string,
                         selectors_p, model_p$coefficients)
   
+  # X pred 
+  AR_output <- fitAR(X_df, 2, 1, covid_dummy)
+  X_pred <- AR_output$pred
+  
   if (f_horizon == 1){
     pred = pred
   } 
   else {
     for (i in 2:f_horizon){
-      # shifting all Y values up by a quarter
-      GDP_df <- lead(GDP_df, 1)
+      updated_end_yq <- example_endyq + i - 1
+      upd_end_y <- as.numeric(year(updated_end_yq))
+      upd_end_q <- as.numeric(quarter(updated_end_yq))
+
       # replace the NA in the last row with the prediction above
-      GDP_df[nrow(GDP_df), "x"] <- pred
+      GDP_df <- rbind(GDP_df, pred)
       
       gdp_ts <- ts(GDP_df, 
                   start = c(start_y, start_q), 
-                  end = c(end_y, end_q), 
+                  end = c(upd_end_y, upd_end_q), 
                   frequency = 4)
       
+      # X pred
+      X_df <- rbind(X_df, X_pred)
+      
+      X_ts <- ts(X_df, 
+                  start = c(start_y, start_q), 
+                  end = c(upd_end_y, upd_end_q), 
+                  frequency = 4)
       
       # Formula recommended by AIC selector
       selectors_AIC_local <- AICselection_indv(gdp_ts, X_string, "gdp_ts")
@@ -303,17 +316,20 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
             start = c(start_y, start_q), 
-            end = c(end_y, end_q))
+            end = c(upd_end_y, upd_end_q))
         
       # Formula recommended by p-value selector
       selectors_p_local <- pval_selection_indv(model_AIC_local, "gdp_ts")
       
       model_p_local <- dynlm(as.formula(selectors_p_local),
                          start = c(start_y, start_q), 
-                         end = c(end_y, end_q))
+                         end = c(upd_end_y, upd_end_q))
       
       pred <- ADL_predict_1(gdp_ts, X_dataframe, "gdp_ts", X_string,
                             selectors_p_local, model_p_local$coefficients)
+      
+      AR_output_new <- fitAR(X_df, 2, i, covid_dummy)
+      X_pred <- AR_output_new$pred
   
     }
   }
