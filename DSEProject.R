@@ -32,7 +32,7 @@ ui <- navbarPage(
                        wellPanel(
                          sliderTextInput('year', 'Input time period', 
                                          choices = RGDP_Data$DATE[120:length(RGDP_Data$DATE)], #starting from 1976 Q4, the earliest start date all datasets have in common
-                                         selected = c(RGDP_Data$DATE[140], RGDP_Data$DATE[160])),
+                                         selected = c(RGDP_Data$DATE[140], RGDP_Data$DATE[200])),
                          #add in from_max to indicate start of test window
                          selectInput('h', 'Select Forecast Horizon (Number of Quarters ahead)', 
                                      choices = c("2", "3", "4"), 
@@ -132,9 +132,11 @@ server <- function(input, output, session) {
   
   observeEvent(input$show_prediction, {output$model1 <- renderPlot({
   # formatting the data variable in terms of year and quarters
+    
   training <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
-    filter(Time <= as.yearqtr("1970 Q1")) %>% #change to start year and end year inputs
+    filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>%
+    filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) %>% #change to start year and end year inputs
     select(Time, growth_rate) %>%
     mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 1) 
@@ -146,10 +148,9 @@ server <- function(input, output, session) {
   
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
-    filter(Time > as.yearqtr("1970 Q1")) %>% 
-    #filter(Time > gsub(":", " ", input$year)) %>% 
-    head(n = 2) %>%
-    mutate(new_growth_rate = c(fitAR_preds(test, 3, input$h)$preds))
+    filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+    head(n = as.numeric(input$h)) %>%
+    mutate(new_growth_rate = c(fitAR_preds(test, 3, as.numeric(input$h))$preds))
     #mutate(rmsfe = c(fitAR(test, 3, 2)$residuals))
 
     # Separate predictions into actual and predicted dataframes for plotting
@@ -169,11 +170,12 @@ server <- function(input, output, session) {
     
     # creating data for fanplot
     predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
+    
     fanplot_data <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr("1970 Q1"))
+      filter(Time > as.yearqtr(gsub(":", " ", input$year[2])))
       
-    fanplot_rmsfe <- fitAR(test, 3, 2)$model$residuals # replace w p and h
+    fanplot_rmsfe <- fitAR(test, 3, as.numeric(input$h))$model$residuals # replace w p and h
     data <- check[-c(1:(3+as.numeric(input$h)-1)),] # replace w p and h
     rmsfe <- sqrt(abs(fanplot_rmsfe))
     fanplot_data <- cbind(as.data.frame(rmsfe), data)
@@ -184,8 +186,8 @@ server <- function(input, output, session) {
       mutate(lower_bound_80 = growth_rate - 1.28*rmsfe) %>%
       mutate(upper_bound_50 = growth_rate + 0.67*rmsfe) %>%
       mutate(lower_bound_50 = growth_rate - 0.67*rmsfe) %>%
-      filter(Time > as.yearqtr("1970 Q1")) %>% #replace w start time
-      filter(Time <= as.yearqtr("1970 Q3")) #replace w end time
+      filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>% #replace w start time
+      filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w end time
     
     # recession blocks
     recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
@@ -199,7 +201,7 @@ server <- function(input, output, session) {
     )
   
     recession_block = rectangles %>%
-      filter(xmin >= as.yearqtr("1950 Q1") & xmax <= as.yearqtr("2010 Q4")) #replace w start and end of lineplot
+      filter(xmin >= as.yearqtr("1976 Q4") & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w start and end of lineplot
       
     model_1 <- ggplot() +
       geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
@@ -254,7 +256,7 @@ server <- function(input, output, session) {
     # formatting the data variable in terms of year and quarters
     training <- check %>%
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time <= as.yearqtr("1970 Q1")) %>% #change to start year and end year inputs
+      filter(Time <= as.yearqtr(input$year[2])) %>% #change to start year and end year inputs
       select(Time, growth_rate) %>%
       mutate(growth_rate = as.numeric(growth_rate)) %>%
       mutate(category = 1) 
@@ -266,10 +268,10 @@ server <- function(input, output, session) {
     
     predictions <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr("1970 Q1")) %>% 
+      filter(Time > as.yearqtr(input$year[1])) %>% 
       #filter(Time > gsub(":", " ", input$year)) %>% 
-      head(n = 2) %>%
-      mutate(new_growth_rate = c(fitAR(advanced_AR_input, 3, input$h)$preds))
+      head(n = as.numeric(input$h)) %>%
+      mutate(new_growth_rate = c(fitAR(advanced_AR_input, 3, as.numeric(input$h))$preds))
     #mutate(rmsfe = c(fitAR(test, 3, 2)$residuals))
     
     # Separate predictions into actual and predicted dataframes for plotting
