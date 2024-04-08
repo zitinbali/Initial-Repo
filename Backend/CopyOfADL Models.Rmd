@@ -291,7 +291,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   } 
   else {
     for (i in 2:f_horizon){
-      updated_end_yq <- example_endyq + i - 1
+      updated_end_yq <- example_endyq + (i - 1)/4
       upd_end_y <- as.numeric(year(updated_end_yq))
       upd_end_q <- as.numeric(quarter(updated_end_yq))
 
@@ -311,6 +311,10 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
                   end = c(upd_end_y, upd_end_q), 
                   frequency = 4)
       
+      print(i)
+      print(c(upd_end_y,upd_end_q))
+      
+      
       # Formula recommended by AIC selector
       selectors_AIC_local <- AICselection_indv(gdp_ts, X_ts, "gdp_ts")
 
@@ -326,7 +330,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
                          start = c(start_y, start_q), 
                          end = c(upd_end_y, upd_end_q))
       
-      pred <- ADL_predict_1(gdp_ts, X_dataframe, "gdp_ts", X_string,
+      pred <- ADL_predict_1(gdp_ts, X_ts, "gdp_ts", "X_ts",
                             selectors_p_local, model_p_local$coefficients)
       
       AR_output_new <- fitAR(X_df, 2, i, covid_dummy)
