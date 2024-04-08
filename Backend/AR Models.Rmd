@@ -47,10 +47,12 @@ fitAR=function(Y,h, dum){
     #note the addition of a constant to the test observation vector
     
     #get unadjusted rmsfe (ignoring estimation uncertainty)
-    rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
+    rmsfe = sqrt(sum(model$residuals^2)/nrow(X))
+    aic = AIC(model)
     
-    if(rmsfe < minimum){
-      minimum = rmsfe
+    if(aic < minimum){
+      minimum = aic
+      best_rmsfe = rmsfe
       best_p = p
       best_model = model
       best_pred = pred
@@ -60,7 +62,7 @@ fitAR=function(Y,h, dum){
   
   
   #save estimated AR regression, prediction, and estimated coefficients
-  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe"=minimum, "p" = best_p)) 
+  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p)) 
 }
 
 ```
@@ -78,7 +80,6 @@ basic_AR_input <- check[start_rownum:end_rownum, ] %>%
   select(growth_rate) %>% 
   as.matrix()
 
-p_optimal = 4
 h = example_fhorizon
 
 basic_AR_output <- fitAR(basic_AR_input, example_fhorizon, covid_dummy)
