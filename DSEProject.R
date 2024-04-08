@@ -173,9 +173,9 @@ server <- function(input, output, session) {
     
     fanplot_data <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[2])))
+      filter(Time > as.yearqtr(gsub(":", " ", input$year[1])))
       
-    fanplot_rmsfe <- fitAR(test, 3, as.numeric(input$h))$model$residuals # replace w p and h
+    fanplot_rmsfe <- fitAR(test, 3, as.numeric(input$h))$model$residuals # replace w p
     data <- check[-c(1:(3+as.numeric(input$h)-1)),] # replace w p and h
     rmsfe <- sqrt(abs(fanplot_rmsfe))
     fanplot_data <- cbind(as.data.frame(rmsfe), data)
@@ -186,8 +186,8 @@ server <- function(input, output, session) {
       mutate(lower_bound_80 = growth_rate - 1.28*rmsfe) %>%
       mutate(upper_bound_50 = growth_rate + 0.67*rmsfe) %>%
       mutate(lower_bound_50 = growth_rate - 0.67*rmsfe) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>% #replace w start time
-      filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w end time
+      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% #replace w start time
+      head(as.numeric(input$h))
     
     # recession blocks
     recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
@@ -242,8 +242,7 @@ server <- function(input, output, session) {
   
   advanced_AR_input <- as.matrix(all_GDP_data)
   
-  
-  advanced_AR_output <- fitAR(advanced_AR_input, 3, example_fhorizon) #p lags hardcoded, dummy covid removed for now
+  advanced_AR_output <- fitAR(advanced_AR_input, 3, as.numeric(input$h)) #p lags hardcoded, dummy covid removed for now
 
   ar2_prediction = advanced_AR_output$pred
   
@@ -252,76 +251,7 @@ server <- function(input, output, session) {
   #################
   
   observeEvent(input$show_prediction, {output$model2 <- renderPlot({
-    
     # formatting the data variable in terms of year and quarters
-    training <- check %>%
-      mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time <= as.yearqtr(input$year[2])) %>% #change to start year and end year inputs
-      select(Time, growth_rate) %>%
-      mutate(growth_rate = as.numeric(growth_rate)) %>%
-      mutate(category = 1) 
-    
-    #training_xts <- xts(training$growth_rate, training$Time) 
-    #check_xts <- xts(check$growth_rate, check$Time) 
-    #test <- as.matrix(check$growth_rate)
-    #print(c(fitAR_preds(test, 2, 2)))
-    
-    predictions <- check %>% 
-      mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(input$year[1])) %>% 
-      #filter(Time > gsub(":", " ", input$year)) %>% 
-      head(n = as.numeric(input$h)) %>%
-      mutate(new_growth_rate = c(fitAR(advanced_AR_input, 3, as.numeric(input$h))$preds))
-    #mutate(rmsfe = c(fitAR(test, 3, 2)$residuals))
-    
-    # Separate predictions into actual and predicted dataframes for plotting
-    actual_test_values <- predictions %>% 
-      select(Time, growth_rate) %>%
-      mutate(category = 2)
-    
-    #actual_test_values_xts <- xts(actual_test_values$growth_rate, actual_test_values$Time)
-    
-    predicted_test_values <- predictions %>% 
-      select(Time, new_growth_rate) %>% 
-      mutate(category = 3) %>% 
-      rename("growth_rate" = "new_growth_rate")
-    
-    original_data <- rbind(training, actual_test_values)
-    predicted_data <- rbind(training, predicted_test_values)
-    
-    # creating data for fanplot
-    predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
-    fanplot_data <- check %>% 
-      mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr("1970 Q1"))
-    
-    fanplot_rmsfe <- fitAR(test, 3, 2)$model$residuals # replace w p and h
-    data <- check[-c(1:(3+as.numeric(input$h)-1)),] # replace w p and h
-    rmsfe <- sqrt(abs(fanplot_rmsfe))
-    fanplot_data <- cbind(as.data.frame(rmsfe), data)
-    
-    ## creating dataframe for bounds 80% = 1.28, 50% = 0.67
-    bound_data <- fanplot_data %>%
-      mutate(upper_bound_80 = growth_rate + 1.28*rmsfe) %>%
-      mutate(lower_bound_80 = growth_rate - 1.28*rmsfe) %>%
-      mutate(upper_bound_50 = growth_rate + 0.67*rmsfe) %>%
-      mutate(lower_bound_50 = growth_rate - 0.67*rmsfe) %>%
-      filter(Time > as.yearqtr("1970 Q1")) %>% #replace w start time
-      filter(Time <= as.yearqtr("1970 Q3")) #replace w end time
-    
-    # recession blocks
-    recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                    2001, 2007:2008)
-    
-    rectangles <- data.frame(
-      xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
-      xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
-      ymin = -Inf,
-      ymax = Inf
-    )
-    
-    recession_block = rectangles %>%
-      filter(xmin >= as.yearqtr("1950 Q1") & xmax <= as.yearqtr("2010 Q4")) #replace w start and end of lineplot
     
     model_2 <- ggplot() +
       geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
