@@ -184,7 +184,7 @@ output$model1 <- renderPlot({
     rmsfe <- sqrt(abs(fanplot_rmsfe))
     fanplot_data <- cbind(as.data.frame(rmsfe), data)
   
-    ## creating dataframe for bounds
+    ## creating dataframe for bounds 80% = 1.28, 50% = 0.67
     bound_data <- fanplot_data %>%
       mutate(upper_bound = growth_rate + 1.645*rmsfe) %>%
       mutate(lower_bound = growth_rate - 1.645*rmsfe) %>%
