@@ -37,12 +37,6 @@ ui <- navbarPage(
                          selectInput('h', 'Select Forecast Horizon (Number of Quarters ahead)', 
                                      choices = c("2", "3", "4"), 
                                      selected = "2", width = '50%'),
-                         selectInput("model_selection", "Model Selection",
-                                     choices = list("AR Model" = 1, 
-                                                    "Revised AR model" = 2,
-                                                    "ADL" = 3, 
-                                                    "Combined model" = 4),
-                                     selected = 1, width = '50%'),
                          actionButton("show_prediction", "Show Prediction")
                        ),
                        mainPanel(
@@ -133,7 +127,7 @@ server <- function(input, output, session) {
   }
   
   ## Output model 1
-output$model1 <- renderPlot({
+observeEvent(input$show_prediction, {output$model1 <- renderPlot({
   # formatting the data variable in terms of year and quarters
   training <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
@@ -223,6 +217,7 @@ output$model1 <- renderPlot({
             plot.margin = margin(20,20,20,20))
     plot(model_1)
   })
+})
 
   
   output$model2 <- renderPlot({
