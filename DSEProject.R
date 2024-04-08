@@ -10,6 +10,7 @@ library(xts)
 library(AICcmodavg)
 library(fresh)
 library(RColorBrewer)
+library(fanplot)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
@@ -122,11 +123,13 @@ server <- function(input, output, session) {
   ##fitAR_preds for predictions at each step along forecast horizon h for line graph
   fitAR_preds <- function(Y, p, h) {
     preds = numeric(h)
+    rmsfe = numeric(h)
     for(i in 1:h){
       #test_AR <- as.matrix(check$growth_rate)
       preds[i] = fitAR(test, 2, i)$pred  ##2 is placeholder for input$lags
+      #rmsfe[i] = fitAR(test, 2, i)$residuals
     }
-    return(preds)
+    return(list("preds" = preds)) #, "rmsfe" = rmsfe
   }
   
   ## Output model 1
@@ -150,7 +153,8 @@ output$model1 <- renderPlot({
     filter(Time > as.yearqtr("1970 Q1")) %>% 
     #filter(Time > gsub(":", " ", input$year)) %>% 
     head(n = 2) %>%
-    mutate(new_growth_rate = c(fitAR_preds(test, 3, 2)))
+    mutate(new_growth_rate = c(fitAR_preds(test, 3, 2)$preds))
+    #mutate(rmsfe = c(fitAR(test, 3, 2)$residuals))
 
     # Separate predictions into actual and predicted dataframes for plotting
     actual_test_values <- predictions %>% 
@@ -167,14 +171,35 @@ output$model1 <- renderPlot({
     original_data <- rbind(training, actual_test_values)
     predicted_data <- rbind(training, predicted_test_values)
     
+
+    
+    # creating data for fanplot
+    predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
+    fanplot_data <- check %>% 
+      mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time > as.yearqtr("1970 Q1"))
+      
+    fanplot_rmsfe <- fitAR(test, 3, 2)$model$residuals
+    data <- check[-c(1:(3+2-1)),]
+    rmsfe <- sqrt(abs(fanplot_rmsfe))
+    fanplot_data <- cbind(as.data.frame(rmsfe), data)
+  
+    ## creating dataframe for bounds
+    bound_data <- fanplot_data %>%
+      mutate(upper_bound = growth_rate + 1.645*rmsfe) %>%
+      mutate(lower_bound = growth_rate - 1.645*rmsfe) %>%
+      filter(Time > as.yearqtr("1970 Q1")) %>% #replace w start time
+      filter(Time <= as.yearqtr("1970 Q3")) #replace w end time
+      
     model_1 <- ggplot() +
       geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
       geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
       scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#FB5917"), 
                              limits = c(1, 3), guide = "none") +
       #geom_rect(data = recessions, aes(x = yearqtr()), fill = "steelblue", alpha = 0.3) +  addin recession rectangles
+      geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound, ymax = upper_bound), fill = "blue", alpha = 0.3) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
-      geom_vline(xintercept = 1970-1, linetype = "solid", color = "blue") + #change x to end of input time horizon
+      #geom_vline(xintercept = 1970-1, linetype = "solid", color = "blue") + #change x to end of input time horizon
       labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP") +
       theme_minimal() +
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
