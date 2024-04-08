@@ -8,22 +8,26 @@ library(sandwich)
 # E.g. Y or train window from 2000 to 2010
 # Trains on data from 2000 to 2010 to produce 2010 data, then 2001 to 2011 for 2011, etc.
 
-rolling_window = function(Y, test_length, dummy, p = 1, h = 1){
-  save.coef = matrix(NA,test_length,p + 1)
+rolling_window = function(Y, test_length, dummy, real, start, en, h = 1){
+  save.coef = matrix(NA,test_length,5)
   save.pred = matrix(NA, test_length, 1) 
   for(i in test_length:1){
     
     Y.window = Y[(1+test_length-i):(nrow(Y)-i),] 
     Y.window = as.matrix(Y.window)
-    winfit = fitAR(Y.window,p,h,dummy)
-    save.coef[(1+test_length-i),] = winfit$coef 
-    save.pred[(1+test_length-i),] = winfit$pred 
+    
+    dummy.window = dummy[(1+test_length-i):(length(dummy)-i)] 
+    dummy.window = as.matrix(dummy.window)
+    
+    winfit = fitAR(Y.window,h,dummy.window)
+    save.coef[(1+test_length-i),] = c(winfit$coef, rep(0 , 5 - length(winfit$coef))) 
+    save.pred[(1+test_length-i),] = winfit$pred
   }
   
-  #Some useful post-prediction misc stuff:
-  real = Y #get actual values
-  plot(real,type="l")
-  lines(c(rep(NA,length(real)-test_length),save.pred),col="red") 
+  real_ts = ts(real, start = example_startyq, end, freq = 4)
+  plot.ts(real_ts, main = "Real values against predicted values", cex.axis = 1.8)
+  lines(ts(save.pred, start, end, freq = 4),col="red") 
+  
   
   rmse = sqrt(mean((tail(real,test_length)-save.pred)^2)) 
   mae = mean(abs(tail(real,test_length)-save.pred))
