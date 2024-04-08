@@ -3,6 +3,7 @@
 
 source("GDP Cleaning.R")
 source("inputs.R")
+source("DM_test.R")
 
 ```
 
@@ -114,5 +115,24 @@ advanced_AR_output <- fitAR(advanced_AR_input, p_optimal, example_fhorizon, covi
 
 ar2_prediction = advanced_AR_output$pred
 ar2_rmsfe = advanced_AR_output$msfe
+
+```
+
+### DM Test
+
+```{r DM Test, warning = FALSE}
+
+row_start_slice = (as.yearqtr(example_startq) - as.yearqtr("1947 Q2"))*4
+row_last_slice = nrow(RGDP_Data) - (as.yearqtr("2023 Q4") - as.yearqtr(example_endq))*4
+
+real_values = tail(as.matrix(RGDP_Data[row_start_slice:row_last_slice, ncol(RGDP_Data)]), 50)
+
+pred1 = rolling_window(basic_AR_input, 50, covid_dummy, p = p_optimal, h = example_fhorizon)$pred
+pred2 = rolling_window(advanced_AR_input, 50, covid_dummy, p = p_optimal, h = example_fhorizon)$pred
+start = example_endyq - 50/4
+end = example_endyq
+
+dm_test(real_values, pred1, pred2, start, end)
+# Basic vs Advanced values, Plots loss of basic - loss of advanced
 
 ```

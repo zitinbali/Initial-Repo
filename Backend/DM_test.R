@@ -1,42 +1,4 @@
 library(sandwich)
-source("GDP Cleaning.R")
-
-# Rolling window prediction
-
-fitAR=function(Y,p,h, dum){
-  
-  # create p lags + forecast horizon shift (=h option)
-  aux = embed(Y, p+h)
-  
-  #  Y variable aligned/adjusted for missing data due to lags
-  y = aux[,1] 
-  
-  # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
-  X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
-  
-  # retrieve last p observations
-  X.out = tail(aux,1)[1:ncol(X)] 
-  
-  # cutting dummy to shape
-  dum = tail(dum, length(y))
-  
-  # estimate direct h-step AR(p) by OLS 
-  model = lm(y~X+dum) 
-  
-  # extract coefficients
-  coef = coef(model)[1:(ncol(X)+1)]
-  
-  #make a forecast using the last few observations: a direct h-step forecast.
-  pred = c(1,X.out)%*%coef 
-  
-  #note the addition of a constant to the test observation vector
-  
-  #get unadjusted rmsfe (ignoring estimation uncertainty)
-  rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
-  
-  #save estimated AR regression, prediction, and estimated coefficients
-  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) 
-}
 
 #####################
 #### ROLLING WINDOW
@@ -46,15 +8,14 @@ fitAR=function(Y,p,h, dum){
 # E.g. Y or train window from 2000 to 2010
 # Trains on data from 2000 to 2010 to produce 2010 data, then 2001 to 2011 for 2011, etc.
 
-rolling_window = function(Y, test_length, p = 1, h = 1){
+rolling_window = function(Y, test_length, dummy, p = 1, h = 1){
   save.coef = matrix(NA,test_length,p + 1)
   save.pred = matrix(NA, test_length, 1) 
   for(i in test_length:1){
     
     Y.window = Y[(1+test_length-i):(nrow(Y)-i),] 
     Y.window = as.matrix(Y.window)
-    print(Y.window)
-    winfit = fitAR(Y.window,p,h, rep(0, length(Y.window)))
+    winfit = fitAR(Y.window,p,h,dummy)
     save.coef[(1+test_length-i),] = winfit$coef 
     save.pred[(1+test_length-i),] = winfit$pred 
   }
@@ -70,16 +31,22 @@ rolling_window = function(Y, test_length, p = 1, h = 1){
   
   return(list("pred"=save.pred,"coef"=save.coef,"errors"=errors))
 }
-Y = as.matrix(check[,2])
-test_length = 100
-
-rolling_window(Y, test_length)
 
 #####################
 #### DIEBOLD-MARINO TEST
 #####################
 
-
-
-
-
+dm_test = function(real_values, pred1, pred2, start, end){
+  loss1 = abs(real_values - pred1)
+  loss2 = abs(real_values - pred2)
+  
+  loss_diff = loss1 - loss2
+  
+  loss_diff_ts = ts(loss_diff, start, end, freq = 4)
+  
+  plot.ts(loss_diff_ts, main = "Loss differential", cex.axis = 1.8)
+  
+  dmreg = lm(loss_diff ~ 1)
+  
+  return(dmreg$coefficients / sqrt(NeweyWest(dmreg, lag = 4)))
+}
