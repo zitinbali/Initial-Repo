@@ -12,41 +12,55 @@ source("DM_test.R")
 ```{r AR function}
 
 # Using the basic AR model from lecture 
-# Inputs: Y - predicted variable, p - AR order, h - forecast horizon
+# Inputs: Y - predicted variable, h - forecast horizon
+# Iterates through p from 1 to 4 to find lowest rmsfe, uses that p to build model
 
-fitAR=function(Y,p,h, dum){
+fitAR=function(Y,h, dum){
   
-  # create p lags + forecast horizon shift (=h option)
-  aux = embed(Y, p+h)
+  minimum = Inf
   
-  #  Y variable aligned/adjusted for missing data due to lags
-  y = aux[,1] 
+  for (p in 1:4){
+    # create p lags + forecast horizon shift (=h option)
+    aux = embed(Y, p+h)
+    
+    #  Y variable aligned/adjusted for missing data due to lags
+    y = aux[,1] 
+    
+    # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
+    X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
   
-  # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
-  X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
-
-  # retrieve last p observations
-  X.out = tail(aux,1)[1:ncol(X)] 
+    # retrieve last p observations
+    X.out = tail(aux,1)[1:ncol(X)] 
+    
+    # cutting dummy to shape
+    dum = tail(dum, length(y))
   
-  # cutting dummy to shape
-  dum = tail(dum, length(y))
-
-  # estimate direct h-step AR(p) by OLS 
-  model = lm(y~X+dum) 
+    # estimate direct h-step AR(p) by OLS 
+    model = lm(y~X+dum) 
+    
+    # extract coefficients
+    coef = coef(model)[1:(ncol(X)+1)]
   
-  # extract coefficients
-  coef = coef(model)[1:(ncol(X)+1)]
-
-  #make a forecast using the last few observations: a direct h-step forecast.
-  pred = c(1,X.out)%*%coef 
+    #make a forecast using the last few observations: a direct h-step forecast.
+    pred = c(1,X.out)%*%coef 
+    
+    #note the addition of a constant to the test observation vector
+    
+    #get unadjusted rmsfe (ignoring estimation uncertainty)
+    rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
+    
+    if(rmsfe < minimum){
+      minimum = rmsfe
+      best_p = p
+      best_model = model
+      best_pred = pred
+      best_coef = coef
+    }
+  }
   
-  #note the addition of a constant to the test observation vector
-  
-  #get unadjusted rmsfe (ignoring estimation uncertainty)
-  rmsfe = sqrt(sum(model$residuals^2)/nrow(X)) 
   
   #save estimated AR regression, prediction, and estimated coefficients
-  return(list("model"=model,"pred"=pred,"coef"=coef, "rmsfe"=rmsfe)) 
+  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe"=minimum, "p" = best_p)) 
 }
 
 ```
@@ -67,7 +81,7 @@ basic_AR_input <- check[start_rownum:end_rownum, ] %>%
 p_optimal = 4
 h = example_fhorizon
 
-basic_AR_output <- fitAR(basic_AR_input, p_optimal, example_fhorizon, covid_dummy)
+basic_AR_output <- fitAR(basic_AR_input, example_fhorizon, covid_dummy)
 
 ar1_prediction = basic_AR_output$pred
 ar1_rmsfe = basic_AR_output$rmsfe
@@ -80,7 +94,7 @@ ar1_rmsfe = basic_AR_output$rmsfe
     preds = numeric(h)
     for(i in 1:h){
       #test_AR <- as.matrix(check$growth_rate)
-      preds[i] = fitAR(test, 2, i)$pred  ##2 is placeholder for input$lags
+      preds[i] = fitAR(test, i)$pred  ##2 is placeholder for input$lags
     }
     return(preds)
   }
@@ -111,7 +125,7 @@ all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta,
 advanced_AR_input <- as.matrix(all_GDP_data)
 
 
-advanced_AR_output <- fitAR(advanced_AR_input, p_optimal, example_fhorizon, covid_dummy)
+advanced_AR_output <- fitAR(advanced_AR_input, example_fhorizon, covid_dummy)
 
 ar2_prediction = advanced_AR_output$pred
 ar2_rmsfe = advanced_AR_output$msfe
@@ -122,17 +136,17 @@ ar2_rmsfe = advanced_AR_output$msfe
 
 ```{r DM Test, warning = FALSE}
 
-row_start_slice = (as.yearqtr(example_startq) - as.yearqtr("1947 Q2"))*4
-row_last_slice = nrow(RGDP_Data) - (as.yearqtr("2023 Q4") - as.yearqtr(example_endq))*4
+row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
 
-real_values = tail(as.matrix(RGDP_Data[row_start_slice:row_last_slice, ncol(RGDP_Data)]), 50)
+real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
 
-pred1 = rolling_window(basic_AR_input, 50, covid_dummy, p = p_optimal, h = example_fhorizon)$pred
-pred2 = rolling_window(advanced_AR_input, 50, covid_dummy, p = p_optimal, h = example_fhorizon)$pred
+pred1 = rolling_window(basic_AR_input, 50, covid_dummy, real_values, start, end, h = example_fhorizon)$pred
+pred2 = rolling_window(advanced_AR_input, 50, covid_dummy, real_values, start, end, h = example_fhorizon)$pred
 start = example_endyq - 50/4
 end = example_endyq
 
-dm_test(real_values, pred1, pred2, start, end)
+dm_test(tail(real_values, 50), pred1, pred2, start, end)
 # Basic vs Advanced values, Plots loss of basic - loss of advanced
 
 ```
