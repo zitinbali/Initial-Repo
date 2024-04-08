@@ -122,11 +122,12 @@ extend_formula <- function(formula_str, new_variable, num_lags) {
 
 # Y_name is the name of the Y variable in string format e.g. GDPgrowth_ts 
 
-AICselection_indv <- function(Y_dataframe, variable, Y_name) {
-  df <- data.frame(Y_dataframe, variable)
+AICselection_indv <- function(Y_dataframe, X_dataframe, Y_name) {
+  df <- data.frame(Y_dataframe, X_dataframe)
   base_best_lag <- find_best_lag(df, Y_name, Y_name, 4)
   base_formula <- generate_base_formula(Y_name, base_best_lag, Y_name)
   best_aic <- AIC(dynlm(as.formula(base_formula)))
+  variable <- deparse(substitute(X_dataframe))
   for (lag in 1:4) {
         formula <- as.formula(extend_formula(base_formula, variable, lag))
         model <- dynlm(formula, data = df)
@@ -266,7 +267,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   X_df <- as.matrix(X_dataframe)
   
   # Formula recommended by AIC selector
-  selectors_AIC <- AICselection_indv(Y_dataframe, X_string, Y_string)
+  selectors_AIC <- AICselection_indv(Y_dataframe, X_dataframe, Y_string)
   # model based on AIC selection
   model_AIC <- dynlm(as.formula(selectors_AIC),
         start = c(start_y, start_q), 
@@ -311,7 +312,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
                   frequency = 4)
       
       # Formula recommended by AIC selector
-      selectors_AIC_local <- AICselection_indv(gdp_ts, X_string, "gdp_ts")
+      selectors_AIC_local <- AICselection_indv(gdp_ts, X_dataframe, "gdp_ts")
 
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
