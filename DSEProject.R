@@ -24,6 +24,14 @@ ui <- navbarPage(
         padding-top: 15px;
         padding-bottom: 15px;
       }
+      .tabbable > .nav > li > a[data-value='Comparing Revised Values'] {background-color: #9ba7a8;   color:white}
+      .tabbable > .nav > li > a[data-value='Analysing Predictive Ability'] {background-color: #9ba7a8;  color:white}
+      .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: #bdc4c5;  color:white}
+      .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #bdc4c5;  color:white}
+      .tabbable > .nav > li > a[data-value='ADL Model'] {background-color: #bdc4c5;  color:white}
+      .tabbable > .nav > li > a[data-value='Combined Model'] {background-color: #bdc4c5;  color:white}
+      .tabbable > .nav > li > a[data-value='Aggregated Model'] {background-color: #bdc4c5;  color:white}
+      .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color:white}
     ")
   ),
            wellPanel("", value = "models", icon = NULL,
@@ -37,7 +45,8 @@ ui <- navbarPage(
                          selectInput('h', 'Select Forecast Horizon (Number of Quarters ahead)', 
                                      choices = c("2", "3", "4"), 
                                      selected = "2", width = '50%'),
-                         actionButton("show_prediction", "Show Prediction")
+                         actionButton("show_prediction", "Show Prediction",
+                                      style="background-color: #79818c")
                        ),
                        mainPanel(
                          width = 14,
@@ -45,10 +54,21 @@ ui <- navbarPage(
                            tabPanel("Comparing Revised Values",
                                     icon = icon("calculator"),
                            wellPanel(
+                             style = "background-color: #f8f9fa",
                              tabsetPanel(
-                               tabPanel("Basic AR Model", plotOutput("model1"),
-                                        textOutput("desc1")),
-                               tabPanel("AR Model with Revised Values", plotOutput("model2"),
+                               type = "pills",
+                               tabPanel("Basic AR Model",
+                                        plotOutput("model1"),
+                                        textOutput("desc1"),
+                                        textOutput("inputValues"),
+                                        div(style="display:inline-block", textInput("data1" ,"2025 Q1:")),
+                                        div(style="display:inline-block", textInput("data2" ,"2025 Q2:")),
+                                        div(style="display:inline-block", textInput("data3" ,"2025 Q3:")),
+                                        div(style="display:inline-block", textInput("data4" ,"2025 Q4:")),
+                                        actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
+                                        ),
+                               tabPanel("AR Model with Revised Values", 
+                                        plotOutput("model2"),
                                         textOutput("desc2"))
                            )
                            )
@@ -56,12 +76,14 @@ ui <- navbarPage(
                          tabPanel("Analysing Predictive Ability",
                                   icon = icon("chart-line"),
                                   wellPanel(
+                                    style = "background-color: #f8f9fa",
                                     tabsetPanel(
+                                      type = "pills", 
                                       tabPanel("ADL Model", plotOutput("model3"),
                                                textOutput("desc3")),
                                       tabPanel("Combined Model", plotOutput("model4"),
                                                textOutput("desc4")),
-                                      tabPanel("ADL + Combined Model", plotOutput("model5"),
+                                      tabPanel("Aggregated Model", plotOutput("model5"),
                                                textOutput("desc5"))
                                     )
                                   )
@@ -95,18 +117,18 @@ server <- function(input, output, session) {
   
   adjust_year_quarters <- function(date1, date2, year_quarters) {
     
-    if (count_quarters(date1, date2) < 20) {
+    if (count_quarters(date1, date2) < 80) {
       
-      if ((count_quarters(date2, tail(year_quarters, 1)) + 1) >= 20) { # Check if the second date can be adjusted forward by 20 quarters
+      if ((count_quarters(date2, tail(year_quarters, 1)) + 1) >= 80) { # Check if the second date can be adjusted forward by 20 quarters
 
         pos1 <- which(year_quarters == date1) # Find the position of the adjusted first date
-        pos2 <- pos1 + 19
+        pos2 <- pos1 + 79
         return(c(date1, year_quarters[pos2]))
         
       } else {
        
         pos2 <- which(year_quarters == date2)
-        pos1 <- pos2 - 19
+        pos1 <- pos2 - 79
         return(c(year_quarters[pos1], date2))
       }
     } else {
