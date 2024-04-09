@@ -57,11 +57,11 @@ ui <- navbarPage(
                                   icon = icon("chart-line"),
                                   wellPanel(
                                     tabsetPanel(
-                                      tabPanel("ADL Model", plotOutput("model3"),
+                                      tabPanel("Individual ADL Model", plotOutput("model3"),
                                                textOutput("desc3")),
-                                      tabPanel("Combined Model", plotOutput("model4"),
+                                      tabPanel("Combined ADL Model", plotOutput("model4"),
                                                textOutput("desc4")),
-                                      tabPanel("ADL + Combined Model", plotOutput("model5"),
+                                      tabPanel("Aggregate Model", plotOutput("model5"),
                                                textOutput("desc5"))
                                     )
                                   )
@@ -320,7 +320,57 @@ server <- function(input, output, session) {
   #########################
   ## Advanced AR Model Prep
   #########################
-
+  
+  prep_func = function(dataset, n){
+    
+    nrow_dataset = nrow(dataset)
+    
+    # cut dataset into relevant ranges
+    data_across_q <- dataset %>%
+      mutate_all(as.numeric)
+    
+    colnames(data_across_q) <- NULL
+    
+    data_across_q <- as.matrix(data_across_q) 
+    
+    lagged_data_across_q <- lag(data_across_q)
+    
+    df <- 100 * (data_across_q - lagged_data_across_q)/(lagged_data_across_q)
+    
+    # Removing the first and last row since we had added those to compute the lag.
+    df <- df[-c(1, nrow_dataset),]
+    
+    # Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
+    
+    revised_growth <- data.frame(matrix(NA, nrow = nrow_dataset - 2, ncol = 0))
+    
+    for (i in 0:n){
+      na_vector = c(replicate(nrow_dataset - 2, NA)) 
+      na_vector = as.numeric(na_vector)
+      
+      values <- diag(df)
+      col_name = paste0("revision", i)
+      na_vector[1:(nrow_dataset - 2 -i)] = values[1:(nrow_dataset - 2 -i)]
+      revised_growth[[`col_name`]] = na_vector
+      
+      df <- df[,-c(1)]
+    }
+    
+    revised_growth_df <- revised_growth
+    
+    # Now, we are looking into how the growth rates change due to revision
+    lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
+    revised_growth <- revised_growth[,-c(1)]
+    
+    # We're taking the average of the change in growth per revision 
+    change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
+    
+    change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
+    
+    change_in_growth <- change_in_growth %>% apply(2, mean, na.rm = TRUE)
+    
+    return(list("df" = revised_growth_df, "delta" = change_in_growth))
+  }
 
   
   #################
@@ -418,33 +468,33 @@ server <- function(input, output, session) {
   recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
                   2001, 2007:2008)
   
-  rectangles <- data.frame(
-    xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
-    xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
-    ymin = -Inf,
-    ymax = Inf
-  )
-  
+    rectangles <- data.frame(
+      xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
+      xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
+      ymin = -Inf,
+      ymax = Inf
+    )
   recession_block = rectangles %>%
     filter(xmin >= as.yearqtr("1976 Q4") & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w range of lineplot
+  
+  model_2 <- ggplot() +
+    geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
+    geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
+    scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#ff006e"), 
+                           limits = c(1, 3), guide = "none") +
+    geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+    geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "yellow",  colour = "steelblue", alpha = 0.3) +
+    geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "yellow3", colour = "steelblue", alpha = 0.3) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
+    #geom_vline(xintercept = 1970-1, linetype = "solid", color = "blue") + #change x to end of input time horizon
+    labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+          panel.grid = element_blank(),
+          panel.border = element_blank(),  # Remove panel border
+          axis.line = element_line(color = "black"),
+          plot.margin = margin(20,20,20,20))
     
-    model_2 <- ggplot() +
-      geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
-      geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
-      scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#f000ff"), 
-                             limits = c(1, 3), guide = "none") +
-      geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
-      geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#50D8D7",  colour = "#50D8D7", alpha = 0.2) +
-      geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#547AA5", colour = "#547AA5", alpha = 0.2) +
-      geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
-      #geom_vline(xintercept = 1996-4, linetype = "solid", color = "blue") + #change x to end of input time horizon
-      labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP") +
-      theme_minimal() +
-      theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-            panel.grid = element_blank(),
-            panel.border = element_blank(),  # Remove panel border
-            axis.line = element_line(color = "black"),
-            plot.margin = margin(20,20,20,20))
     plot(model_2)
   })
 })
