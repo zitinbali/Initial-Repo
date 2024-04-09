@@ -75,8 +75,53 @@ ui <- navbarPage(
 
 server <- function(input, output, session) {
   
-### AR Function & Model 
+  ############################  
+  ## RESTRICTING SLIDER RANGE
+  ############################  
   
+  count_quarters <- function(date1, date2) {
+    year1 <- as.numeric(substr(date1, 1, 4)) # Extract year and quarter from the input dates
+    quarter1 <- as.numeric(substr(date1, 7, 7))
+    
+    year2 <- as.numeric(substr(date2, 1, 4))
+    quarter2 <- as.numeric(substr(date2, 7, 7))
+    
+    year_diff <- year2 - year1  # Calculate the difference in years
+    
+    quarter_diff <- (year_diff * 4) + (quarter2 - quarter1)     # Calculate the difference in quarters
+    
+    return(quarter_diff)
+  }
+  
+  adjust_year_quarters <- function(date1, date2, year_quarters) {
+    
+    if (count_quarters(date1, date2) < 20) {
+      
+      if ((count_quarters(date2, tail(year_quarters, 1)) + 1) >= 20) { # Check if the second date can be adjusted forward by 20 quarters
+
+        pos1 <- which(year_quarters == date1) # Find the position of the adjusted first date
+        pos2 <- pos1 + 19
+        return(c(date1, year_quarters[pos2]))
+        
+      } else {
+       
+        pos2 <- which(year_quarters == date2)
+        pos1 <- pos2 - 19
+        return(c(year_quarters[pos1], date2))
+      }
+    } else {
+      return(c(date1, date2))
+    }
+  }
+  
+  observeEvent(input$year,{
+    updateSliderTextInput(session,"year", selected = adjust_year_quarters(input$year[1], input$year[2], RGDP_Data$DATE))
+  })
+  
+ ############## 
+ ## fitAR PREP 
+ ##############
+   
   # Using the basic AR model from lecture 
   # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
   
@@ -248,6 +293,7 @@ server <- function(input, output, session) {
   ## Advanced AR Model Prep
   #########################
   
+
   
   #################
   ## MODEL 2 OUTPUT
