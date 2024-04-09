@@ -29,8 +29,8 @@ ui <- navbarPage(
       .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
-      .tabbable > .nav > li > a[data-value='ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
-      .tabbable > .nav > li > a[data-value='Combined Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Aggregated Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
     ")
