@@ -222,7 +222,6 @@ server <- function(input, output, session) {
     #save estimated AR regression, prediction, and estimated coefficients
     return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p)) 
   }
-  
 
   
   ##fitAR_preds for predictions at each step along forecast horizon h for line graph
@@ -230,7 +229,7 @@ server <- function(input, output, session) {
     preds = numeric(h)
     for(i in 1:h){
       #test_AR <- as.matrix(check$growth_rate)
-      preds[i] = fitAR(Y, i, dum)$pred  ##2 is placeholder for input$lags
+      preds[i] = fitAR(Y, i, dum)$pred  
     }
     return(preds)
   }
@@ -276,6 +275,8 @@ server <- function(input, output, session) {
     select(growth_rate) %>% 
     as.matrix()
   
+  start_plot = check$Time[end_rownum - 10]
+  
   h = as.numeric(input$h)
   
   p = as.numeric(fitAR(basic_AR_input, h, dummy)$p)
@@ -283,53 +284,91 @@ server <- function(input, output, session) {
   training <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>%
-    filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) %>% #change to start year and end year inputs
+    filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+    tail(n = 9) %>%
     select(Time, growth_rate) %>%
     mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 1) 
+  
+  joining_value <- check %>%
+    mutate(Time = as.yearqtr(Dates)) %>%
+    filter(Time == as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+    select(Time, growth_rate) %>%
+    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    mutate(category = 3) 
+
+  training_t <- bind_rows(training, joining_value) %>%
+    mutate(category = 1) 
+  
+  training_p <- bind_rows(training, joining_value)
   
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     head(n = as.numeric(input$h)) %>%
     mutate(new_growth_rate = c(fitAR_preds(basic_AR_input, h, dummy)))
-    #mutate(rmsfe = c(fitAR(test, 3, 2)$residuals))
+  
+  #predictions <- bind_rows(predictions, joining_value)
 
     # Separate predictions into actual and predicted dataframes for plotting
     actual_test_values <- predictions %>% 
+      
       select(Time, growth_rate) %>%
       mutate(category = 2)
 
-    #actual_test_values_xts <- xts(actual_test_values$growth_rate, actual_test_values$Time)
-    
-    predicted_test_values <- predictions %>% 
+    predicted_test_values <- predictions %>%
       select(Time, new_growth_rate) %>% 
-      mutate(category = 3) %>% 
-      rename("growth_rate" = "new_growth_rate")
+      rename("growth_rate" = "new_growth_rate") %>% 
+      #l_join(joining_value, by = "growth_rate") %>%
+      mutate(category = 3) 
+      
     
-    original_data <- rbind(training, actual_test_values)
-    predicted_data <- rbind(training, predicted_test_values)
+    original_data <- rbind(training_t, actual_test_values)
+    predicted_data <- rbind(training_p, predicted_test_values)
     
     # creating data for fanplot
     predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
     
-    fanplot_data <- check %>% 
-      mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[1])))
+  #  fanplot_data <- check %>% 
+   #   mutate(Time = as.yearqtr(Dates)) %>%
+  #   filter(Time > as.yearqtr(gsub(":", " ", input$year[1])))
       
-    fanplot_rmsfe <- fitAR(basic_AR_input, h, dummy)$rmsfe ############
-    data <- check[-c(1:(p+h-1)),] # replace w p and h
-    rmsfe <- sqrt(abs(fanplot_rmsfe))
-    fanplot_data <- cbind(as.data.frame(rmsfe), data)
-  
-    ## creating dataframe for bounds 80% = 1.28, 50% = 0.67
-    bound_data <- fanplot_data %>%
-      mutate(upper_bound_80 = growth_rate + 1.28*rmsfe) %>%
-      mutate(lower_bound_80 = growth_rate - 1.28*rmsfe) %>%
-      mutate(upper_bound_50 = growth_rate + 0.67*rmsfe) %>%
-      mutate(lower_bound_50 = growth_rate - 0.67*rmsfe) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% #replace w start time
-      head(h)
+    fanplot_rmsfe <- function(full_df, input_df, predictions, h) {
+      predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
+                                      upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
+      predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
+      predictions_rmsfe$lower_bound_80[1] = joining_value$growth_rate
+      predictions_rmsfe$upper_bound_50[1] = joining_value$growth_rate
+      predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
+        
+      for(i in 2:(h+1)){
+        rmsfe = fitAR(input_df, i, dummy)$rmsfe 
+        predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
+        predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
+        predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
+        predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate - 0.67*rmsfe
+      }
+        return(predictions_rmsfe)
+    }
+    
+    ##create fanplot dataframe with time column
+    time_data <- check %>%
+      mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+      select(Time) 
+    
+    data <- check %>%
+      mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+      select(Time) %>% 
+      mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
+      
+    rmsfe_data <- cbind(time_data, fanplot_rmsfe(check, basic_AR_input, predictions, h)) 
+    
+    fanplot_data <- rbind(data, rmsfe_data) %>%
+      filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+      head(h+1)
+    
     
     # recession blocks
     recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
@@ -343,16 +382,16 @@ server <- function(input, output, session) {
     )
   
     recession_block = rectangles %>%
-      filter(xmin >= as.yearqtr("1976 Q4") & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w start and end of lineplot
+      filter(xmin >= start_plot & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w start and end of lineplot
       
     model_1 <- ggplot() +
       geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
       geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
-      scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#FB5917"), 
+      scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#FF0000"), 
                              limits = c(1, 3), guide = "none") +
       geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
-      geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "yellow",  colour = "steelblue", alpha = 0.3) +
-      geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "yellow3", colour = "steelblue", alpha = 0.3) +
+      geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
+      geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
       #geom_vline(xintercept = 1970-1, linetype = "solid", color = "blue") + #change x to end of input time horizon
       labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP") +
@@ -365,6 +404,8 @@ server <- function(input, output, session) {
     plot(model_1)
   })
 })
+  
+  
   #########################
   ## Advanced AR Model Prep
   #########################
@@ -452,24 +493,37 @@ server <- function(input, output, session) {
   #end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
   advanced_AR_input <- as.matrix(all_GDP_data)
   
-    h = as.numeric(input$h)
+  h = as.numeric(input$h)
   
   advanced_AR_output <- fitAR(advanced_AR_input, h, dummy)
-
+  
+  start_plot = check$Time[end_rownum - 10]
   
   p = as.numeric(fitAR(advanced_AR_input, h, dummy)$p)
   
   ar2_prediction = advanced_AR_output$pred
   ar2_rmsfe = advanced_AR_output$msfe
-
   
   training <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>%
-    filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) %>% #change to start year and end year inputs
+    filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+    tail(10) %>% 
     select(Time, growth_rate) %>%
     mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 1) 
+  
+  joining_value <- check %>%
+    mutate(Time = as.yearqtr(Dates)) %>%
+    filter(Time == as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+    select(Time, growth_rate) %>%
+    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    mutate(category = 3) 
+  
+  training_t <- bind_rows(training, joining_value) %>%
+    mutate(category = 1) 
+  
+  training_p <- bind_rows(training, joining_value)
   
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
@@ -484,6 +538,7 @@ server <- function(input, output, session) {
   
   
   predicted_test_values <- predictions %>% 
+    #add in last data pt in training set
     select(Time, new_growth_rate) %>% 
     mutate(category = 3) %>% 
     rename("growth_rate" = "new_growth_rate")
@@ -494,23 +549,41 @@ server <- function(input, output, session) {
   # creating data for fanplot
   predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
   
-  fanplot_data <- check %>% 
+  fanplot_rmsfe <- function(full_df, input_df, predictions, h) {
+    predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
+                                    upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
+    predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
+    predictions_rmsfe$lower_bound_80[1] = joining_value$growth_rate
+    predictions_rmsfe$upper_bound_50[1] = joining_value$growth_rate
+    predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
+    
+    for(i in 2:(h+1)){
+      rmsfe = fitAR(input_df, i, dummy)$rmsfe 
+      predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
+      predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
+      predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
+      predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate - 0.67*rmsfe
+    }
+    return(predictions_rmsfe)
+  }
+  
+  ##create fanplot dataframe with time column
+  time_data <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
-    filter(Time > as.yearqtr(gsub(":", " ", input$year[1])))
+    filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+    select(Time) 
   
-  fanplot_rmsfe <- fitAR(advanced_AR_input, h, dummy)$rmsfe
-  data <- check[-c(1:(p+h-1)),] # replace w p and h
-  rmsfe <- sqrt(abs(fanplot_rmsfe))
-  fanplot_data <- cbind(as.data.frame(rmsfe), data)
+  data <- check %>%
+    mutate(Time = as.yearqtr(Dates)) %>%
+    filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+    select(Time) %>% 
+    mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
   
-  ## creating dataframe for bounds 80% = 1.28, 50% = 0.67
-  bound_data <- fanplot_data %>%
-    mutate(upper_bound_80 = growth_rate + 1.28*rmsfe) %>%
-    mutate(lower_bound_80 = growth_rate - 1.28*rmsfe) %>%
-    mutate(upper_bound_50 = growth_rate + 0.67*rmsfe) %>%
-    mutate(lower_bound_50 = growth_rate - 0.67*rmsfe) %>%
-    filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% #replace w start time
-    head(h)
+  rmsfe_data <- cbind(time_data, fanplot_rmsfe(check, advanced_AR_input, predictions, h)) 
+  
+  fanplot_data <- rbind(data, rmsfe_data) %>%
+    filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+    head(h+1)
   
   # recession blocks
   recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
@@ -523,20 +596,21 @@ server <- function(input, output, session) {
       ymax = Inf
     )
   recession_block = rectangles %>%
-    filter(xmin >= as.yearqtr("1976 Q4") & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w range of lineplot
+    filter(xmin >= start_plot & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w range of lineplot
   
   model_2 <- ggplot() +
     geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
     geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
-    scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#ff006e"), 
+    scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#FF0000"), 
                            limits = c(1, 3), guide = "none") +
     geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
-    geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "yellow",  colour = "steelblue", alpha = 0.3) +
-    geom_ribbon(data = bound_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "yellow3", colour = "steelblue", alpha = 0.3) +
+    geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
+    geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
     #geom_vline(xintercept = 1970-1, linetype = "solid", color = "blue") + #change x to end of input time horizon
     labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP") +
     theme_minimal() +
+    scale_x_yearqtr(breaks = seq(min(predicted_data$Time), max(predicted_data$Time), by = 1)) +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           panel.grid = element_blank(),
           panel.border = element_blank(),  # Remove panel border
