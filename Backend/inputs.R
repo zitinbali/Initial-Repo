@@ -1,5 +1,5 @@
 example_startq = "1980 Q4"
-example_endq = "2015 Q4"
+example_endq = "2019 Q4"
 example_startyq = as.yearqtr(example_startq)
 example_endyq = as.yearqtr(example_endq)
 
@@ -17,18 +17,13 @@ end_q = as.numeric(quarter(example_endyq))
 # The minimum size is 4. If it is reduced, it won't work.
 ADL_variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts", 
                    "consent2_ts")
-
+num_X <- length(ADL_variables)
 
 
 covid = c("2020 Q2", "2020 Q3")
 covid_start = as.yearqtr(covid[1])
 covid_end = as.yearqtr(covid[2])
 covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
-
-covid_dummy_ts <- ts(covid_dummy,
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q), 
-                     frequency = 4)
 
 
 # Timeframe cannot start from during covid or after
@@ -46,4 +41,8 @@ if (example_startyq <= covid_start & example_endyq >= covid_end){
 }
 
 
+covid_dummy_ts <- ts(covid_dummy,
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
 

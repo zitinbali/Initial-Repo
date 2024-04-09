@@ -3,9 +3,9 @@
 
 source("GDP Cleaning.R")
 source("inputs.R")
+source("ADL Data.R")
 
 ```
-
 
 # Basic GDP Prep 
 
@@ -33,6 +33,65 @@ GDPGrowth_ts <- ts(all_GDP_data,
                   frequency = 4)
 ```
 
+# AR Function 
+
+```{r AR function}
+
+# Using the basic AR model from lecture 
+# Inputs: Y - predicted variable, p - AR order, h - forecast horizon
+
+fitAR=function(Y,h, dum){
+  
+  minimum = Inf
+  
+  for (p in 1:4){
+    # create p lags + forecast horizon shift (=h option)
+    aux = embed(Y, p+h)
+    
+    #  Y variable aligned/adjusted for missing data due to lags
+    y = aux[,1] 
+    
+    # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
+    X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
+  
+    # retrieve last p observations
+    X.out = tail(aux,1)[1:ncol(X)] 
+    
+    # cutting dummy to shape
+    dum = tail(dum, length(y))
+  
+    # estimate direct h-step AR(p) by OLS 
+    model = lm(y~X+dum) 
+    
+    # extract coefficients
+    coef = coef(model)[1:(ncol(X)+1)]
+  
+    #make a forecast using the last few observations: a direct h-step forecast.
+    pred = c(1,X.out)%*%coef 
+    
+    #note the addition of a constant to the test observation vector
+    
+    #get unadjusted rmsfe (ignoring estimation uncertainty)
+    rmsfe = sqrt(sum(model$residuals^2)/nrow(X))
+    aic = AIC(model)
+    
+    if(aic < minimum){
+      minimum = aic
+      best_rmsfe = rmsfe
+      best_p = p
+      best_model = model
+      best_pred = pred
+      best_coef = coef
+    }
+  }
+  
+  
+  #save estimated AR regression, prediction, and estimated coefficients
+  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p)) 
+}
+
+```
+
 
 # ADL Model - Splicing Function 
 
@@ -49,151 +108,75 @@ ADL_splice <- function(data, window_start, window_end){
 
 ```
 
-# Functions for AIC selection
 
-```{r prep for AIC selection}
+# Selecting Best Model - AIC 
 
-# List of variables
+```{r aic}
 
-####################################################
-# COMMENT: ADD VARIABLES TO INPUTS FOR MODULARITY 
-####################################################
-variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts")
-n <- length(variables)
+#end_year, end_quarter differ for the ADL function; can't be hardcoded
 
-# formula to find best number of lags given a variable
-find_best_lag <- function(df, response, variable, max_lags) {
-  best_aic <- Inf
-  best_lag <- 0
+AICselector <- function(Y_df, X_df, end_year, end_quarter, dum){
   
-  for (lag in 1:max_lags) {
-    # Build the model formula
-    model_formula <- as.formula(paste(response, "~", paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + ")))
-    
-    # Fit the model
-    model <- dynlm(model_formula, df)
-    
-    # Calculate AIC
-    aic <- AIC(model)
-    
-    # Update best lag if AIC improves
-    if (aic < best_aic) {
-      best_aic <- aic
-      best_lag <- lag
-    }
-  }
-  return(best_lag)
-}
-
-# function to generate a base formula to add on more variables later
-# Y_name is the name of the Y variable in string format e.g. GDPgrowth_ts 
-generate_base_formula <- function(variable, lag, Y_name){
-  start_string = paste(Y_name, " ~", sep = "")
-  model_formula <- paste(start_string, paste("L(", variable, ",", 1:lag, ")", sep = "", collapse = " + "))
-  return(model_formula)
-}
-
-# function to extend the base formula 
-extend_formula <- function(formula_str, new_variable, num_lags) {
-
-  formula_components <- strsplit(formula_str, "~")[[1]] # Split the formula string into its components
-  response_var <- trimws(formula_components[1])         # Extract the left-hand side (response variable)
-  explanatory_vars <- trimws(formula_components[2])     # Extract the right-hand side (explanatory variables)
-  
-  if (grepl(paste0("\\b", new_variable, "\\b"), explanatory_vars)) {  # Check if the new variable already exists
-    return(formula_str)  
+  # options is a vector that comprises all the lags of Y and X. 
+  # These are the options for permutations and combinations
+  options <- c()
+  for (j in 1:4){
+    Y_string = paste("L(", "Y_df", ",", j, ")", sep = "")
+    X_string = paste("L(", "X_df", ",", j, ")", sep = "")
+    options <- append(options, Y_string)
+    options <- append(options, X_string)
   }
   
-  new_var_lags <- paste0("L(", new_variable, ", ", 1:num_lags, ")")   # Construct the part for the new variable and lags
+  dum_string = as.character(substitute(dum))
+  # creates the "GDPGrowth_ts ~ " part
+  #start_string = paste("Y_df", " ~ ", sep = "")
+  start_string = "Y_df ~ dum + "
   
-  if (explanatory_vars == "") {
-    new_formula <- paste(response_var, "~", paste(new_var_lags, collapse = " + "), sep = " ")
-    return(new_formula)
-  }
+  # just a really large value
+  min_AIC = Inf
+  min_AIC_string = ""
   
-  new_formula <- paste(response_var, "~", explanatory_vars, "+", paste(new_var_lags, collapse = " + "), sep = " ")
-  return(new_formula)
-}
-```
-
-# Functions for individual ADL Model - aic selector
-
-```{r}
-
-# Y_name is the name of the Y variable in string format e.g. GDPgrowth_ts 
-
-AICselection_indv <- function(Y_dataframe, variable, Y_name) {
-  df <- data.frame(Y_dataframe, variable)
-  base_best_lag <- find_best_lag(df, Y_name, Y_name, 4)
-  base_formula <- generate_base_formula(Y_name, base_best_lag, Y_name)
-  best_aic <- AIC(dynlm(as.formula(base_formula)))
-  for (lag in 1:4) {
-        formula <- as.formula(extend_formula(base_formula, variable, lag))
-        model <- dynlm(formula, data = df)
-        aic <- AIC(model)
+  for (i in 1:4){
+    store = combn(options, i)
+    length_store = ncol(store)
+  
+    for (m in 1:length_store){
+      elements <- store[,m]
+      body_string = ""
+      
+      for (n in 1:i){
+        body_string = paste(body_string, elements[n], sep = " + ")
+        # remove the first plus sign
+        body_string_up <- substring(body_string, 4)
         
-        if (aic < best_aic) {
-          best_aic <- aic
-          best_lag <- lag
+        model_string = paste(start_string, body_string_up, sep = "")
+        model_formula = as.formula(model_string)
+      
+        # create dynlm model 
+        model_local <- dynlm(model_formula,
+                             start = c(start_y, start_q), 
+                             end = c(end_year, end_quarter))
+        
+        # AIC of model 
+        AIC_local <- AIC(model_local)
+        
+        # if AIC_local < min_AIC, replace the value of min_AIC. 
+        # replace min_AIC_string too
+        if(AIC_local < min_AIC){
+          min_AIC = AIC_local
+          min_AIC_string = model_string
         }
-  }
-  formula <- extend_formula(base_formula, variable, best_lag)
-  return(formula)
-}
-
-```
-
-# Functions for individual ADL Model - p value selector
-
-```{r}
-
-test_AICselectors <- "GDPGrowth_ts ~ L(GDPGrowth_ts,1) + L(GDPGrowth_ts,2) + L(GDPGrowth_ts,3) + L(GDPGrowth_ts,4) + L(baa_aaa_ts, 1) + L(baa_aaa_ts, 2)"
-
-test <- 
-  dynlm(as.formula(test_AICselectors),
-          start = c(start_y, start_q), 
-          end = c(end_y, end_q))
-
-
-# input model is the dynlm model churned out based on AIC selector 
-# y_name is the name of the y variable in string format e.g. GDPgrowth_ts 
-pval_selection_indv <- function(model, y_name){
-  coeftest <- coeftest(model)
-  tidy_coeftest <- broom::tidy(coeftest) %>% 
-    filter(p.value <= 0.10) %>% 
-    select(term)
-  
-  if (sum(str_detect(tidy_coeftest$term, '(Intercept)')) > 0){
-    # Intercept is significant; so remove it from the rows 
-    tidy_coeftest = tidy_coeftest[-1,]
-  }
-  
-  if (nrow(tidy_coeftest) == 0){
-    lag_string = ""
-  } 
-  
-  else if (nrow(tidy_coeftest) == 1) {
-    lag_string = tidy_coeftest[[1]][1]
-  }
-  
-  else {
-    lag_string = tidy_coeftest[[1]][1]
-    
-    for (i in 2:nrow(tidy_coeftest)){
-      lag_string = paste(lag_string, tidy_coeftest[[1]][i], sep = " + ")
+      }
     }
   }
-  
-  model_start = paste(y_name, " ~ ", sep = "")
-  model_string = paste(model_start, lag_string)
-  
-  return(model_string)
+  final_string = gsub("dum", dum_string, min_AIC_string)
+  # output is the string format of the optimal model formula
+  return(final_string)
 }
-
-# note that the output is a string
 
 
 ```
+
 
 # Function for calculating next quarter prediction
 
@@ -202,48 +185,96 @@ pval_selection_indv <- function(model, y_name){
 ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
                           selectors, coefficients){
   
+  coef_df <- as.data.frame(coefficients)
+  coef_row_name <- c(rownames(coef_df))
+  
   input_string <- as.character(selectors)
   
   Y_lags <- str_count(input_string, Y_string) - 1
   X_lags <- str_count(input_string, X_string) 
   
+  # error proof: number of lags is accurate 
+  
+  Y_lag_names <- c()
+  for (x in (1:length(coef_row_name))){
+    if (grepl(Y_string, coef_row_name[x], fixed = TRUE)){
+      # string of lag 
+      str <- coef_row_name[x]
+      Y_lag_names <- append(Y_lag_names, str)
+    }
+  }
+    
+  X_lag_names <- c()
+  for (y in (1:length(coef_row_name))){
+    if (grepl(X_string, coef_row_name[y], fixed = TRUE)){
+      # string of lag 
+      str <- coef_row_name[y]
+      X_lag_names <- append(X_lag_names, str)
+    }
+  }
+  
   pred = coefficients[[1]]
+  
   
   if (Y_lags == 0){
     if (X_lags == 0){
       # if Y_lags = 0 and X_lags = 0
       pred = pred
-      print(pred)
     } 
     else {
       # if Y_lags = 0 and X_lags != 0
       for (i in 1:X_lags){
-        coeff_n = 1 + Y_lags + i
-        temp = (tail(X_dataframe, n = i)[1]) * coefficients[[coeff_n]]
+        # create lag string 
+        lag_string <- X_lag_names[i]
+        coeff_value = coef_df[lag_string,]
+        
+        tail_num_i = as.numeric(str_sub(lag_string,-2,-2))
+        
+        temp = (tail(X_dataframe, n = tail_num_i)[1]) * coeff_value
         pred = pred + temp
       }
     }
-  } else if (X_lags == 0){
+  } 
+  else if (X_lags == 0){
     # if Y_lags != 0 and X_lags = 0
+    
     for (j in 1:Y_lags){
-      coeff_n = 1 + j
-      temp = (tail(Y_dataframe, n = j)[1]) * coefficients[[coeff_n]]
+      # create lag string 
+      lag_string <- Y_lag_names[j]
+      coeff_value = coef_df[lag_string,]
+      
+      tail_num_j = as.numeric(str_sub(lag_string,-2,-2))
+      
+      temp = (tail(Y_dataframe, n = tail_num_j)[1]) * coeff_value
       pred = pred + temp
     }
-  } else {
+  } 
+  else {
     # if Y_lags != 0 and X_lags != 0 
       for (p in 1:Y_lags){
-        coeff_n = 1 + p
-        temp = (tail(Y_dataframe, n = p)[1]) * coefficients[[coeff_n]]
+        # create lag string 
+        lag_string <- Y_lag_names[p]
+        coeff_value = coef_df[lag_string,]
+        
+        tail_num_p = as.numeric(str_sub(lag_string,-2,-2))
+        
+        temp = (tail(Y_dataframe, n = tail_num_p)[1]) * coeff_value
+        
         pred = pred + temp
+        
       }
       for (q in 1:X_lags){
-        coeff_n = 1 + Y_lags + q
-        temp = (tail(X_dataframe, n = q)[1]) * coefficients[[coeff_n]]
+        # create lag string 
+        lag_string <- X_lag_names[q]
+        coeff_value = coef_df[lag_string,]
+        
+        tail_num_q = as.numeric(str_sub(lag_string,-2,-2))
+        
+        temp = (tail(X_dataframe, n = tail_num_q)[1]) * coeff_value
         pred = pred + temp
       }
     }
-  
+
   return(pred)
 }
 
@@ -251,73 +282,92 @@ ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
 ```
 
 
+
+
 # Function for calculating predictions for all time horizons
 
 ```{r predict all horizons}
 
+# note that Y_dataframe and X_dataframe are in ts form
 ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
+  selectors_AIC <- AICselector(Y_dataframe, X_dataframe, end_y, end_q, covid_dummy)
   
-  # extracting the names of the dataframes in string format
   Y_string <- as.character(substitute(Y_dataframe))
   X_string <- as.character(substitute(X_dataframe))
-
-  # converting from time series class to dataframe for future use
-  GDP_df <- as.data.frame(Y_dataframe)
-  X_df <- as.data.frame(X_dataframe)
   
-  # Formula recommended by AIC selector
-  selectors_AIC <- AICselection_indv(Y_dataframe, X_string, Y_string)
-  # model based on AIC selection
-  model_AIC <- dynlm(as.formula(selectors_AIC),
+  selectors_AIC <- gsub("Y_df", Y_string, selectors_AIC) 
+  selectors_AIC <- gsub("X_df", X_string, selectors_AIC)
+  
+  model_formula = as.formula(selectors_AIC)
+
+  model_AIC <- dynlm(model_formula,
         start = c(start_y, start_q), 
         end = c(end_y, end_q))
-    
-  # Formula recommended by p-value selector
-  selectors_p <- pval_selection_indv(model_AIC, Y_string)
-  model_p <- dynlm(as.formula(selectors_p),
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q))
-    
+  
+  
   pred <- ADL_predict_1(Y_dataframe, X_dataframe, Y_string, X_string,
-                        selectors_p, model_p$coefficients)
+                        selectors_AIC, model_AIC$coefficients)
+  
+  X_df <- as.matrix(X_dataframe)
+  GDP_df <- as.matrix(Y_dataframe)
+  
+  # X pred 
+  AR_output <- fitAR(X_df, 1, covid_dummy)
+  X_pred <- AR_output$pred
   
   if (f_horizon == 1){
     pred = pred
-  } 
-  else {
+  }
+  
+  else{
     for (i in 2:f_horizon){
-      # shifting all Y values up by a quarter
-      GDP_df <- lead(GDP_df, 1)
+      
+      # updating end year & quarter 
+      updated_end_yq <- example_endyq + (i - 1)/4
+      upd_end_y <- as.numeric(year(updated_end_yq))
+      upd_end_q <- as.numeric(quarter(updated_end_yq))
+      
       # replace the NA in the last row with the prediction above
-      GDP_df[nrow(GDP_df), "x"] <- pred
+      GDP_df <- rbind(GDP_df, pred)
       
       gdp_ts <- ts(GDP_df, 
                   start = c(start_y, start_q), 
-                  end = c(end_y, end_q), 
+                  end = c(upd_end_y, upd_end_q), 
                   frequency = 4)
       
+      # X pred
+      X_df <- rbind(X_df, X_pred)
+      
+      X_ts <- ts(X_df, 
+                start = c(start_y, start_q), 
+                end = c(upd_end_y, upd_end_q), 
+                frequency = 4)
+      
+      # Updating COVID dummy
+      upd_covid_dummy = c(covid_dummy, rep(0, i - 1))
       
       # Formula recommended by AIC selector
-      selectors_AIC_local <- AICselection_indv(gdp_ts, X_string, "gdp_ts")
-
+      selectors_AIC_local <- AICselector(gdp_ts, X_ts, upd_end_y, upd_end_q, upd_covid_dummy)
+      
+      selectors_AIC_local <- gsub("Y_df", "gdp_ts", selectors_AIC_local) 
+      selectors_AIC_local <- gsub("X_df", "X_ts", selectors_AIC_local)
+      
+      
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
             start = c(start_y, start_q), 
-            end = c(end_y, end_q))
+            end = c(upd_end_y, upd_end_q))
         
-      # Formula recommended by p-value selector
-      selectors_p_local <- pval_selection_indv(model_AIC_local, "gdp_ts")
+      pred <- ADL_predict_1(gdp_ts, X_ts, "gdp_ts", "X_ts",
+                            selectors_AIC_local, model_AIC_local$coefficients)
       
-      model_p_local <- dynlm(as.formula(selectors_p_local),
-                         start = c(start_y, start_q), 
-                         end = c(end_y, end_q))
+      AR_output_new <- fitAR(X_df, i, covid_dummy)
+      X_pred <- AR_output_new$pred
       
-      pred <- ADL_predict_1(gdp_ts, X_dataframe, "gdp_ts", X_string,
-                            selectors_p_local, model_p_local$coefficients)
-  
+      
     }
   }
-  
+
   return (pred)
 }
 
@@ -328,32 +378,6 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
 
 ```{r adl model baa-aaa}
 
-baa_aaa <- read_excel("../Data/FRED BAA-AAA Data.xls", 
-                      col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
-  
-baa_aaa_ts <- ts(baa_aaa$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(baa_aaa_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "BAA-AAA Spread & GDP Growth over Time")
-
-legend("topright", 
-       legend = c("GDP Growth", "BAA-AAA Spread"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
-
 BAA_AAA_prediction <- ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, example_fhorizon)
 ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 1)
 ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 2)
@@ -362,36 +386,9 @@ ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 4)
 
 ```
 
-
 # ADL Model - Treasury Spread 
 
 ```{r adl model treasury}
-
-tspread <- read_excel("../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-# NOTE: tspread is only from 1976 Q4 onward, so we can't accept forecast horizons earlier, at least not for this ADL model
-
-tspread <- ADL_splice(tspread, example_startyq, example_endyq)
-
-tspread_ts <- ts(tspread$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(tspread_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Treasury Spread & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Treasury Spread"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
 
 tspread_prediction <- ADL_predict_all(GDPGrowth_ts, tspread_ts, example_fhorizon)
 ADL_predict_all(GDPGrowth_ts, tspread_ts, 1)
@@ -402,33 +399,11 @@ ADL_predict_all(GDPGrowth_ts, tspread_ts, 4)
 ```
 
 
+
+
 # ADL Model - FRED Hstarts
 
 ```{r adl model fred hstarts}
-
-fred_hstarts <- read_excel("../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-fred_hstarts <- ADL_splice(fred_hstarts, example_startyq, example_endyq)
-
-fred_hstarts_ts <- ts(fred_hstarts$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Housing Starts & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Housing Starts"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
 
 hstarts_prediction <- ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, example_fhorizon)
 ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, 1)
@@ -439,33 +414,10 @@ ADL_predict_all(GDPGrowth_ts, fred_hstarts_ts, 4)
 ```
 
 
+
 # ADL Model - Consumer Sentiment
 
 ```{r adl model consent}
-
-consent <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-consent <- ADL_splice(consent, example_startyq, example_endyq)
-
-consent_ts <- ts(consent$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Consumer Sentiment & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Consumer Sentiment"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
 
 consent_prediction <- ADL_predict_all(GDPGrowth_ts, consent_ts, example_fhorizon)
 ADL_predict_all(GDPGrowth_ts, consent_ts, 1)
@@ -475,91 +427,7 @@ ADL_predict_all(GDPGrowth_ts, consent_ts, 4)
 
 ```
 
-# ADL Combined Model selection
-
-```{r combined ADL without AR}
-
-df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
-
-AICselection_without_AR <- function(df, variables) {
-  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
-  base_formula <- "GDPGrowth_ts ~ "
-  best_var <- 1
-  
-  while (best_var != 0) {
-    best_aic <- Inf
-    best_lag <- 0
-    best_var <- 0
-    
-    for (i in seq_along(variables)) {
-      var <- variables[i]
-      
-      for (lag in 1:4) {
-        formula <- as.formula(extend_formula(base_formula, var, lag))
-        model <- dynlm(formula, data = df)
-        aic <- AIC(model)
-        
-        if (aic < best_aic) {
-          best_aic <- aic
-          best_lag <- lag
-          best_var <- i
-        }
-      }
-    }
-    
-    if (best_lag != 0) {
-      base_formula <- extend_formula(base_formula, variables[[best_var]], best_lag)
-      variables <- variables[-best_var]
-    }
-  }
-  
-  return(base_formula)
-}
-
-AICselection_without_AR(df, variables)
-
-```
 
 
-```{r combined ADL with AR}
 
-df <- data.frame(GDP_growth = GDPGrowth_ts, BAA_AAA_spread = baa_aaa_ts, treasury_spread = tspread_ts, housing_starts = fred_hstarts_ts, consumer_sentiment = consent_ts)
 
-AICselection_with_AR <- function(df, variables) {
-  base_best_lag <- find_best_lag(df, "GDPGrowth_ts", "GDPGrowth_ts", 4)
-  base_formula <- generate_base_formula("GDPGrowth_ts", base_best_lag, )
-  best_var <- 1
-  
-  while (best_var != 0) {
-    best_aic <- AIC(dynlm(as.formula(base_formula), data = df))
-    best_lag <- 0
-    best_var <- 0
-    
-    for (i in seq_along(variables)) {
-      var <- variables[i]
-      
-      for (lag in 1:4) {
-        formula <- as.formula(extend_formula(base_formula, var, lag))
-        model <- dynlm(formula, data = df)
-        aic <- AIC(model)
-        
-        if (aic < best_aic) {
-          best_aic <- aic
-          best_lag <- lag
-          best_var <- i
-        }
-      }
-    }
-    
-    if (best_lag != 0) {
-      base_formula <- extend_formula(base_formula, variables[[best_var]], best_lag)
-      variables <- variables[-best_var]
-    }
-  }
-  
-  return(base_formula)
-}
-
-AICselection_with_AR(df, variables, "GDPGrowth_ts")
-
-```
