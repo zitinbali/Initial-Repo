@@ -81,7 +81,13 @@ ui <- navbarPage(
                                     style = "background-color: #f8f9fa",
                                     tabsetPanel(
                                       type = "pills", 
-                                      tabPanel("ADL Model", plotOutput("model3"),
+                                      tabPanel("ADL Model", 
+                                               headerPanel(""), # adds space btwn text and inputs
+                                               selectInput("select_ADL", "Select ADL Predictors",
+                                                           choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment"),
+                                                           selected = "Treasury Spread"),
+                                               headerPanel(""), # adds space btwn text and inputs
+                                               plotOutput("model3"),
                                                textOutput("desc3")),
                                       tabPanel("Combined Model", plotOutput("model4"),
                                                textOutput("desc4")),
