@@ -46,6 +46,14 @@ dm_test = function(real_values, pred1, pred2, start, end){
   
   loss_diff = loss1 - loss2
   
+  if (as.yearqtr("2020 Q2") >= start){
+    year_diff = (as.yearqtr("2020 Q2") - start) * 4
+    if (as.yearqtr("2020 Q3") <= end){
+      loss_diff[year_diff + 1] = 0
+    }
+    loss_diff[year_diff] = 0
+  }
+  
   loss_diff_ts = ts(loss_diff, start, end, freq = 4)
   
   plot.ts(loss_diff_ts, main = "Loss differential", cex.axis = 1.8)
