@@ -20,13 +20,16 @@ ADL_variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts",
 
 
 
-
-
-
 covid = c("2020 Q2", "2020 Q3")
 covid_start = as.yearqtr(covid[1])
 covid_end = as.yearqtr(covid[2])
 covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+
+covid_dummy_ts <- ts(covid_dummy,
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+
 
 # Timeframe cannot start from during covid or after
 # Dummy if timeframe ends on 2020 Q2, start of covid
