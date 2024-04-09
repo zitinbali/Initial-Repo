@@ -24,6 +24,15 @@ ui <- navbarPage(
         padding-top: 15px;
         padding-bottom: 15px;
       }
+      .tabbable > .nav > li > a[data-value='Comparing Revised Values'] {background-color: #9ba7a8;   color:white}
+      .tabbable > .nav > li > a[data-value='Analysing Predictive Ability'] {background-color: #9ba7a8;  color:white}
+      .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #9ba7a8;  color:white}
+      .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Aggregated Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
     ")
   ),
            wellPanel("", value = "models", icon = NULL,
@@ -37,7 +46,8 @@ ui <- navbarPage(
                          selectInput('h', 'Select Forecast Horizon (Number of Quarters ahead)', 
                                      choices = c("2", "3", "4"), 
                                      selected = "2", width = '50%'),
-                         actionButton("show_prediction", "Show Prediction")
+                         actionButton("show_prediction", "Show Prediction",
+                                      style="background-color: #79818c")
                        ),
                        mainPanel(
                          width = 14,
@@ -45,10 +55,22 @@ ui <- navbarPage(
                            tabPanel("Comparing Revised Values",
                                     icon = icon("calculator"),
                            wellPanel(
+                             style = "background-color: #f8f9fa",
                              tabsetPanel(
-                               tabPanel("Basic AR Model", plotOutput("model1"),
-                                        textOutput("desc1")),
-                               tabPanel("AR Model with Revised Values", plotOutput("model2"),
+                               type = "pills",
+                               tabPanel("Basic AR Model",
+                                        plotOutput("model1"),
+                                        textOutput("desc1"),
+                                        headerPanel(""), # adds space btwn text and inputs
+                                        helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
+                                        div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
+                                        div(style="display:inline-block", textInput("data2" ,"2024 Q2:")),
+                                        div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
+                                        div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
+                                        actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
+                                        ),
+                               tabPanel("AR Model with Revised Values", 
+                                        plotOutput("model2"),
                                         textOutput("desc2"))
                            )
                            )
@@ -56,13 +78,39 @@ ui <- navbarPage(
                          tabPanel("Analysing Predictive Ability",
                                   icon = icon("chart-line"),
                                   wellPanel(
+                                    style = "background-color: #f8f9fa",
                                     tabsetPanel(
-                                      tabPanel("Individual ADL Model", plotOutput("model3"),
+                                      type = "pills", 
+                                      tabPanel("Individual ADL Model", 
+                                               headerPanel(""), # adds space btwn text and inputs
+                                               selectInput("select_ADL", "Select ADL Predictors",
+                                                           choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment"),
+                                                           selected = "Treasury Spread"),
+                                               headerPanel(""), # adds space btwn text and inputs
+                                               plotOutput("model3"),
                                                textOutput("desc3")),
+                                      
                                       tabPanel("Combined ADL Model", plotOutput("model4"),
                                                textOutput("desc4")),
-                                      tabPanel("Aggregate Model", plotOutput("model5"),
+
+                                      tabPanel("Aggregated Model", plotOutput("model5"),
                                                textOutput("desc5"))
+                                    )
+                                  )
+                         ),
+                         tabPanel("Add A Predictor",
+                                  icon = icon("table"),
+                                  wellPanel(
+                                    style = "background-color: #f8f9fa",
+                                    tabsetPanel(
+                                      fileInput("excel_data", "Upload a .xlsx file following the sample format.",
+                                                multiple = FALSE,
+                                                accept = c(".xlsx")),
+                                      downloadButton("download_data", "Download a Sample File",
+                                                     style="background-color: #79818c"),
+                                      actionButton("show_ADL", "Generate ADL Model",
+                                                   style="background-color: #79818c"),
+                                      plotOutput("model6")
                                     )
                                   )
                          )
@@ -95,18 +143,18 @@ server <- function(input, output, session) {
   
   adjust_year_quarters <- function(date1, date2, year_quarters) {
     
-    if (count_quarters(date1, date2) < 20) {
+    if (count_quarters(date1, date2) < 80) {
       
-      if ((count_quarters(date2, tail(year_quarters, 1)) + 1) >= 20) { # Check if the second date can be adjusted forward by 20 quarters
+      if ((count_quarters(date2, tail(year_quarters, 1)) + 1) >= 80) { # Check if the second date can be adjusted forward by 20 quarters
 
         pos1 <- which(year_quarters == date1) # Find the position of the adjusted first date
-        pos2 <- pos1 + 19
+        pos2 <- pos1 + 79
         return(c(date1, year_quarters[pos2]))
         
       } else {
        
         pos2 <- which(year_quarters == date2)
-        pos1 <- pos2 - 19
+        pos1 <- pos2 - 79
         return(c(year_quarters[pos1], date2))
       }
     } else {
