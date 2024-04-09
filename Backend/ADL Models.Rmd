@@ -4,6 +4,7 @@
 source("GDP Cleaning.R")
 source("inputs.R")
 source("ADL Data.R")
+source("AR_Model_Functions.R")
 
 ```
 
@@ -31,65 +32,6 @@ GDPGrowth_ts <- ts(all_GDP_data,
                   start = c(start_y, start_q), 
                   end = c(end_y, end_q), 
                   frequency = 4)
-```
-
-# AR Function 
-
-```{r AR function}
-
-# Using the basic AR model from lecture 
-# Inputs: Y - predicted variable, p - AR order, h - forecast horizon
-
-fitAR=function(Y,h, dum){
-  
-  minimum = Inf
-  
-  for (p in 1:4){
-    # create p lags + forecast horizon shift (=h option)
-    aux = embed(Y, p+h)
-    
-    #  Y variable aligned/adjusted for missing data due to lags
-    y = aux[,1] 
-    
-    # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
-    X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
-  
-    # retrieve last p observations
-    X.out = tail(aux,1)[1:ncol(X)] 
-    
-    # cutting dummy to shape
-    dum = tail(dum, length(y))
-  
-    # estimate direct h-step AR(p) by OLS 
-    model = lm(y~X+dum) 
-    
-    # extract coefficients
-    coef = coef(model)[1:(ncol(X)+1)]
-  
-    #make a forecast using the last few observations: a direct h-step forecast.
-    pred = c(1,X.out)%*%coef 
-    
-    #note the addition of a constant to the test observation vector
-    
-    #get unadjusted rmsfe (ignoring estimation uncertainty)
-    rmsfe = sqrt(sum(model$residuals^2)/nrow(X))
-    aic = AIC(model)
-    
-    if(aic < minimum){
-      minimum = aic
-      best_rmsfe = rmsfe
-      best_p = p
-      best_model = model
-      best_pred = pred
-      best_coef = coef
-    }
-  }
-  
-  
-  #save estimated AR regression, prediction, and estimated coefficients
-  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p)) 
-}
-
 ```
 
 
