@@ -1,14 +1,14 @@
 library(sandwich)
 
 #####################
-#### ROLLING WINDOW
+#### ROLLING WINDOW BASIC
 #####################
 
 # E.g. test window from 2010 to 2020
 # E.g. Y or train window from 2000 to 2010
 # Trains on data from 2000 to 2010 to produce 2010 data, then 2001 to 2011 for 2011, etc.
 
-rolling_window = function(Y, test_length, dummy, real, start, en, h = 1){
+rolling_window = function(Y, test_length, dummy, real, start, end, h = 1){
   save.coef = matrix(NA,test_length,5)
   save.pred = matrix(NA, test_length, 1) 
   for(i in test_length:1){
@@ -37,6 +37,42 @@ rolling_window = function(Y, test_length, dummy, real, start, en, h = 1){
 }
 
 #####################
+#### ROLLING WINDOW ADVANCED
+#####################
+
+rolling_window_adv = function(Y, test_length, dummy, real, start, end, h = 1){
+  save.coef = matrix(NA,test_length,5)
+  save.pred = matrix(NA, test_length, 1)
+  
+  start_str = format(start, "%Y Q%q")
+  
+  for(i in test_length:1){
+    
+    adv_ar_input(RGDP_Data, start_str, example_endq)
+    
+    Y.window = Y[(1+test_length-i):(nrow(Y)-i),] 
+    Y.window = as.matrix(Y.window)
+    
+    dummy.window = dummy[(1+test_length-i):(length(dummy)-i)] 
+    dummy.window = as.matrix(dummy.window)
+    
+    winfit = fitAR(Y.window,h,dummy.window)
+    save.coef[(1+test_length-i),] = c(winfit$coef, rep(0 , 5 - length(winfit$coef))) 
+    save.pred[(1+test_length-i),] = winfit$pred
+  }
+  
+  real_ts = ts(real, start = example_startyq, end, freq = 4)
+  plot.ts(real_ts, main = "Real values against predicted values", cex.axis = 1.8)
+  lines(ts(save.pred, start, end, freq = 4),col="red") 
+  
+  
+  rmse = sqrt(mean((tail(real,test_length)-save.pred)^2)) 
+  mae = mean(abs(tail(real,test_length)-save.pred))
+  errors = c("rmse"=rmse,"mae"=mae) 
+  
+  return(list("pred"=save.pred,"coef"=save.coef,"errors"=errors))
+}
+#####################
 #### DIEBOLD-MARINO TEST
 #####################
 
@@ -47,7 +83,7 @@ dm_test = function(real_values, pred1, pred2, start, end){
   loss_diff = loss1 - loss2
   
   if (as.yearqtr("2020 Q2") >= start){
-    year_diff = (as.yearqtr("2020 Q2") - start) * 4
+    year_diff = (as.yearqtr("2020 Q2") - start) * 4 + 1
     if (as.yearqtr("2020 Q3") <= end){
       loss_diff[year_diff + 1] = 0
     }
