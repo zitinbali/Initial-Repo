@@ -26,12 +26,13 @@ ui <- navbarPage(
       }
       .tabbable > .nav > li > a[data-value='Comparing Revised Values'] {background-color: #9ba7a8;   color:white}
       .tabbable > .nav > li > a[data-value='Analysing Predictive Ability'] {background-color: #9ba7a8;  color:white}
-      .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: #bdc4c5;  color:white}
-      .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #bdc4c5;  color:white}
-      .tabbable > .nav > li > a[data-value='ADL Model'] {background-color: #bdc4c5;  color:white}
-      .tabbable > .nav > li > a[data-value='Combined Model'] {background-color: #bdc4c5;  color:white}
-      .tabbable > .nav > li > a[data-value='Aggregated Model'] {background-color: #bdc4c5;  color:white}
-      .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color:white}
+      .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #9ba7a8;  color:white}
+      .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Combined Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Aggregated Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
     ")
   ),
            wellPanel("", value = "models", icon = NULL,
@@ -60,11 +61,12 @@ ui <- navbarPage(
                                tabPanel("Basic AR Model",
                                         plotOutput("model1"),
                                         textOutput("desc1"),
-                                        textOutput("inputValues"),
-                                        div(style="display:inline-block", textInput("data1" ,"2025 Q1:")),
-                                        div(style="display:inline-block", textInput("data2" ,"2025 Q2:")),
-                                        div(style="display:inline-block", textInput("data3" ,"2025 Q3:")),
-                                        div(style="display:inline-block", textInput("data4" ,"2025 Q4:")),
+                                        headerPanel(""), # adds space btwn text and inputs
+                                        helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
+                                        div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
+                                        div(style="display:inline-block", textInput("data2" ,"2024 Q2:")),
+                                        div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
+                                        div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
                                         actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
                                         ),
                                tabPanel("AR Model with Revised Values", 
@@ -85,6 +87,22 @@ ui <- navbarPage(
                                                textOutput("desc4")),
                                       tabPanel("Aggregated Model", plotOutput("model5"),
                                                textOutput("desc5"))
+                                    )
+                                  )
+                         ),
+                         tabPanel("Add A Predictor",
+                                  icon = icon("table"),
+                                  wellPanel(
+                                    style = "background-color: #f8f9fa",
+                                    tabsetPanel(
+                                      fileInput("excel_data", "Upload a .xlsx file following the sample format.",
+                                                multiple = FALSE,
+                                                accept = c(".xlsx")),
+                                      downloadButton("download_data", "Download a Sample File",
+                                                     style="background-color: #79818c"),
+                                      actionButton("show_ADL", "Generate ADL Model",
+                                                   style="background-color: #79818c"),
+                                      plotOutput("model6")
                                     )
                                   )
                          )
