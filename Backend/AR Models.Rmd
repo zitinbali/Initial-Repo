@@ -91,11 +91,11 @@ ar1_rmsfe = basic_AR_output$rmsfe
 
 # Predictions for Basic AR Model
 ```{r}
-  fitAR_preds <- function(Y, p, h, dum) {
+  fitAR_preds <- function(Y, h, dum) {
     preds = numeric(h)
     for(i in 1:h){
       #test_AR <- as.matrix(check$growth_rate)
-      preds[i] = fitAR(test, i, dum)$pred  ##2 is placeholder for input$lags
+      preds[i] = fitAR(Y, i, dum)$pred  ##2 is placeholder for input$lags
     }
     return(preds)
   }
@@ -141,11 +141,12 @@ row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
 row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
 
 real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
+start = example_endyq - 50/4
+end = example_endyq
 
 pred1 = rolling_window(basic_AR_input, 50, covid_dummy, real_values, start, end, h = example_fhorizon)$pred
 pred2 = rolling_window(advanced_AR_input, 50, covid_dummy, real_values, start, end, h = example_fhorizon)$pred
-start = example_endyq - 50/4
-end = example_endyq
+
 
 dm_test(tail(real_values, 50), pred1, pred2, start, end)
 # Basic vs Advanced values, Plots loss of basic - loss of advanced
