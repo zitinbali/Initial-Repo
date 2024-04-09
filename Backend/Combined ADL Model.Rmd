@@ -8,32 +8,6 @@ source("ADL Data.R")
 ```
 
 
-# Basic GDP Prep 
-
-```{r gdp prep, warning=FALSE}
-
-spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                           "2024 Q1", example_startyq, example_endyq, 3, 0)
-
-post_prep_gdp <- prep_func(spliced_GDP, 40)
-post_prep_gdp_df <- post_prep_gdp$df
-post_prep_gdp_delta = post_prep_gdp$delta
-
-# revise GDP values
-
-# note that the last input should be in a string format
-sliced_perc_change <- data_splice(perc_change_df, "1947 Q2", "2023 Q4", 
-                                  "1965 Q4", "2024 Q1", 
-                                  example_startq, example_endq, 2, 1)
-all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta, 
-                              example_startq, example_endq)
-
-GDPGrowth_ts <- ts(all_GDP_data, 
-                  start = c(start_y, start_q), 
-                  end = c(end_y, end_q), 
-                  frequency = 4)
-```
-
 # AR Function 
 
 ```{r AR function}
@@ -208,7 +182,7 @@ ADL_comb_predict <- function(Y_dataframe, X_combined_dataframe,
     assign(name, X_combined_dataframe[,i])
   }
   
-  # if there is covid dummy 
+  
   coef_df <- as.data.frame(coefficients)
   coef_row_name <- c(rownames(coef_df))
   
@@ -220,20 +194,6 @@ ADL_comb_predict <- function(Y_dataframe, X_combined_dataframe,
   # intercept value 
   pred = coefficients[1]
   
-  # if covid_dummy is one of the chosen variables
-  if (covid_dummy_name %in% coef_row_name){
-    
-    # if it's 2020 Q1, take dummy coefficient * -1 
-    if (end_yq == "2020 Q1"){
-      temp = coef_df[covid_dummy_name, 1] * (-1)
-      pred = temp + pred
-    } 
-    # if it's 2020 Q2, take dummy coefficient * 1 
-    else if (end_yq == "2020 Q2"){
-      temp = coef_df[covid_dummy_name, 1] * (1)
-      pred = temp + pred
-    }
-  }
   
   # if covid_dummy is one of the chosen variables
   # start looking through the table from row 3
@@ -329,7 +289,7 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
   else{
     for (i in 2:f_horizon){
       # updating end year & quarter 
-      updated_end_yq <- example_endyq + (i - 1)/4
+      updated_end_yq <- as.yearqtr(end_yq) + (i - 1)/4
       upd_end_y <- as.numeric(year(updated_end_yq))
       upd_end_q <- as.numeric(quarter(updated_end_yq))
       
@@ -340,6 +300,7 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
                   start = c(start_y, start_q), 
                   end = c(upd_end_y, upd_end_q), 
                   frequency = 4)
+      
       
       # X pred
       for (j in 1:num_X){
@@ -365,6 +326,7 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
         
       }
       
+      
       # create the combined dataframe with the updated X dataframes 
       
       # this makes X_comb_upd the first ts 
@@ -384,22 +346,26 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
       # Updating COVID dummy
       upd_covid_dummy = c(covid_dummy, rep(0, i - 1))
       
-      upd_covid_dummy_ts <- ts(covid_dummy,
+      upd_covid_dummy_ts <- ts(upd_covid_dummy,
                         start = c(start_y, start_q), 
-                        end = c(end_y, end_q), 
+                        end = c(upd_end_y, upd_end_q), 
                         frequency = 4)
       
       selectors_AIC_local <- gsub("GDPGrowth_ts", "gdp_ts", selectors_AIC) 
       selectors_AIC_local <- gsub("covid_dummy_ts", "upd_covid_dummy_ts", selectors_AIC_local) 
+      
       
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
             start = c(start_y, start_q), 
             end = c(upd_end_y, upd_end_q))
       
+      
       pred <- ADL_comb_predict(gdp_ts, X_comb_upd, 
                             selectors_AIC_local, model_AIC_local$coefficients, 
                             upd_covid_dummy_ts, updated_end_yq)
+      
+      
       
       # predictions for all X variables
       for (n in 1:num_X){
@@ -422,10 +388,6 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
   return(pred[[1]])
 }
 
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 2, example_endq)
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 3, example_endq)
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 4, example_endq)
-
 ```
 
 
@@ -436,25 +398,6 @@ ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 4, example_endq)
 
 
 ```{r test}
-
-
-t <- "GDPGrowth_ts ~ covid_dummy_ts + L(GDPGrowth_ts, 1) + L(baa_aaa_ts, 1) + L(fred_hstarts_ts, 1) +  L(GDPGrowth_ts, 2)"
-
-
-
-model_AIC <- dynlm(as.formula(t),
-        start = c(start_y, start_q), 
-        end = c(end_y, end_q))
-
-test_coefficients <- model_AIC$coefficients
-test_coef_df <- as.data.frame(test_coefficients)
-test_coef_row_name <- c(rownames(test_coef_df))
-  
-test_coef_df <- test_coef_df %>% 
-mutate(lag_name = gsub("^.*?\\(([^,]+).*", "\\1", test_coef_row_name), 
-       lag_num = str_sub(test_coef_row_name,-2,-2))
-
-is.na(test_coef_df["covid_dummy_ts", test_coef_df$coefficients])
 
 X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts)
 
@@ -470,14 +413,9 @@ if (num_X > 4){
 # set colnames 
 colnames(X_comb_df) <- ADL_variables
 
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 1)
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 2)
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 3)
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 4)
-
-
-test_coef_row_name <- c("(Intercept)", "covid_dummy_ts", "L(GDPGrowth_ts, 1)", "L(baa_aaa_ts, 1)")
-test_name <- "covid_dummy_ts"
-test_name %in% test_coef_row_name
+ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 1, example_endq)
+ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 2, example_endq)
+ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 3, example_endq)
+ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 4, example_endq)
 
 ```

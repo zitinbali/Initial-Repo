@@ -1,4 +1,48 @@
 
+source("GDP Cleaning.R")
+source("inputs.R")
+
+
+##############
+# GDP prep
+##############
+
+spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
+                           "2024 Q1", example_startyq, example_endyq, 3, 0)
+
+post_prep_gdp <- prep_func(spliced_GDP, 40)
+post_prep_gdp_df <- post_prep_gdp$df
+post_prep_gdp_delta = post_prep_gdp$delta
+
+# revise GDP values
+
+# note that the last input should be in a string format
+sliced_perc_change <- data_splice(perc_change_df, "1947 Q2", "2023 Q4", 
+                                  "1965 Q4", "2024 Q1", 
+                                  example_startq, example_endq, 2, 1)
+all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta, 
+                              example_startq, example_endq)
+
+GDPGrowth_ts <- ts(all_GDP_data, 
+                   start = c(start_y, start_q), 
+                   end = c(end_y, end_q), 
+                   frequency = 4)
+
+
+##############
+# splice fn
+##############
+
+ADL_splice <- function(data, window_start, window_end){
+  start_rownum = which(grepl(window_start, data$Date))
+  end_rownum = which(grepl(window_end, data$Date))
+  
+  output <- data[start_rownum:end_rownum+1, ]
+  
+  return(output)
+}
+
+
 ##############
 # BAA-AAA 
 ##############
