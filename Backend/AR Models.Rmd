@@ -95,7 +95,7 @@ ar1_rmsfe = basic_AR_output$rmsfe
     preds = numeric(h)
     for(i in 1:h){
       #test_AR <- as.matrix(check$growth_rate)
-      preds[i] = fitAR(test, i)$pred  ##2 is placeholder for input$lags
+      preds[i] = fitAR(test, i, dum)$pred  ##2 is placeholder for input$lags
     }
     return(preds)
   }
