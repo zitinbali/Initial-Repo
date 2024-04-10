@@ -259,6 +259,8 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
         start = c(start_y, start_q), 
         end = c(end_y, end_q))
   
+  output_model <- model_AIC$residuals
+  
   pred <- ADL_comb_predict(Y_dataframe, X_combined_dataframe,
                         selectors_AIC, model_AIC$coefficients, covid_dummy_ts, end_yq)
   
@@ -360,6 +362,8 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
             start = c(start_y, start_q), 
             end = c(upd_end_y, upd_end_q))
       
+      output_model <- model_AIC_local$residuals
+      
       
       pred <- ADL_comb_predict(gdp_ts, X_comb_upd, 
                             selectors_AIC_local, model_AIC_local$coefficients, 
@@ -385,7 +389,7 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
       }
     }
   }
-  return(pred[[1]])
+  return (list("output_model" = output_model, "prediction" = pred[[1]]))
 }
 
 ```
@@ -414,7 +418,8 @@ if (num_X > 5){
 colnames(X_comb_df) <- ADL_variables
 
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 1, example_endq)
-ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 2, example_endq)
+temp <-  ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 2, example_endq)
+temp$prediction
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 3, example_endq)
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 4, example_endq)
 
