@@ -143,7 +143,7 @@ prep_func = function(dataset, n){
   revised_growth_df <- revised_growth
   
   revised_growth = revised_growth %>%
-    filter(revision0 < 0 & lag(revision0) > 0)
+    filter(revision0 < 0)
   
   # Now, we are looking into how the growth rates change due to revision
   lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
@@ -155,6 +155,7 @@ prep_func = function(dataset, n){
   change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
   
   change_in_growth <- change_in_growth %>% 
+    filter(revision1 > 0) %>%
     apply(2, mean, na.rm = TRUE)
   
   
@@ -230,12 +231,9 @@ revise_values = function(data, delta, window_start, window_end){
   # Applying approximation of final growth numbers on recent values
   forecast_growth = recent_values 
   for (i in 1:length(recent_values)){
-    
-    if (forecast_growth[i] < 0 & i > 1){
-      if (forecast_growth[i-1] > 0){
-        for (j in 1:i){
-          forecast_growth[i] = forecast_growth[i] * (1 + (delta[41 - j] / 100) )
-        }
+    if (forecast_growth[i] < 0){
+      for (j in 1:i){
+        forecast_growth[i] = forecast_growth[i] * (1 + (delta[41 - j] / 100) )
       }
     }
   }

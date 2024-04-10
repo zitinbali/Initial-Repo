@@ -39,7 +39,7 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
                        frequency = 4)
 
     if (i == test_length){
-      selection = AICselector(GDPGrowth_ts, X.window, year(window_start), quarter(window_start), dummy.window)
+      selection = AICselector(GDPGrowth_ts, X.window, year(window_start - 1/4), quarter(window_start -1/4), dummy.window)
     }
     
     Y_string = as.character(substitute(GDPGrowth_ts))
