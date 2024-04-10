@@ -31,7 +31,7 @@ ui <- navbarPage(
       .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
-      .tabbable > .nav > li > a[data-value='Aggregated Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Aggregate Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
     ")
   ),
@@ -93,8 +93,11 @@ ui <- navbarPage(
                                       tabPanel("Combined ADL Model", plotOutput("model4"),
                                                textOutput("desc4")),
 
-                                      tabPanel("Aggregated Model", plotOutput("model5"),
-                                               textOutput("desc5"))
+                                      tabPanel("Aggregate Model", plotOutput("model5"),
+                                               textOutput("poor_outlook"),
+                                               htmlOutput("abnormal_indicators"),
+                                               textOutput("abnormal_message")
+                                               ),
                                     )
                                   )
                          ),
@@ -840,7 +843,34 @@ observeEvent(input$show_prediction, {
     plot(model_3)
     
   })
-
+  
+  ##################
+  ## AGGREGATE MODEL
+  ##################
+  
+  observeEvent(input$show_prediction, {
+    advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
+    output <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    output$poor_outlook <- renderText({
+      return(output$outlook$message)
+    })
+    
+    output$abnormal_indicators <- renderText({
+      value <- output$abnormal$indicators
+      
+      color <- ifelse(is.null(value) || value == 0, "#00b392",
+                      ifelse(value == 1, "#729a5a",
+                             ifelse(value == 2, "#d48f3b",
+                                    ifelse(value == 3, "#f07a32",
+                                           ifelse(value == 4, "#ed6435", "#e7463a")))))
+      
+      return(paste("Your number is ", "<span style='color:", color, "\'>", value, "</span>"))
+    })
+    
+    output$abnormal_message <- renderText({
+      return(output$abnormal$message)
+    })
+  })
 })
   
 }
