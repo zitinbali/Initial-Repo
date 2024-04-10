@@ -184,6 +184,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   
   selectors_AIC <- gsub("Y_df", Y_string, selectors_AIC) 
   selectors_AIC <- gsub("X_df", X_string, selectors_AIC)
+
   
   model_formula = as.formula(selectors_AIC)
   
@@ -238,16 +239,17 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
       upd_covid_dummy = c(covid_dummy, rep(0, i - 1))
       
       # Formula recommended by AIC selector
-      selectors_AIC_local <- AICselector(gdp_ts, X_ts, upd_end_y, upd_end_q, upd_covid_dummy)
+      selectors_AIC_local <- gsub(Y_string, "gdp_ts", selectors_AIC) 
+      selectors_AIC_local <- gsub(X_string, "X_ts", selectors_AIC_local) 
+      selectors_AIC_local <- gsub("covid_dummy", "upd_covid_dummy", selectors_AIC_local)
       
-      selectors_AIC_local <- gsub("Y_df", "gdp_ts", selectors_AIC_local) 
-      selectors_AIC_local <- gsub("X_df", "X_ts", selectors_AIC_local)
       
       
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
                                start = c(start_y, start_q), 
                                end = c(upd_end_y, upd_end_q))
+      
       
       output_model <- model_AIC_local$residuals
       resid <- as.matrix(output_model)

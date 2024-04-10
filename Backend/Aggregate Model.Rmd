@@ -6,6 +6,7 @@ source("inputs.R")
 source("ADL Data.R")
 source("AR_Model_Functions.R")
 source("ADL Functions.R")
+source("Combined ADL Model Functions.R")
 
 ```
 
@@ -101,13 +102,13 @@ abnormal <- function(X_variables){
   }
   
   if (length(indicators) == 0){
-    message = "All good!"
+    output_message = "All good!"
   } 
   else {
-    "Markets have been deviating from the norm severely in the last year. If a recession is not already taking place, one might occur soon."
+    output_message = "Markets have been deviating from the norm severely in the last year. If a recession or rapid economic boom is not already taking place, one might occur soon. Conduct deeper analysis into the deviating predictors to arrive at more conclusive results."
   }
   
-  return(list("message" = message, "indicators" = indicators))
+  return(list("message" = output_message, "indicators" = indicators))
 }
 
 abnormal(ADL_variables)
@@ -123,6 +124,55 @@ Aggregates the forecasts
 ```{r aggregate forecast}
 
 
+aggregate_output <- function(Y_dataframe, X_variables, f_horizon){
+  
+  forecast_output <- c() 
+  
+  # Advanced AR prediction
+  advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
+  advanced_AR_output <- fitAR(advanced_AR_input, example_fhorizon, covid_dummy)
+  ar2_prediction = advanced_AR_output$pred
+  
+  forecast_output <- append(forecast_output, ar2_prediction)
+  
+  
+  # ADL outputs 
+  m <- length(X_variables)
+  
+  forecast_output <- c() 
+  for (i in 1:m){
+    X_temp <- get(X_variables[i])
+    for (j in 1:f_horizon){
+      forecast <- (ADL_predict_all(Y_dataframe, X_temp, j))$prediction
+      forecast_output <- append(forecast_output, forecast)
+    }
+  }
+  
+  # Combined ADL output 
+  
+  # Creating combined dataset 
+  name_ts_first <- ADL_variables[1]
+  X_comb <- get(name_ts_first)
+  
+  for (j in 2:m){
+    X_temp <- get(X_variables[i])
+    for (j in 1:f_horizon){
+      name_ts <- ADL_variables[m]
+      X_new <- get(name_ts)
+      X_comb <- ts.union(X_comb, X_new)
+    }
+  }
+  
+  # comb ADL output 
+  comb_ADL_output <- ADL_comb_predict_all(Y_dataframe, X_comb, f_horizon, example_endq)$prediction
+  forecast_output <- append(forecast_output, comb_ADL_output)
+  
+  mean_output <- mean(forecast_output)
+  
+  return(mean_output)
+}
+
+aggregate_output(GDPGrowth_ts, ADL_variables, 2)
 
 
 ```
