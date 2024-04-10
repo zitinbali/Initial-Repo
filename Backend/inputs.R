@@ -1,5 +1,5 @@
 example_startq = "1980 Q4"
-example_endq = "2009 Q4"
+example_endq = "2019 Q4"
 example_startyq = as.yearqtr(example_startq)
 example_endyq = as.yearqtr(example_endq)
 

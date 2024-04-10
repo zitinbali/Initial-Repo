@@ -79,11 +79,11 @@ ADL_predict_all(GDPGrowth_ts, nasdaq_ts, 4, covid_dummy)
 
 ```{r rolling-window, warning = FALSE}
 
-rw_baa = rolling_window_adl(RGDP_Data, baa_aaa_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-rw_tsp = rolling_window_adl(RGDP_Data, tspread_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-rw_hstarts = rolling_window_adl(RGDP_Data, fred_hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-rw_consent = rolling_window_adl(RGDP_Data, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-rw_nasdaq = rolling_window_adl(RGDP_Data, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_hstarts = rolling_window_adl(perc_change_df_spliced, fred_hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 
 ```
 

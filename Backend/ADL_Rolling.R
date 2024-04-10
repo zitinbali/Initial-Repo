@@ -8,33 +8,34 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
   start_str = format(start, "%Y Q%q")
   temp = window_start
   
-  window_start = window_start - 1/4
+  #window_start = window_start - 1/4
   
   for (i in test_length:1){
     window_start_str = format(window_start, "%Y Q%q")
 
-    Y = adv_ar_input(Y_df, start_str, window_start_str)
+    #Y = adv_ar_input(Y_df, start_str, window_start_str)
+    Y = Y_df[[`window_start_str`]]
 
-    Y.window = Y[(1+test_length-i):(length(Y))] 
+    Y.window = Y[(1+test_length-i):(length(Y) - i)] 
 
     Y.window = as.matrix(Y.window)
 
     GDPGrowth_ts <- ts(Y.window, 
                        start = start + (test_length - i) * 1/4, 
-                       end = window_start, 
+                       end = window_start - 1/4, 
                        frequency = 4)
 
     dummy.window = dummy[(1+test_length-i):(length(dummy)-i)] 
     dummy.window = as.matrix(dummy.window)
     dummy.window <- ts(dummy.window, 
                        start = start + (test_length - i) * 1/4, 
-                       end = window_start, 
+                       end = window_start - 1/4, 
                        frequency = 4)
     
     X.window = X_df[(1+test_length-i):(length(X_df) - i)]
     X.window <- ts(X.window, 
                        start = start + (test_length - i) * 1/4, 
-                       end = window_start, 
+                       end = window_start - 1/4, 
                        frequency = 4)
 
     if (i == test_length){
