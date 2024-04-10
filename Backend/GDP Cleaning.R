@@ -142,20 +142,19 @@ prep_func = function(dataset, n){
   
   revised_growth_df <- revised_growth
   
-  revised_growth = revised_growth %>%
-    filter(revision0 < 0)
+  # revised_growth = revised_growth %>%
+  #   filter(revision0 < 0)
   
   # Now, we are looking into how the growth rates change due to revision
   lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
   revised_growth <- revised_growth[,-c(1)]
   
   # We're taking the average of the change in growth per revision 
-  change_in_growth <- 100*((revised_growth - lagged_growth)/lagged_growth)
+  change_in_growth <- (revised_growth - lagged_growth)
 
-  change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
+  #change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
   
   change_in_growth <- change_in_growth %>% 
-    filter(revision1 > 0) %>%
     apply(2, mean, na.rm = TRUE)
   
   
@@ -233,7 +232,7 @@ revise_values = function(data, delta, window_start, window_end){
   for (i in 1:length(recent_values)){
     if (forecast_growth[i] < 0){
       for (j in 1:i){
-        forecast_growth[i] = forecast_growth[i] * (1 + (delta[41 - j] / 100) )
+        forecast_growth[i] = forecast_growth[i] + (1 / (1 + exp(-abs(forecast_growth[i]))) - 0.5) * delta[41 - j]
       }
     }
   }
