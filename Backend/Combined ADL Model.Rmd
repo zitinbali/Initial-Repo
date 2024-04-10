@@ -399,10 +399,10 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
 
 ```{r test}
 
-X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts)
+X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
 
-if (num_X > 4){
-  for (i in 5:num_X){
+if (num_X > 5){
+  for (i in 6:num_X){
     # get the new dataset 
     X_new <- get(ADL_variables[i])
     # union it

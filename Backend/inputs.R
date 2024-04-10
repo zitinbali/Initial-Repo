@@ -1,5 +1,5 @@
 example_startq = "1980 Q4"
-example_endq = "2000 Q4"
+example_endq = "2000 Q3"
 example_startyq = as.yearqtr(example_startq)
 example_endyq = as.yearqtr(example_endq)
 
@@ -16,7 +16,7 @@ end_q = as.numeric(quarter(example_endyq))
 # ADL_variables is used for the combined model. 
 # The minimum size is 4. If it is reduced, it won't work.
 ADL_variables <- c("baa_aaa_ts", "tspread_ts", "fred_hstarts_ts", "consent_ts", 
-                   "consent2_ts")
+                   "nasdaq_ts", "consent2_ts")
 num_X <- length(ADL_variables)
 
 

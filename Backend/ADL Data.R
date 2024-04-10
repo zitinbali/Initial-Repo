@@ -181,22 +181,22 @@ nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
-consent <- ADL_splice(consent, example_startyq, example_endyq)
+nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
 
-consent_ts <- ts(consent$Spread, 
+nasdaq_ts <- ts(nasdaq$Spread, 
                  start = c(start_y, start_q), 
                  end = c(end_y, end_q), 
                  frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(nasdaq_ts)), 
      plot.type = "single", 
      col = c("darkred", "steelblue"),
      lwd = 2,
      xlab = "Date",
      ylab = "",
-     main = "Consumer Sentiment & GDP Growth over Time")
+     main = "NASDAQ Composite Index & GDP Growth over Time")
 legend("topright", 
-       legend = c("GDP Growth", "Consumer Sentiment"),
+       legend = c("GDP Growth", "NASDAQ Composite Index"),
        col = c("darkred", "steelblue"),
        lwd = c(1, 1),
        cex = 0.5)

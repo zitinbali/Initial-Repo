@@ -1,0 +1,13 @@
+
+```{r import, warning = FALSE, results= "hide", echo = FALSE}
+
+source("GDP Cleaning.R")
+source("inputs.R")
+source("ADL Data.R")
+source("AR_Model_Functions.R")
+source("ADL Functions.R")
+
+```
+
+
+# Aggregate Model Function
