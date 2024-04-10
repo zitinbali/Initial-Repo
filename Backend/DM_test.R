@@ -114,3 +114,11 @@ dm_test = function(real_values, pred1, pred2, start, end){
   
   return(dmreg$coefficients / sqrt(NeweyWest(dmreg, lag = 4)))
 }
+
+row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
+
+real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
+perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
+
+pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred

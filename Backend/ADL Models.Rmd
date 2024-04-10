@@ -7,6 +7,7 @@ source("ADL Data.R")
 source("AR_Model_Functions.R", local = TRUE)
 source("ADL Functions.R")
 source("ADL_Rolling.R")
+source("DM_test.R")
 
 ```
 
@@ -94,6 +95,15 @@ rw_hstarts$formula
 rw_consent$formula
 rw_nasdaq$formula
 
+pred2 = rw_nasdaq$pred
+
+dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
+# Basic vs Advanced values, Plots loss of basic - loss of advanced
+
+p_value = pt(dm_test_result, df = window_length - 1) * 100
+
+dm_test_result
+p_value
 
 ```
 
