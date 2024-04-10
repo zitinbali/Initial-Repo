@@ -206,6 +206,8 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   
   if (f_horizon == 1){
     pred = pred
+    resid <- as.matrix(output_model)
+    rmsfe <- sqrt(sum(resid^2))/nrow(resid)
   }
   
   else{
@@ -249,7 +251,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
       
       output_model <- model_AIC_local$residuals
       resid <- as.matrix(output_model)
-      RMSFE <- sqrt(sum(resid^2))/nrow(resid)
+      rmsfe <- sqrt(sum(resid^2))/nrow(resid)
       
       pred <- ADL_predict_1(gdp_ts, X_ts, "gdp_ts", "X_ts",
                             selectors_AIC_local, model_AIC_local$coefficients)
@@ -261,7 +263,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
     }
   }
   
-  return (list("RMSFE" = RMSFE, "prediction" = pred))
+  return (list("rmsfe" = rmsfe, "prediction" = pred))
 }
 
 

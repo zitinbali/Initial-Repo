@@ -4,7 +4,7 @@
 source("GDP Cleaning.R")
 source("inputs.R")
 source("ADL Data.R")
-source("AR_Model_Functions.R")
+source("AR_Model_Functions.R", local = TRUE)
 source("ADL Functions.R")
 
 ```
