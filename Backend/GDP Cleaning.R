@@ -18,7 +18,7 @@ library(broom)
 library(flexmix)
 
 # reading the GDP data
-RGDP_Data <- read_excel("./Data/RGDP Data.xlsx")
+RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
 
 # extracting the most revised values/recent data (2024 Q1) 
 latest_data <- RGDP_Data$ROUTPUT24Q1
