@@ -27,7 +27,7 @@ poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
   for (i in 1:m){
     X_temp <- get(X_variables[i])
     for (j in 1:f_horizon){
-      forecast <- (ADL_predict_all(Y_dataframe, X_temp, j))$prediction
+      forecast <- (ADL_predict_all(Y_dataframe, X_temp, j, covid_dummy = covid_dummy))$prediction
       forecast_output <- append(forecast_output, forecast)
     }
   }
@@ -148,7 +148,7 @@ aggregate_output <- function(Y_dataframe, X_variables, AR_input, f_horizon, dum)
   for (i in 1:m){
     X_temp <- get(X_variables[i])
     for (j in 1:f_horizon){
-      forecast <- (ADL_predict_all(Y_dataframe, X_temp, j))$prediction
+      forecast <- (ADL_predict_all(Y_dataframe, X_temp, j, covid_dummy = covid_dummy))$prediction
       forecast_output <- append(forecast_output, forecast)
     }
   }
