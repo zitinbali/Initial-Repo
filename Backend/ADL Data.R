@@ -50,7 +50,7 @@ ADL_splice <- function(data, window_start, window_end){
 # BAA-AAA 
 ##############
 
-baa_aaa <- read_excel("./Data/FRED BAA-AAA Data.xls", 
+baa_aaa <- read_excel("../Data/FRED BAA-AAA Data.xls", 
                       col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
@@ -84,7 +84,7 @@ legend("topright",
 
 
 
-tspread <- read_excel("./Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+tspread <- read_excel("../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -116,7 +116,7 @@ legend("topright",
 ##############
 
 
-fred_hstarts <- read_excel("./Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+fred_hstarts <- read_excel("../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -148,7 +148,7 @@ legend("topright",
 ##############
 
 
-consent <- read_excel("./Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+consent <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -180,7 +180,7 @@ legend("topright",
 ############################
 
 
-nasdaq <- read_excel("./Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
+nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -205,13 +205,44 @@ legend("topright",
        cex = 0.5)
 
 
+#########################################
+# Unemployment Insurance Claims Index
+#########################################
+
+
+unemp <- read_excel("../Data/FRED Unemployment.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+unemp <- ADL_splice(unemp, example_startyq, example_endyq)
+
+unemp_ts <- ts(unemp$Spread, 
+                start = c(start_y, start_q), 
+                end = c(end_y, end_q), 
+                frequency = 4)
+
+plot(merge(as.zoo(GDPGrowth_ts), as.zoo(unemp_ts)), 
+     plot.type = "single", 
+     col = c("darkred", "steelblue"),
+     lwd = 2,
+     xlab = "Date",
+     ylab = "",
+     main = "Unemployment Insurance Claims & GDP Growth over Time")
+legend("topright", 
+       legend = c("GDP Growth", "Unemployment Insurance Claims"),
+       col = c("darkred", "steelblue"),
+       lwd = c(1, 1),
+       cex = 0.5)
+
+
+
 
 ##############
 # test
 ##############
 
 
-consent2 <- read_excel("./Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+consent2 <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -221,3 +252,5 @@ consent2_ts <- ts(consent$Spread,
                   start = c(start_y, start_q), 
                   end = c(end_y, end_q), 
                   frequency = 4)
+
+
