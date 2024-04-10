@@ -44,7 +44,7 @@ ui <- navbarPage(
                                          selected = c(RGDP_Data$DATE[140], RGDP_Data$DATE[200])),
                          #add in from_max to indicate start of test window
                          selectInput('h', 'Select Forecast Horizon (Number of Quarters ahead)', 
-                                     choices = c("2", "3", "4"), 
+                                     choices = c("1","2", "3", "4"), 
                                      selected = "2", width = '50%'),
                          actionButton("show_prediction", "Show Prediction",
                                       style="background-color: #79818c")
@@ -84,7 +84,7 @@ ui <- navbarPage(
                                       tabPanel("Individual ADL Model", 
                                                headerPanel(""), # adds space btwn text and inputs
                                                selectInput("select_ADL", "Select ADL Predictors",
-                                                           choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment"),
+                                                           choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment", "NASDAQ Composite Index"),
                                                            selected = "Treasury Spread"),
                                                headerPanel(""), # adds space btwn text and inputs
                                                plotOutput("model3"),
@@ -106,6 +106,7 @@ ui <- navbarPage(
                                       fileInput("excel_data", "Upload a .xlsx file following the sample format.",
                                                 multiple = FALSE,
                                                 accept = c(".xlsx")),
+                                      helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
                                       downloadButton("download_data", "Download a Sample File",
                                                      style="background-color: #79818c"),
                                       actionButton("show_ADL", "Generate ADL Model",
@@ -694,7 +695,17 @@ observeEvent(input$show_prediction, {
     #consent_prediction <- ADL_predict_all(GDPGrowth_ts, consent_ts, h)
     #nasdaq_prediction <- ADL_predict_all(GDPGrowth_ts, nasdaq_ts, h)
     
-    X_dataframe = baa_aaa_ts #### change to input
+    rename_variable <- function(input_string) {          #function to rename input
+      mapping <- c("BAA-AAA Spread" = baa_aaa_ts,
+                   "Treasury Spread" = tspread_ts,
+                   "Housing Starts" = fred_hstarts_ts,
+                   "Consumer Sentiment" = consent_ts,
+                   "NASDAQ Composite Index" = nasdaq_ts)
+      
+      return(mapping[input_string])
+    }
+    
+    X_dataframe = rename_variable(input$select_ADL) 
     #advanced_AR_output <- fitAR(advanced_AR_input, h, dummy)
     
     
