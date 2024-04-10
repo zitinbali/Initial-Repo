@@ -180,6 +180,8 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
   Y_string <- as.character(substitute(Y_dataframe))
   X_string <- as.character(substitute(X_dataframe))
   
+  assign(X_string, X_dataframe)
+  
   selectors_AIC <- gsub("Y_df", Y_string, selectors_AIC) 
   selectors_AIC <- gsub("X_df", X_string, selectors_AIC)
   
