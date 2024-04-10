@@ -166,6 +166,19 @@ server <- function(input, output, session) {
     updateSliderTextInput(session,"year", selected = adjust_year_quarters(input$year[1], input$year[2], RGDP_Data$DATE))
   })
   
+  #######################
+  ## SAMPLE FILE DOWNLOAD
+  #######################
+
+  output$download_data <- downloadHandler(
+    filename = function(){
+     "FRED Unemployment.xls"
+      },
+    content = function(file){
+      download.file("https://github.com/zitinbali/Initial-Repo/blob/main/Data/FRED%20Unemployment.xls", destfile = file)
+    }
+  )
+  
  ############## 
  ## fitAR PREP 
  ##############
