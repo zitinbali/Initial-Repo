@@ -1243,14 +1243,215 @@ observeEvent(input$show_prediction, {
     plot(model_4)
     
   })
+})
   
   
   ##################
   ## AGGREGATE MODEL
   ##################
-
-})
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
+    
+    m <- length(X_variables)
+    
+    forecast_output <- c() 
+    for (i in 1:m){
+      X_temp <- get(X_variables[i])
+      for (j in 1:f_horizon){
+        forecast <- (ADL_predict_all(Y_dataframe, X_temp, j, covid_dummy = covid_dummy))$prediction
+        forecast_output <- append(forecast_output, forecast)
+      }
+    }
+    
+    # what is the number of forecasts that are less than 0
+    num_poor_forecast <- sum(forecast_output < 0)
+    
+    # what is the percentage of forecasts < 0
+    perc_poor_forecast <- num_poor_forecast/length(forecast_output)
+    
+    # identifying which indicators show a poor forecast
+    
+    # indexes of the indicators predicting GDP growth rate < 0
+    less_than_zero <- which(forecast_output < 0)
+    less_than_zero <- ifelse(less_than_zero > 5, less_than_zero %% 5, less_than_zero)
+    less_than_zero[less_than_zero == 0] <- 5
+    
+    # names of unique indicators which predict GDP growth rate < 0
+    less_than_zero <- unique(less_than_zero)
+    indicators_poor <- X_variables[less_than_zero]
+    
+    if (is_empty(unique(indicators_poor))){
+      output_message = "None of the ADL predictors forecast a negative GDP growth rate."
+      indicators_output = NULL
+    } else {
+      output_message = "Some of the ADL predictors forecast a negative GDP growth rate."
+      indicators_output = unique(indicators_poor)
+    }
+    return(list("message" = output_message, "indicators" = indicators_output))
+  }
+  
+  
+  abnormal <- function(X_variables){
+    
+    m <- length(X_variables)
+    indicators <- c()
+    
+    for (i in 1:m){
+      X_temp <- get(X_variables[i])
+      name_indicator <- X_variables[i]
+      
+      # median of the X variable
+      median_value <- median(X_temp)
+      # calculate the median absolute deviation (MAD)
+      mad_value <- mad(X_temp)
+      
+      # set the threshold for outlier detection (3 times the MAD)
+      threshold <- 3 * mad_value
+      
+      # calculate the absolute deviations from the median
+      absolute_deviations <- abs(X_temp - median_value)
+      
+      # identify outliers 
+      outliers <- X_temp[absolute_deviations > threshold]
+      
+      # subset last 4 entries
+      last_4_entries <- tail(X_temp, 4)
+      
+      # check if any of the outliers correspond to the last 4 entries
+      if(any(last_4_entries %in% outliers)){
+        indicators <- append(indicators, name_indicator)
+      }
+    }
+    
+    if (length(indicators) == 0){
+      output_message = "All good!"
+    } 
+    else {
+      output_message = "Markets have been deviating from the norm severely in the last year. If a recession or rapid economic boom is not already taking place, one might occur soon. Conduct deeper analysis into the deviating predictors to arrive at more conclusive results."
+    }
+    
+    return(list("message" = output_message, "indicators" = indicators))
+  }
+  
+  aggregate_output <- function(Y_dataframe, X_variables, AR_input, f_horizon, dum){
+    
+    forecast_output <- c() 
+    
+    # Advanced AR prediction
+    advanced_AR_output <- fitAR(AR_input, example_fhorizon, dum)
+    ar2_prediction = advanced_AR_output$pred
+    
+    forecast_output <- append(forecast_output, ar2_prediction)
+    
+    
+    # ADL outputs 
+    m <- length(X_variables)
+    
+    forecast_output <- c() 
+    for (i in 1:m){
+      X_temp <- get(X_variables[i])
+      for (j in 1:f_horizon){
+        forecast <- (ADL_predict_all(Y_dataframe, X_temp, j, covid_dummy = covid_dummy))$prediction
+        forecast_output <- append(forecast_output, forecast)
+      }
+    }
+    
+    # Combined ADL output 
+    
+    # Creating combined dataset 
+    name_ts_first <- ADL_variables[1]
+    X_comb <- get(name_ts_first)
+    
+    for (j in 2:m){
+      X_temp <- get(X_variables[i])
+      for (j in 1:f_horizon){
+        name_ts <- ADL_variables[m]
+        X_new <- get(name_ts)
+        X_comb <- ts.union(X_comb, X_new)
+      }
+    }
+    
+    # comb ADL output 
+    comb_ADL_output <- ADL_comb_predict_all(Y_dataframe, X_comb, f_horizon, example_endq)$prediction
+    forecast_output <- append(forecast_output, comb_ADL_output)
+    
+    mean_output <- mean(forecast_output)
+    
+    # call poor outlook function 
+    poor_outlook <- poor_outlook(Y_dataframe, X_variables, f_horizon)
+    
+    # call abnormalities function 
+    abnormal <- abnormal(X_variables)
+    
+    return(list("prediction" = mean_output, "outlook" = poor_outlook, "abnormal" = abnormal))
+  }
+  
+  
+  ##aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, h, covid_dummy)
+  
+  observeEvent(input$show_prediction, {
+  example_startq = gsub(":", " ", input$year[1])
+  example_endq = gsub(":", " ", input$year[2])
+  example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+  example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+  
+  
+  
+  
+  output$model4 <- renderPlot({
+    
+    covid = c("2020 Q2", "2020 Q3")
+    covid_start = as.yearqtr(covid[1])
+    covid_end = as.yearqtr(covid[2])
+    covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+    
+    # Timeframe cannot start from during covid or after
+    # Dummy if timeframe ends on 2020 Q2, start of covid
+    if (example_startyq <= covid_start & example_endyq == covid_start){
+      index = (covid_start - example_startyq) * 4 + 1
+      covid_dummy[index] = -1
+    }
+    
+    # Dummy if timeframe includes all of covid
+    if (example_startyq <= covid_start & example_endyq >= covid_end){
+      index = (covid_start - example_startyq) * 4 + 1
+      covid_dummy[index] = -1
+      covid_dummy[index + 1] = 1
+    }
+    
+    
+    covid_dummy_ts <- ts(covid_dummy,
+                         start = c(start_y, start_q), 
+                         end = c(end_y, end_q), 
+                         frequency = 4)
+    
+    ##############
+    # Predictor data
+    ##############
+    ADL_splice <- function(data, window_start, window_end){
+      start_rownum = which(grepl(window_start, data$Date))
+      end_rownum = which(grepl(window_end, data$Date))
+      
+      output <- data[start_rownum:end_rownum+1, ]
+      
+      return(output)
+    }
+
+  })
+  })
 }
   
 

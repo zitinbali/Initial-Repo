@@ -292,6 +292,9 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
                    end = c(upd_end_y, upd_end_q), 
                    frequency = 4)
       
+      # Updating COVID dummy
+      upd_covid_dummy = c(covid_dummy, rep(0, i - 1))
+      
       
       # X pred
       for (j in 1:num_X){
