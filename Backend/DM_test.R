@@ -58,11 +58,11 @@ rolling_window_adv = function(df, window_start, dummy, real, start, end, h = 1){
   temp = window_start
   
   for(i in test_length:1){
-    window_start_str = format(window_start, "%Y Q%q")
+    window_start_str = format(window_start - 1/4, "%Y Q%q")
     
     Y = adv_ar_input(df, start_str, window_start_str)
     
-    Y.window = Y[(1+test_length-i):(length(Y) - 1)] 
+    Y.window = Y[(1+test_length-i):(length(Y))] 
     Y.window = as.matrix(Y.window)
     
     dummy.window = dummy[(1+test_length-i):(length(dummy)-i)] 

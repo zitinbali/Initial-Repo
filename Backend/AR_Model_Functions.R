@@ -68,7 +68,7 @@ adv_ar_input = function(RGDP_Data, example_startq, example_endq){
   
   spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
                              "2024 Q1", example_startyq, example_endyq, 3, 0)
-
+  
   post_prep_gdp <- prep_func(spliced_GDP, 40)
   post_prep_gdp_df <- post_prep_gdp$df
   post_prep_gdp_delta = post_prep_gdp$delta
@@ -81,6 +81,7 @@ adv_ar_input = function(RGDP_Data, example_startq, example_endq){
   sliced_perc_change <- data_splice(perc_change_df, "1947 Q2", "2023 Q4", 
                                     "1965 Q4", "2024 Q1", 
                                     example_startq, example_endq, 2, 1)
+  
   all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta, 
                                 example_startq, example_endq)
   
