@@ -36,7 +36,6 @@ ar1_rmsfe = basic_AR_output$rmsfe
 
 advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
 
-
 advanced_AR_output <- fitAR(advanced_AR_input, example_fhorizon, covid_dummy)
 
 ar2_prediction = advanced_AR_output$pred
@@ -52,13 +51,13 @@ row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
 row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
 
 real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
-start = example_endyq - 50/4
-end = example_endyq
+perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
 
-pred1 = rolling_window(basic_AR_input, 50, covid_dummy, real_values, start, end)$pred
-pred2 = rolling_window(advanced_AR_input, 50, covid_dummy, real_values, start, end)$pred
+pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
 
-dm_test(tail(real_values, 50), pred1, pred2, start, end)
+pred2 = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
+
+dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)
 # Basic vs Advanced values, Plots loss of basic - loss of advanced
 
 ```
