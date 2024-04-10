@@ -14,6 +14,8 @@ library(dynlm)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
+source("/Backend/GDP Cleaning.R")
+
 ui <- navbarPage(
   theme = shinythemes::shinytheme('flatly'),
   title = "GDP Growth Rate Predictor",
