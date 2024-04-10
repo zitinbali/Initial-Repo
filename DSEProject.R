@@ -621,64 +621,184 @@ server <- function(input, output, session) {
   })
 })
   
+  ADL_splice <- function(data, window_start, window_end){
+      start_rownum = which(grepl(window_start, data$Date))
+      end_rownum = which(grepl(window_end, data$Date))
+      
+      output <- data[start_rownum:end_rownum+1, ]
+      
+      return(output)
+  }
   
-  output$model3 <- renderPlot({
-    latest_data <- RGDP_Data$ROUTPUT24Q1
+  AICselector <- function(Y_df, X_df, end_year, end_quarter, dum){
     
-    # creating a lag for all quarters
-    lag(latest_data)
-    
-    # check is a dataset to validate whether the data is stationary 
-    check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
-    
-    check <- check %>% 
-      rename(c("Date" = "RGDP_Data.DATE",
-               "Raw Data" = "X.latest_data.",
-               "First Lag" = "lag.latest_data."))
-    
-    # calculating growth rate of GDP from one quarter to the next
-    check <- check[-1,] %>% 
-      mutate(growth_rate = (`Raw Data` - `First Lag`)/(`First Lag`) * 100)
-    
-    # formatting the data variable in terms of year and quarters
-    Dates <- gsub(":", " ", check$Date) 
-    check <- check %>% 
-      mutate(Time = as.yearqtr(Dates)) %>% 
-      select(c(Time, growth_rate)) %>% 
-      mutate(growth_rate = as.numeric(growth_rate))
-    
-    check_xts <- xts(check$growth_rate, check$Time) 
-    
-    plot(as.zoo(check_xts), 
-         plot.type = "single", 
-         col = c("darkred"),
-         lwd = 1,
-         xlab = "Date",
-         ylab = "Growth Rate",
-         main = "Quarterly Growth Rate of GDP")
-    
-    # function that transform years to class 'yearqtr'
-    YToYQTR <- function(years){
-      return(
-        sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
-      )
+    # options is a vector that comprises all the lags of Y and X. 
+    # These are the options for permutations and combinations
+    options <- c()
+    for (j in 1:4){
+      Y_string = paste("L(", "Y_df", ",", j, ")", sep = "")
+      X_string = paste("L(", "X_df", ",", j, ")", sep = "")
+      options <- append(options, Y_string)
+      options <- append(options, X_string)
     }
     
-    # recessions
-    recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                            2001, 2007:2008))
-    # the COVID recession ended in April 2020 according to the Fed
-    recessions_covid <- append(recessions, 
-                               c(as.yearqtr("2020 Q1"), 
-                                 as.yearqtr("2020 Q2")))
+    dum_string = as.character(substitute(dum))
+    # creates the "GDPGrowth_ts ~ " part
+    #start_string = paste("Y_df", " ~ ", sep = "")
+    start_string = "Y_df ~ dum + "
     
-    # colour shading for recessions
-    xblocks(time(as.zoo(check_xts)), 
-            c(time(check_xts) %in% recessions_covid), 
-            col = alpha("steelblue", alpha = 0.3))
+    # just a really large value
+    min_AIC = Inf
+    min_AIC_string = ""
+    
+    for (i in 1:4){
+      store = combn(options, i)
+      length_store = ncol(store)
+      
+      for (m in 1:length_store){
+        elements <- store[,m]
+        body_string = ""
+        
+        for (n in 1:i){
+          body_string = paste(body_string, elements[n], sep = " + ")
+          # remove the first plus sign
+          body_string_up <- substring(body_string, 4)
+          
+          model_string = paste(start_string, body_string_up, sep = "")
+          model_formula = as.formula(model_string)
+          
+          # create dynlm model 
+          model_local <- dynlm(model_formula,
+                               start = c(start_y, start_q), 
+                               end = c(end_year, end_quarter))
+          
+          # AIC of model 
+          AIC_local <- AIC(model_local)
+          
+          # if AIC_local < min_AIC, replace the value of min_AIC. 
+          # replace min_AIC_string too
+          if(AIC_local < min_AIC){
+            min_AIC = AIC_local
+            min_AIC_string = model_string
+          }
+        }
+      }
+    }
+    final_string = gsub("dum", dum_string, min_AIC_string)
+    # output is the string format of the optimal model formula
+    return(final_string)
+  }
+  
+  ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
+                            selectors, coefficients){
+    
+    coef_df <- as.data.frame(coefficients)
+    coef_row_name <- c(rownames(coef_df))
+    
+    input_string <- as.character(selectors)
+    
+    Y_lags <- str_count(input_string, Y_string) - 1
+    X_lags <- str_count(input_string, X_string) 
+    
+    # error proof: number of lags is accurate 
+    
+    Y_lag_names <- c()
+    for (x in (1:length(coef_row_name))){
+      if (grepl(Y_string, coef_row_name[x], fixed = TRUE)){
+        # string of lag 
+        str <- coef_row_name[x]
+        Y_lag_names <- append(Y_lag_names, str)
+      }
+    }
+    
+    X_lag_names <- c()
+    for (y in (1:length(coef_row_name))){
+      if (grepl(X_string, coef_row_name[y], fixed = TRUE)){
+        # string of lag 
+        str <- coef_row_name[y]
+        X_lag_names <- append(X_lag_names, str)
+      }
+    }
+    
+    pred = coefficients[[1]]
+    
+    
+    if (Y_lags == 0){
+      if (X_lags == 0){
+        # if Y_lags = 0 and X_lags = 0
+        pred = pred
+      } 
+      else {
+        # if Y_lags = 0 and X_lags != 0
+        for (i in 1:X_lags){
+          # create lag string 
+          lag_string <- X_lag_names[i]
+          coeff_value = coef_df[lag_string,]
+          
+          tail_num_i = as.numeric(str_sub(lag_string,-2,-2))
+          
+          temp = (tail(X_dataframe, n = tail_num_i)[1]) * coeff_value
+          pred = pred + temp
+        }
+      }
+    } 
+    else if (X_lags == 0){
+      # if Y_lags != 0 and X_lags = 0
+      
+      for (j in 1:Y_lags){
+        # create lag string 
+        lag_string <- Y_lag_names[j]
+        coeff_value = coef_df[lag_string,]
+        
+        tail_num_j = as.numeric(str_sub(lag_string,-2,-2))
+        
+        temp = (tail(Y_dataframe, n = tail_num_j)[1]) * coeff_value
+        pred = pred + temp
+      }
+    } 
+    else {
+      # if Y_lags != 0 and X_lags != 0 
+      for (p in 1:Y_lags){
+        # create lag string 
+        lag_string <- Y_lag_names[p]
+        coeff_value = coef_df[lag_string,]
+        
+        tail_num_p = as.numeric(str_sub(lag_string,-2,-2))
+        
+        temp = (tail(Y_dataframe, n = tail_num_p)[1]) * coeff_value
+        
+        pred = pred + temp
+        
+      }
+      for (q in 1:X_lags){
+        # create lag string 
+        lag_string <- X_lag_names[q]
+        coeff_value = coef_df[lag_string,]
+        
+        tail_num_q = as.numeric(str_sub(lag_string,-2,-2))
+        
+        temp = (tail(X_dataframe, n = tail_num_q)[1]) * coeff_value
+        pred = pred + temp
+      }
+    }
+    
+    return(pred)
+  }
+  
+  
+  
+    
+  
+observeEvent(input$show_prediction, {
+  output$model3 <- renderPlot({
+
+    
+    
+    
+    
   })
 
-  
+})
   
 }
   
