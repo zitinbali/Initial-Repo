@@ -8,12 +8,16 @@ AICselector <- function(Y_df, X_df, end_year, end_quarter, dum){
   # options is a vector that comprises all the lags of Y and X. 
   # These are the options for permutations and combinations
   options <- c()
+  
+  
   for (j in 1:4){
     Y_string = paste("L(", "Y_df", ",", j, ")", sep = "")
     X_string = paste("L(", "X_df", ",", j, ")", sep = "")
     options <- append(options, Y_string)
     options <- append(options, X_string)
   }
+  
+
   
   dum_string = as.character(substitute(dum))
   # creates the "GDPGrowth_ts ~ " part
