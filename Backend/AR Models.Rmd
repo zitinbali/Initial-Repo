@@ -57,7 +57,11 @@ pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_v
 
 pred2 = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
 
-dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)
+dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
 # Basic vs Advanced values, Plots loss of basic - loss of advanced
 
+p_value = pt(dm_test_result, df = window_length - 1) * 100
+
+dm_test_result
+p_value
 ```
