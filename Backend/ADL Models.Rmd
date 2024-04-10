@@ -77,6 +77,20 @@ ADL_predict_all(GDPGrowth_ts, nasdaq_ts, 4, covid_dummy)
 
 ```
 
+
+# ADL Model - Unemployment Insurance Claims
+
+```{r adl model baa-aaa}
+
+unemp_prediction <- ADL_predict_all(GDPGrowth_ts, unemp_ts, example_fhorizon, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, unemp_ts, 1, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, unemp_ts, 2, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, unemp_ts, 3, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, unemp_ts, 4, covid_dummy)
+
+```
+
+
 ```{r rolling-window, warning = FALSE}
 
 rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
@@ -84,6 +98,7 @@ rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, co
 rw_hstarts = rolling_window_adl(perc_change_df_spliced, fred_hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_unemp = rolling_window_adl(perc_change_df_spliced, unemp_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 
 ```
 
@@ -94,6 +109,7 @@ rw_tsp$formula
 rw_hstarts$formula
 rw_consent$formula
 rw_nasdaq$formula
+rw_unemp$formula
 
 pred2 = rw_nasdaq$pred
 

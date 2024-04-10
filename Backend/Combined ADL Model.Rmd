@@ -5,6 +5,8 @@ source("GDP Cleaning.R")
 source("inputs.R")
 source("ADL Data.R")
 source("Combined ADL Model Functions.R")
+source("ADL_Rolling.R")
+source("DM_test.R")
 
 ```
 
@@ -32,5 +34,23 @@ temp <-  ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 2, example_endq)
 temp$prediction
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 3, example_endq)
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, 4, example_endq)
+
+```
+
+```{r}
+
+rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_comb$formula
+
+pred2 = rw_comb$pred
+
+dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
+# Basic vs Advanced values, Plots loss of basic - loss of advanced
+
+p_value = pt(dm_test_result, df = window_length - 1) * 100
+
+dm_test_result
+p_value
+
 
 ```

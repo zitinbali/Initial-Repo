@@ -3,8 +3,8 @@
 
 source("GDP Cleaning.R")
 source("inputs.R")
-source("DM_test.R")
 source("AR_Model_Functions.R")
+source("DM_test.R")
 
 ```
 
