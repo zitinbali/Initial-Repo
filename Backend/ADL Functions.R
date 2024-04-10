@@ -189,6 +189,8 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
                      start = c(start_y, start_q), 
                      end = c(end_y, end_q))
   
+  output_model <- model_AIC$residuals
+  
   
   pred <- ADL_predict_1(Y_dataframe, X_dataframe, Y_string, X_string,
                         selectors_AIC, model_AIC$coefficients)
@@ -243,6 +245,8 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
                                start = c(start_y, start_q), 
                                end = c(upd_end_y, upd_end_q))
       
+      output_model <- model_AIC_local$residuals
+      
       pred <- ADL_predict_1(gdp_ts, X_ts, "gdp_ts", "X_ts",
                             selectors_AIC_local, model_AIC_local$coefficients)
       
@@ -253,7 +257,7 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon){
     }
   }
   
-  return (pred)
+  return (list("output_model" = output_model, "prediction" = pred))
 }
 
 

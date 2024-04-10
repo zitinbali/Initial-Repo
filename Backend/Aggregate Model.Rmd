@@ -11,3 +11,20 @@ source("ADL Functions.R")
 
 
 # Aggregate Model Function
+
+```{r aggregate model}
+
+# X variables is a vector; input would be ADL variables
+aggregate_model <- function(Y_dataframe, X_variables, f_horizon){
+  for (i in 1:length(X_variables)){
+    X_ts <- get(X_variables[i])
+    forecast <- ADL_predict_all(Y_dataframe, X_ts, f_horizon)
+    print(forecast)
+  }
+}
+
+aggregate_model(GDPGrowth_ts, ADL_variables, 1)
+
+
+
+```
