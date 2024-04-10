@@ -21,7 +21,7 @@ library(flexmix)
 RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
 
 # extracting the most revised values/recent data (2024 Q1) 
-latest_data <- RGDP_Data$ROUTPUT24Q1
+latest_data <- RGDP_Data[, ncol(RGDP_Data)]
 
 # creating a lag for all quarters
 lag(latest_data)
@@ -29,10 +29,8 @@ lag(latest_data)
 # check is a dataset to validate whether the data is stationary 
 check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
 
-check <- check %>% 
-  rename(c("Date" = "RGDP_Data.DATE",
-           "Raw Data" = "X.latest_data.",
-           "First Lag" = "lag.latest_data."))
+# renaming columns
+colnames(check) <- c("Date", "Raw Data", "First Lag")
 
 # calculating growth rate of GDP from one quarter to the next
 check <- check[-1,] %>% 
