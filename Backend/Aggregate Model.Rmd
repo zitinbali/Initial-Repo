@@ -10,21 +10,122 @@ source("ADL Functions.R")
 ```
 
 
-# Aggregate Model Function
+# Poor Outlook Function
 
-```{r aggregate model}
+This function analyses how many of our ADL predictions until and including the forecast horizon are less than 0. i.e. Predicting a negative GDP Growth Rate. 
+
+
+```{r poor outlook}
 
 # X variables is a vector; input would be ADL variables
-aggregate_model <- function(Y_dataframe, X_variables, f_horizon){
-  for (i in 1:length(X_variables)){
-    X_ts <- get(X_variables[i])
-    forecast <- ADL_predict_all(Y_dataframe, X_ts, f_horizon)
-    print(forecast)
+poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
+  
+  m <- length(X_variables)
+  
+  forecast_output <- c() 
+  for (i in 1:m){
+    X_temp <- get(X_variables[i])
+    for (j in 1:f_horizon){
+      forecast <- (ADL_predict_all(Y_dataframe, X_temp, j))$prediction
+      forecast_output <- append(forecast_output, forecast)
+    }
   }
+  
+  # what is the number of forecasts that are less than 0
+  num_poor_forecast <- sum(forecast_output < 0)
+  
+  # what is the percentage of forecasts < 0
+  perc_poor_forecast <- num_poor_forecast/length(forecast_output)
+  
+  # identifying which indicators show a poor forecast
+  
+  # indexes of the indicators predicting GDP growth rate < 0
+  less_than_zero <- which(forecast_output < 0)
+  less_than_zero <- ifelse(less_than_zero > 5, less_than_zero %% 5, less_than_zero)
+  less_than_zero[less_than_zero == 0] <- 5
+  
+  # names of unique indicators which predict GDP growth rate < 0
+  less_than_zero <- unique(less_than_zero)
+  indicators_poor <- X_variables[less_than_zero]
+  
+  print(unique(indicators_poor))
+  print(perc_poor_forecast)
 }
 
-aggregate_model(GDPGrowth_ts, ADL_variables, 1)
+
+poor_outlook(GDPGrowth_ts, ADL_variables, 2)
+
+```
+
+
+# Abnormalities Function
+
+How many of the indicators have been behaving weirdly in the last 4 quarters? This would indicate an imminent crisis. 
+
+The function returns a list comprising a message and the indicators that are behaving abnormally (if any). If the indicators are behaving normally, the output for indicators will be NULL.
+
+
+```{r abnormalities}
+
+
+abnormal <- function(X_variables){
+  
+  m <- length(X_variables)
+  indicators <- c()
+
+  for (i in 1:m){
+    X_temp <- get(X_variables[i])
+    name_indicator <- X_variables[i]
+    
+    # median of the X variable
+    median_value <- median(X_temp)
+    # calculate the median absolute deviation (MAD)
+    mad_value <- mad(X_temp)
+    
+    # set the threshold for outlier detection (3 times the MAD)
+    threshold <- 3 * mad_value
+    
+    # calculate the absolute deviations from the median
+    absolute_deviations <- abs(X_temp - median_value)
+    
+    # identify outliers 
+    outliers <- X_temp[absolute_deviations > threshold]
+    
+    # subset last 4 entries
+    last_4_entries <- tail(X_temp, 4)
+    
+    # check if any of the outliers correspond to the last 4 entries
+    if(any(last_4_entries %in% outliers)){
+      indicators <- append(indicators, name_indicator)
+    }
+  }
+  
+  if (length(indicators) == 0){
+    message = "All good!"
+  } 
+  else {
+    "Markets have been deviating from the norm severely in the last year. If a recession is not already taking place, one might occur soon."
+  }
+  
+  return(list("message" = message, "indicators" = indicators))
+}
+
+abnormal(ADL_variables)
+
+
+```
+
+
+# Aggregate Forecast Function
+
+Aggregates the forecasts
+
+```{r aggregate forecast}
+
 
 
 
 ```
+
+
+

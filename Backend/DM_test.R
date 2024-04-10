@@ -1,8 +1,8 @@
 library(sandwich)
 
-#####################
+###########################
 #### ROLLING WINDOW BASIC
-#####################
+###########################
 
 # E.g. test window from 2010 to 2020
 # E.g. Y or train window from 2000 to 2010
@@ -36,9 +36,9 @@ rolling_window = function(Y, test_length, dummy, real, start, end, h = 1){
   return(list("pred"=save.pred,"coef"=save.coef,"errors"=errors))
 }
 
-#####################
+#############################
 #### ROLLING WINDOW ADVANCED
-#####################
+#############################
 
 rolling_window_adv = function(Y, test_length, dummy, real, start, end, h = 1){
   save.coef = matrix(NA,test_length,5)
