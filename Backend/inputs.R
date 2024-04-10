@@ -1,8 +1,10 @@
-example_startq = "1980 Q4"
-example_endq = "2000 Q3"
+example_startq = "1970 Q4"
+example_endq = "2019 Q3"
 example_startyq = as.yearqtr(example_startq)
 example_endyq = as.yearqtr(example_endq)
 
+window_start = as.yearqtr("1990 Q1")
+window_length = (example_endyq - window_start) * 4 + 1
 
 
 example_fhorizon = as.numeric("1")
