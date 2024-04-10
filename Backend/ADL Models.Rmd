@@ -111,7 +111,7 @@ rw_consent$formula
 rw_nasdaq$formula
 rw_unemp$formula
 
-pred2 = rw_unemp$pred
+pred2 = rw_nasdaq$pred
 
 dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
 # Basic vs Advanced values, Plots loss of basic - loss of advanced

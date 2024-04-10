@@ -1,4 +1,7 @@
 library(sandwich)
+source("GDP Cleaning.R")
+source("inputs.R")
+source("AR_Model_Functions.R")
 
 ###########################
 #### ROLLING WINDOW BASIC
@@ -98,6 +101,9 @@ dm_test = function(real_values, pred1, pred2, start, end){
   
   if (as.yearqtr("2020 Q2") >= start){
     year_diff = (as.yearqtr("2020 Q2") - start) * 4 + 1
+    if (as.yearqtr("2020 Q4") <= end){
+      loss_diff[year_diff + 2] = 0
+    } 
     if (as.yearqtr("2020 Q3") <= end){
       loss_diff[year_diff + 1] = 0
     } 
