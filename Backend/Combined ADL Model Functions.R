@@ -10,7 +10,7 @@ source("ADL Data.R")
 # Using the basic AR model from lecture 
 # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
 
-fitAR=function(Y,h, dum){
+fitAR=function(Y,h, covid_dummy){
   
   minimum = Inf
   
@@ -28,7 +28,7 @@ fitAR=function(Y,h, dum){
     X.out = tail(aux,1)[1:ncol(X)] 
     
     # cutting dummy to shape
-    dum = tail(dum, length(y))
+    dum = tail(covid_dummy, length(y))
     
     # estimate direct h-step AR(p) by OLS 
     model = lm(y~X+dum) 
@@ -78,17 +78,14 @@ ADL_splice <- function(data, window_start, window_end){
 }
 
 
-
-
-
 #########################################
 ## Combined: Selecting Best Model - AIC 
 #########################################
 
 
-comb_AICselector <- function(Y_df, X_combined_df, end_year, end_quarter, dum){
+comb_AICselector <- function(Y_df, X_combined_df, end_year, end_quarter, covid_dummy){
   
-  dum_string <- as.character(substitute(dum))
+  dum_string <- as.character(substitute(covid_dummy))
   # options is a vector that comprises all the lags of Y and X. 
   # These are the options for permutations and combinations
   options <- c()
@@ -106,7 +103,7 @@ comb_AICselector <- function(Y_df, X_combined_df, end_year, end_quarter, dum){
   }
   
   # creates the "GDPGrowth_ts ~ " part
-  start_string = "Y_df ~ dum + "
+  start_string = "Y_df ~ covid_dummy + "
   
   # just a really large value
   min_AIC = Inf
@@ -152,7 +149,7 @@ comb_AICselector <- function(Y_df, X_combined_df, end_year, end_quarter, dum){
       }
     }
   }
-  final_string = gsub("dum", dum_string, min_AIC_string)
+  final_string = gsub("covid_dummy", dum_string, min_AIC_string)
   # output is the string format of the optimal model formula
   return(final_string)
 }
@@ -248,6 +245,8 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
                      end = c(end_y, end_q))
   
   output_model <- model_AIC$residuals
+  resid <- as.matrix(output_model)
+  rmsfe <- sqrt(sum(resid^2))/nrow(resid)
   
   pred <- ADL_comb_predict(Y_dataframe, X_combined_dataframe,
                            selectors_AIC, model_AIC$coefficients, covid_dummy_ts, end_yq)
@@ -274,6 +273,8 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
   
   if (f_horizon == 1){
     pred = pred
+    resid <- as.matrix(output_model)
+    rmsfe <- sqrt(sum(resid^2))/nrow(resid)
   }
   
   else{
@@ -351,6 +352,8 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
                                end = c(upd_end_y, upd_end_q))
       
       output_model <- model_AIC_local$residuals
+      resid <- as.matrix(output_model)
+      rmsfe <- sqrt(sum(resid^2))/nrow(resid)
       
       
       pred <- ADL_comb_predict(gdp_ts, X_comb_upd, 
@@ -377,6 +380,6 @@ ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, e
       }
     }
   }
-  return (list("output_model" = output_model, "prediction" = pred[[1]]))
+  return (list("output_model" = output_model, "prediction" = pred[[1]], "rmsfe" = rmsfe))
 }
 
