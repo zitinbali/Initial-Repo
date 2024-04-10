@@ -347,7 +347,6 @@ server <- function(input, output, session) {
 
     # Separate predictions into actual and predicted dataframes for plotting
     actual_test_values <- predictions %>% 
-      
       select(Time, growth_rate) %>%
       mutate(category = 2)
 
@@ -536,27 +535,31 @@ server <- function(input, output, session) {
     mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 3) 
 
+  training_t <- bind_rows(training, joining_value) %>%
+    mutate(category = 1) 
+  
+  training_p <- bind_rows(training, joining_value)
   
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
-    head(n = as.numeric(input$h)) %>%
-    mutate(new_growth_rate = c(fitAR_preds(advanced_AR_input, h, dummy)))
+    head(n = h) %>%
+    mutate(new_growth_rate = c(fitAR_preds(advanced_AR_input, h, covid_dummy)))
   
   # Separate predictions into actual and predicted dataframes for plotting
   actual_test_values <- predictions %>% 
     select(Time, growth_rate) %>%
     mutate(category = 2)
   
-  
-  predicted_test_values <- predictions %>% 
-    #add in last data pt in training set
+  predicted_test_values <- predictions %>%
     select(Time, new_growth_rate) %>% 
-    mutate(category = 3) %>% 
-    rename("growth_rate" = "new_growth_rate")
+    rename("growth_rate" = "new_growth_rate") %>% 
+    #l_join(joining_value, by = "growth_rate") %>%
+    mutate(category = 3) 
   
-  original_data <- rbind(training, actual_test_values)
-  predicted_data <- rbind(training, predicted_test_values)
+  
+  original_data <- rbind(training_t, actual_test_values)
+  predicted_data <- rbind(training_p, predicted_test_values)
   
   # creating data for fanplot
   predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
@@ -820,8 +823,9 @@ observeEvent(input$show_prediction, {
       rmsfe = numeric(h)
       for(i in 1:h){
         #test_AR <- as.matrix(check$growth_rate)
-        preds[i] = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy_ts)$prediction
-        rmsfe[i] = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy_ts)$rmsfe
+        adl_predicting = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy_ts)
+        preds[i] = adl_predicting$prediction
+        rmsfe[i] = adl_predicting$rmsfe
         ##2 is placeholder for input$lags
       }
       return(list("preds" = preds, "rmsfe" = rmsfe))
@@ -831,6 +835,7 @@ observeEvent(input$show_prediction, {
     
     start_plot = GDPGrowth_ts_df$Time[end_rownum - 10]
     
+    
     training <- check %>%
       #mutate(Time = as.yearqtr(Dates)) %>%
       filter(Time > as.yearqtr(example_startq)) %>%
@@ -839,18 +844,23 @@ observeEvent(input$show_prediction, {
       select(Time, growth_rate) %>%
       mutate(growth_rate = as.numeric(growth_rate)) %>%
       mutate(category = 1) 
-    
+
     joining_value <- check %>%
       #mutate(Time = as.yearqtr(Time)) %>%
       filter(Time == as.yearqtr(example_endq)) %>% 
       select(Time, growth_rate) %>%
       mutate(growth_rate = as.numeric(growth_rate)) %>%
       mutate(category = 3) 
-
+    
+    training_t <- bind_rows(training, joining_value) %>%
+      mutate(category = 1) 
+    
+    training_p <- bind_rows(training, joining_value)
+    
     predictions <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(example_endq)) %>% 
-      head(n = as.numeric(input$h)) %>%
+      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      head(n = h) %>%
       mutate(new_growth_rate = c(ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds))
     
     # Separate predictions into actual and predicted dataframes for plotting
@@ -858,14 +868,15 @@ observeEvent(input$show_prediction, {
       select(Time, growth_rate) %>%
       mutate(category = 2)
     
-    predicted_test_values <- predictions %>% 
-      #add in last data pt in training set
+    predicted_test_values <- predictions %>%
       select(Time, new_growth_rate) %>% 
-      mutate(category = 3) %>% 
-      rename("growth_rate" = "new_growth_rate")
+      rename("growth_rate" = "new_growth_rate") %>% 
+      #l_join(joining_value, by = "growth_rate") %>%
+      mutate(category = 3) 
     
-    original_data <- rbind(training, actual_test_values)
-    predicted_data <- rbind(training, predicted_test_values)
+    
+    original_data <- rbind(training_t, actual_test_values)
+    predicted_data <- rbind(training_p, predicted_test_values)
     
     # creating data for fanplot
     predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
@@ -879,7 +890,7 @@ observeEvent(input$show_prediction, {
       predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
       
       for(i in 2:(h+1)){
-        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, h)$rmsfe  
+        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, h)$rmsfe
         predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
         predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
         predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
