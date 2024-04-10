@@ -457,6 +457,7 @@ server <- function(input, output, session) {
       end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
+      
       covid = c("2020 Q2", "2020 Q3")
       covid_start = as.yearqtr(covid[1])
       covid_end = as.yearqtr(covid[2])
@@ -507,15 +508,6 @@ server <- function(input, output, session) {
   advanced_AR_input <- as.matrix(all_GDP_data)
   
   h = as.numeric(input$h)
-  
-  advanced_AR_output <- fitAR(advanced_AR_input, h, dummy)
-  
-
-  
-  p = as.numeric(fitAR(advanced_AR_input, h, dummy)$p)
-  
-  ar2_prediction = advanced_AR_output$pred
-  ar2_rmsfe = advanced_AR_output$msfe
   
   start_plot = check$Time[end_rownum - 10]
   
@@ -573,7 +565,7 @@ server <- function(input, output, session) {
     predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
     
     for(i in 2:(h+1)){
-      rmsfe = fitAR(input_df, i, dummy)$rmsfe 
+      rmsfe = fitAR(input_df, i, covid_dummy)$rmsfe 
       predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
       predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
       predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
@@ -890,7 +882,7 @@ observeEvent(input$show_prediction, {
       predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
       
       for(i in 2:(h+1)){
-        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, h)$rmsfe
+        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, i)$rmsfe
         predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
         predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
         predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
@@ -954,6 +946,16 @@ observeEvent(input$show_prediction, {
     plot(model_3)
     
   })
+  
+  
+  ##################
+    ## COMBINED MODEL
+  ##################
+  
+  
+  
+  
+  
   
   ##################
   ## AGGREGATE MODEL
