@@ -98,6 +98,7 @@ rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, co
 rw_hstarts = rolling_window_adl(perc_change_df_spliced, fred_hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_unemp = rolling_window_adl(perc_change_df_spliced, unemp_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 
 ```
 
@@ -108,8 +109,9 @@ rw_tsp$formula
 rw_hstarts$formula
 rw_consent$formula
 rw_nasdaq$formula
+rw_unemp$formula
 
-pred2 = rw_nasdaq$pred
+pred2 = rw_unemp$pred
 
 dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
 # Basic vs Advanced values, Plots loss of basic - loss of advanced
