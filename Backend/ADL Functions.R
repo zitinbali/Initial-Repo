@@ -4,7 +4,7 @@
 #################################
 
 AICselector <- function(Y_df, X_df, end_year, end_quarter, dum){
-  
+
   # options is a vector that comprises all the lags of Y and X. 
   # These are the options for permutations and combinations
   options <- c()
@@ -44,7 +44,7 @@ AICselector <- function(Y_df, X_df, end_year, end_quarter, dum){
         model_local <- dynlm(model_formula,
                              start = c(start_y, start_q), 
                              end = c(end_year, end_quarter))
-        
+
         # AIC of model 
         AIC_local <- AIC(model_local)
         
@@ -80,7 +80,6 @@ ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
   
   Y_lags <- str_count(input_string, Y_string) - 1
   X_lags <- str_count(input_string, X_string) 
-  
   # error proof: number of lags is accurate 
   
   Y_lag_names <- c()
