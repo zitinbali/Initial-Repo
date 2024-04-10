@@ -263,8 +263,6 @@ ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon, covid_dummy = c
       
       AR_output_new <- fitAR(X_df, i, covid_dummy)
       X_pred <- AR_output_new$pred
-      
-      
     }
   }
   

@@ -12,7 +12,13 @@ library(fresh)
 library(RColorBrewer)
 library(dynlm)
 
-RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
+RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
+
+#source("GDP Cleaning.R")
+#source("inputs.R")
+#source("ADL Data.R")
+#source("AR_Model_Functions.R")
+#source("ADL Functions.R")
 
 ui <- navbarPage(
   theme = shinythemes::shinytheme('flatly'),
@@ -260,6 +266,15 @@ server <- function(input, output, session) {
   
   observeEvent(input$show_prediction, {
     output$model1 <- renderPlot({
+      example_startq = gsub(":", " ", input$year[1])
+      example_endq = gsub(":", " ", input$year[2])
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
+      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
+      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
+      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+      
       test <- as.matrix(check$growth_rate)
       
       covid = c("2020 Q2", "2020 Q3")
@@ -332,7 +347,6 @@ server <- function(input, output, session) {
 
     # Separate predictions into actual and predicted dataframes for plotting
     actual_test_values <- predictions %>% 
-      
       select(Time, growth_rate) %>%
       mutate(category = 2)
 
@@ -434,6 +448,16 @@ server <- function(input, output, session) {
 
   observeEvent(input$show_prediction, {
     output$model2 <- renderPlot({
+      example_startq = gsub(":", " ", input$year[1])
+      example_endq = gsub(":", " ", input$year[2])
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
+      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
+      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
+      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+      
+      
       covid = c("2020 Q2", "2020 Q3")
       covid_start = as.yearqtr(covid[1])
       covid_end = as.yearqtr(covid[2])
@@ -485,14 +509,7 @@ server <- function(input, output, session) {
   
   h = as.numeric(input$h)
   
-  advanced_AR_output <- fitAR(advanced_AR_input, h, dummy)
-  
   start_plot = check$Time[end_rownum - 10]
-  
-  p = as.numeric(fitAR(advanced_AR_input, h, dummy)$p)
-  
-  ar2_prediction = advanced_AR_output$pred
-  ar2_rmsfe = advanced_AR_output$msfe
   
   training <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
@@ -510,27 +527,31 @@ server <- function(input, output, session) {
     mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 3) 
 
+  training_t <- bind_rows(training, joining_value) %>%
+    mutate(category = 1) 
+  
+  training_p <- bind_rows(training, joining_value)
   
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
-    head(n = as.numeric(input$h)) %>%
-    mutate(new_growth_rate = c(fitAR_preds(advanced_AR_input, h, dummy)))
+    head(n = h) %>%
+    mutate(new_growth_rate = c(fitAR_preds(advanced_AR_input, h, covid_dummy)))
   
   # Separate predictions into actual and predicted dataframes for plotting
   actual_test_values <- predictions %>% 
     select(Time, growth_rate) %>%
     mutate(category = 2)
   
-  
-  predicted_test_values <- predictions %>% 
-    #add in last data pt in training set
+  predicted_test_values <- predictions %>%
     select(Time, new_growth_rate) %>% 
-    mutate(category = 3) %>% 
-    rename("growth_rate" = "new_growth_rate")
+    rename("growth_rate" = "new_growth_rate") %>% 
+    #l_join(joining_value, by = "growth_rate") %>%
+    mutate(category = 3) 
   
-  original_data <- rbind(training, actual_test_values)
-  predicted_data <- rbind(training, predicted_test_values)
+  
+  original_data <- rbind(training_t, actual_test_values)
+  predicted_data <- rbind(training_p, predicted_test_values)
   
   # creating data for fanplot
   predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
@@ -544,7 +565,7 @@ server <- function(input, output, session) {
     predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
     
     for(i in 2:(h+1)){
-      rmsfe = fitAR(input_df, i, dummy)$rmsfe 
+      rmsfe = fitAR(input_df, i, covid_dummy)$rmsfe 
       predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
       predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
       predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
@@ -613,8 +634,8 @@ server <- function(input, output, session) {
   #####################
   #source("Backend/GDP Cleaning.R")
   #source("Backend/ADL Data.R")
-  source("Backend/AR_Model_Functions.R")
-  source("Backend/ADL Functions.R")
+  #source("Backend/AR_Model_Functions.R")
+  #source("Backend/ADL Functions.R")
   
 observeEvent(input$show_prediction, {
   example_startq = gsub(":", " ", input$year[1])
@@ -657,6 +678,77 @@ observeEvent(input$show_prediction, {
     ##############
     # Predictor data
     ##############
+    ADL_splice <- function(data, window_start, window_end){
+      start_rownum = which(grepl(window_start, data$Date))
+      end_rownum = which(grepl(window_end, data$Date))
+      
+      output <- data[start_rownum:end_rownum+1, ]
+      
+      return(output)
+    }
+    
+    
+    baa_aaa <- read_excel("FRED BAA-AAA Data.xls", 
+                          col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+    
+    baa_aaa_ts <- ts(baa_aaa$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    
+    
+    tspread <- read_excel("FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    # NOTE: tspread is only from 1976 Q4 onward, so we can't accept forecast horizons earlier, at least not for this ADL model
+    
+    tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+    
+    tspread_ts <- ts(tspread$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    fred_hstarts <- read_excel("FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    fred_hstarts <- ADL_splice(fred_hstarts, example_startyq, example_endyq)
+    
+    fred_hstarts_ts <- ts(fred_hstarts$Spread, 
+                          start = c(start_y, start_q), 
+                          end = c(end_y, end_q), 
+                          frequency = 4)
+    
+    
+    consent <- read_excel("FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    consent <- ADL_splice(consent, example_startyq, example_endyq)
+    
+    consent_ts <- ts(consent$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    nasdaq <- read_excel("NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
+    
+    nasdaq_ts <- ts(nasdaq$Spread, 
+                    start = c(start_y, start_q), 
+                    end = c(end_y, end_q), 
+                    frequency = 4)
+    
   
     
     ##############
@@ -718,7 +810,23 @@ observeEvent(input$show_prediction, {
     
     X_dataframe = rename_variable(input$select_ADL) 
     
+    ADL_preds <- function(GDPGrowth_ts, X_dataframe, h) {
+      preds = numeric(h)
+      rmsfe = numeric(h)
+      for(i in 1:h){
+        #test_AR <- as.matrix(check$growth_rate)
+        adl_predicting = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy_ts)
+        preds[i] = adl_predicting$prediction
+        rmsfe[i] = adl_predicting$rmsfe
+        ##2 is placeholder for input$lags
+      }
+      return(list("preds" = preds, "rmsfe" = rmsfe))
+    }
+    
+    ### graph plotting
+    
     start_plot = GDPGrowth_ts_df$Time[end_rownum - 10]
+    
     
     training <- check %>%
       #mutate(Time = as.yearqtr(Dates)) %>%
@@ -728,33 +836,39 @@ observeEvent(input$show_prediction, {
       select(Time, growth_rate) %>%
       mutate(growth_rate = as.numeric(growth_rate)) %>%
       mutate(category = 1) 
-    
+
     joining_value <- check %>%
       #mutate(Time = as.yearqtr(Time)) %>%
       filter(Time == as.yearqtr(example_endq)) %>% 
       select(Time, growth_rate) %>%
       mutate(growth_rate = as.numeric(growth_rate)) %>%
       mutate(category = 3) 
-
+    
+    training_t <- bind_rows(training, joining_value) %>%
+      mutate(category = 1) 
+    
+    training_p <- bind_rows(training, joining_value)
+    
     predictions <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(example_endq)) %>% 
-      head(n = as.numeric(input$h)) %>%
-      mutate(new_growth_rate = ADL_predict_all(GDPGrowth_ts, X_dataframe, h, covid_dummy_ts)$prediction)
+      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      head(n = h) %>%
+      mutate(new_growth_rate = c(ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds))
     
     # Separate predictions into actual and predicted dataframes for plotting
     actual_test_values <- predictions %>% 
       select(Time, growth_rate) %>%
       mutate(category = 2)
     
-    predicted_test_values <- predictions %>% 
-      #add in last data pt in training set
+    predicted_test_values <- predictions %>%
       select(Time, new_growth_rate) %>% 
-      mutate(category = 3) %>% 
-      rename("growth_rate" = "new_growth_rate")
+      rename("growth_rate" = "new_growth_rate") %>% 
+      #l_join(joining_value, by = "growth_rate") %>%
+      mutate(category = 3) 
     
-    original_data <- rbind(training, actual_test_values)
-    predicted_data <- rbind(training, predicted_test_values)
+    
+    original_data <- rbind(training_t, actual_test_values)
+    predicted_data <- rbind(training_p, predicted_test_values)
     
     # creating data for fanplot
     predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
@@ -768,7 +882,7 @@ observeEvent(input$show_prediction, {
       predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
       
       for(i in 2:(h+1)){
-        rmsfe = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy_ts)$rmsfe 
+        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, i)$rmsfe
         predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
         predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
         predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
@@ -832,6 +946,16 @@ observeEvent(input$show_prediction, {
     plot(model_3)
     
   })
+  
+  
+  ##################
+    ## COMBINED MODEL
+  ##################
+  
+  
+  
+  
+  
   
   ##################
   ## AGGREGATE MODEL
