@@ -305,7 +305,7 @@ server <- function(input, output, session) {
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
-    head(n = as.numeric(input$h)) %>%
+    head(n = h) %>%
     mutate(new_growth_rate = c(fitAR_preds(basic_AR_input, h, dummy)))
   
   #predictions <- bind_rows(predictions, joining_value)
@@ -621,171 +621,10 @@ server <- function(input, output, session) {
   })
 })
   
-  ADL_splice <- function(data, window_start, window_end){
-      start_rownum = which(grepl(window_start, data$Date))
-      end_rownum = which(grepl(window_end, data$Date))
-      
-      output <- data[start_rownum:end_rownum+1, ]
-      
-      return(output)
-  }
   
-  AICselector <- function(Y_df, X_df, end_year, end_quarter, dum){
-    
-    # options is a vector that comprises all the lags of Y and X. 
-    # These are the options for permutations and combinations
-    options <- c()
-    for (j in 1:4){
-      Y_string = paste("L(", "Y_df", ",", j, ")", sep = "")
-      X_string = paste("L(", "X_df", ",", j, ")", sep = "")
-      options <- append(options, Y_string)
-      options <- append(options, X_string)
-    }
-    
-    dum_string = as.character(substitute(dum))
-    # creates the "GDPGrowth_ts ~ " part
-    #start_string = paste("Y_df", " ~ ", sep = "")
-    start_string = "Y_df ~ dum + "
-    
-    # just a really large value
-    min_AIC = Inf
-    min_AIC_string = ""
-    
-    for (i in 1:4){
-      store = combn(options, i)
-      length_store = ncol(store)
-      
-      for (m in 1:length_store){
-        elements <- store[,m]
-        body_string = ""
-        
-        for (n in 1:i){
-          body_string = paste(body_string, elements[n], sep = " + ")
-          # remove the first plus sign
-          body_string_up <- substring(body_string, 4)
-          
-          model_string = paste(start_string, body_string_up, sep = "")
-          model_formula = as.formula(model_string)
-          
-          # create dynlm model 
-          model_local <- dynlm(model_formula,
-                               start = c(start_y, start_q), 
-                               end = c(end_year, end_quarter))
-          
-          # AIC of model 
-          AIC_local <- AIC(model_local)
-          
-          # if AIC_local < min_AIC, replace the value of min_AIC. 
-          # replace min_AIC_string too
-          if(AIC_local < min_AIC){
-            min_AIC = AIC_local
-            min_AIC_string = model_string
-          }
-        }
-      }
-    }
-    final_string = gsub("dum", dum_string, min_AIC_string)
-    # output is the string format of the optimal model formula
-    return(final_string)
-  }
-  
-  ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
-                            selectors, coefficients){
-    
-    coef_df <- as.data.frame(coefficients)
-    coef_row_name <- c(rownames(coef_df))
-    
-    input_string <- as.character(selectors)
-    
-    Y_lags <- str_count(input_string, Y_string) - 1
-    X_lags <- str_count(input_string, X_string) 
-    
-    # error proof: number of lags is accurate 
-    
-    Y_lag_names <- c()
-    for (x in (1:length(coef_row_name))){
-      if (grepl(Y_string, coef_row_name[x], fixed = TRUE)){
-        # string of lag 
-        str <- coef_row_name[x]
-        Y_lag_names <- append(Y_lag_names, str)
-      }
-    }
-    
-    X_lag_names <- c()
-    for (y in (1:length(coef_row_name))){
-      if (grepl(X_string, coef_row_name[y], fixed = TRUE)){
-        # string of lag 
-        str <- coef_row_name[y]
-        X_lag_names <- append(X_lag_names, str)
-      }
-    }
-    
-    pred = coefficients[[1]]
-    
-    
-    if (Y_lags == 0){
-      if (X_lags == 0){
-        # if Y_lags = 0 and X_lags = 0
-        pred = pred
-      } 
-      else {
-        # if Y_lags = 0 and X_lags != 0
-        for (i in 1:X_lags){
-          # create lag string 
-          lag_string <- X_lag_names[i]
-          coeff_value = coef_df[lag_string,]
-          
-          tail_num_i = as.numeric(str_sub(lag_string,-2,-2))
-          
-          temp = (tail(X_dataframe, n = tail_num_i)[1]) * coeff_value
-          pred = pred + temp
-        }
-      }
-    } 
-    else if (X_lags == 0){
-      # if Y_lags != 0 and X_lags = 0
-      
-      for (j in 1:Y_lags){
-        # create lag string 
-        lag_string <- Y_lag_names[j]
-        coeff_value = coef_df[lag_string,]
-        
-        tail_num_j = as.numeric(str_sub(lag_string,-2,-2))
-        
-        temp = (tail(Y_dataframe, n = tail_num_j)[1]) * coeff_value
-        pred = pred + temp
-      }
-    } 
-    else {
-      # if Y_lags != 0 and X_lags != 0 
-      for (p in 1:Y_lags){
-        # create lag string 
-        lag_string <- Y_lag_names[p]
-        coeff_value = coef_df[lag_string,]
-        
-        tail_num_p = as.numeric(str_sub(lag_string,-2,-2))
-        
-        temp = (tail(Y_dataframe, n = tail_num_p)[1]) * coeff_value
-        
-        pred = pred + temp
-        
-      }
-      for (q in 1:X_lags){
-        # create lag string 
-        lag_string <- X_lag_names[q]
-        coeff_value = coef_df[lag_string,]
-        
-        tail_num_q = as.numeric(str_sub(lag_string,-2,-2))
-        
-        temp = (tail(X_dataframe, n = tail_num_q)[1]) * coeff_value
-        pred = pred + temp
-      }
-    }
-    
-    return(pred)
-  }
-  
-  
+  #####################
+  ## ADL functions
+  #####################
   
     
   
