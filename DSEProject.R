@@ -60,7 +60,8 @@ ui <- navbarPage(
                                type = "pills",
                                tabPanel("Basic AR Model",
                                         plotOutput("model1"),
-                                        textOutput("desc1"),
+                                        tableOutput("table1"),
+                                        htmlOutput("desc1"),
                                         headerPanel(""), # adds space btwn text and inputs
                                         helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
                                         div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
@@ -94,6 +95,8 @@ ui <- navbarPage(
                                                textOutput("desc4")),
 
                                       tabPanel("Aggregate Model", plotOutput("model5"),
+                                               actionButton("temp", "temp"),
+                                               headerPanel(""), # adds space btwn text and inputs
                                                textOutput("poor_outlook"),
                                                htmlOutput("abnormal_indicators"),
                                                textOutput("abnormal_message")
@@ -185,6 +188,7 @@ server <- function(input, output, session) {
       download.file("https://github.com/zitinbali/Initial-Repo/blob/main/Data/FRED%20Unemployment.xls", destfile = file)
     }
   )
+  
   
  ############## 
  ## fitAR PREP 
@@ -422,7 +426,31 @@ server <- function(input, output, session) {
             axis.line = element_line(color = "black"),
             plot.margin = margin(20,20,20,20))
     plot(model_1)
-  })
+  }) 
+    
+    output$table1 <- renderTable({
+      
+      dummy = covid_dum(as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", input$year[2])))
+      
+      start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
+      end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
+      
+      h = as.numeric(input$h)
+      
+      basic_AR_input <- check[start_rownum:end_rownum, ] %>% 
+        select(growth_rate) %>% 
+        as.matrix()
+      
+      predictions <- check %>% 
+        mutate(Dates = as.yearqtr(Dates)) %>%
+        filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+        head(n = h) %>%
+        mutate("Predicted Growth Rate" = c(fitAR_preds(basic_AR_input, h, dummy))) %>%
+        select(Dates, "Predicted Growth Rate")
+      
+      predictions
+
+    })
 })
   
   
@@ -843,35 +871,37 @@ observeEvent(input$show_prediction, {
     plot(model_3)
     
   })
+})
   
   ##################
   ## AGGREGATE MODEL
   ##################
   
-  observeEvent(input$show_prediction, {
+  observeEvent(input$temp, {
     advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
-    output <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    text <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    
     output$poor_outlook <- renderText({
-      return(output$outlook$message)
+      return(text$outlook$message)
     })
     
     output$abnormal_indicators <- renderText({
-      value <- output$abnormal$indicators
+      value <- text$abnormal$indicators
+      if(is.null(value)){value = 0}
       
-      color <- ifelse(is.null(value) || value == 0, "#00b392",
+      color <- ifelse(value == 0, "#00b392",
                       ifelse(value == 1, "#729a5a",
                              ifelse(value == 2, "#d48f3b",
                                     ifelse(value == 3, "#f07a32",
                                            ifelse(value == 4, "#ed6435", "#e7463a")))))
       
-      return(paste("Your number is ", "<span style='color:", color, "\'>", value, "</span>"))
+      return(paste("Number of abnormal indicators: ", "<span style='color:", color, "\'>", value, "</span>"))
     })
     
     output$abnormal_message <- renderText({
-      return(output$abnormal$message)
+      return(text$abnormal$message)
     })
   })
-})
   
 }
   
