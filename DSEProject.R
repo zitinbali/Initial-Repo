@@ -318,7 +318,7 @@ server <- function(input, output, session) {
   predictions <- check %>% 
     mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
-    head(n = as.numeric(input$h)) %>%
+    head(n = h) %>%
     mutate(new_growth_rate = c(fitAR_preds(basic_AR_input, h, dummy)))
   
   #predictions <- bind_rows(predictions, joining_value)
@@ -635,63 +635,22 @@ server <- function(input, output, session) {
 })
   
   
+  #####################
+  ## ADL functions
+  #####################
+  
+    
+  
+observeEvent(input$show_prediction, {
   output$model3 <- renderPlot({
-    latest_data <- RGDP_Data$ROUTPUT24Q1
+
     
-    # creating a lag for all quarters
-    lag(latest_data)
     
-    # check is a dataset to validate whether the data is stationary 
-    check <- data.frame(RGDP_Data$DATE, (latest_data), lag(latest_data))
     
-    check <- check %>% 
-      rename(c("Date" = "RGDP_Data.DATE",
-               "Raw Data" = "X.latest_data.",
-               "First Lag" = "lag.latest_data."))
     
-    # calculating growth rate of GDP from one quarter to the next
-    check <- check[-1,] %>% 
-      mutate(growth_rate = (`Raw Data` - `First Lag`)/(`First Lag`) * 100)
-    
-    # formatting the data variable in terms of year and quarters
-    Dates <- gsub(":", " ", check$Date) 
-    check <- check %>% 
-      mutate(Time = as.yearqtr(Dates)) %>% 
-      select(c(Time, growth_rate)) %>% 
-      mutate(growth_rate = as.numeric(growth_rate))
-    
-    check_xts <- xts(check$growth_rate, check$Time) 
-    
-    plot(as.zoo(check_xts), 
-         plot.type = "single", 
-         col = c("darkred"),
-         lwd = 1,
-         xlab = "Date",
-         ylab = "Growth Rate",
-         main = "Quarterly Growth Rate of GDP")
-    
-    # function that transform years to class 'yearqtr'
-    YToYQTR <- function(years){
-      return(
-        sort(as.yearqtr(sapply(years, paste, c("Q1", "Q2", "Q3", "Q4"))))
-      )
-    }
-    
-    # recessions
-    recessions <- YToYQTR(c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                            2001, 2007:2008))
-    # the COVID recession ended in April 2020 according to the Fed
-    recessions_covid <- append(recessions, 
-                               c(as.yearqtr("2020 Q1"), 
-                                 as.yearqtr("2020 Q2")))
-    
-    # colour shading for recessions
-    xblocks(time(as.zoo(check_xts)), 
-            c(time(check_xts) %in% recessions_covid), 
-            col = alpha("steelblue", alpha = 0.3))
   })
 
-  
+})
   
 }
   
