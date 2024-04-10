@@ -49,8 +49,14 @@ poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
   less_than_zero <- unique(less_than_zero)
   indicators_poor <- X_variables[less_than_zero]
   
-  print(unique(indicators_poor))
-  print(perc_poor_forecast)
+  if (is_empty(unique(indicators_poor))){
+    output_message = "None of the ADL predictors forecast a negative GDP growth rate."
+    indicators_output = NULL
+  } else {
+    output_message = "Some of the ADL predictors forecast a negative GDP growth rate."
+    indicators_output = unique(indicators_poor)
+  }
+  return(list("message" = output_message, "indicators" = indicators_output))
 }
 
 
@@ -124,13 +130,12 @@ Aggregates the forecasts
 ```{r aggregate forecast}
 
 
-aggregate_output <- function(Y_dataframe, X_variables, f_horizon){
+aggregate_output <- function(Y_dataframe, X_variables, AR_input, f_horizon, dum){
   
   forecast_output <- c() 
   
   # Advanced AR prediction
-  advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
-  advanced_AR_output <- fitAR(advanced_AR_input, example_fhorizon, covid_dummy)
+  advanced_AR_output <- fitAR(AR_input, example_fhorizon, dum)
   ar2_prediction = advanced_AR_output$pred
   
   forecast_output <- append(forecast_output, ar2_prediction)
@@ -169,11 +174,24 @@ aggregate_output <- function(Y_dataframe, X_variables, f_horizon){
   
   mean_output <- mean(forecast_output)
   
-  return(mean_output)
+  # call poor outlook function 
+  poor_outlook <- poor_outlook(Y_dataframe, X_variables, f_horizon)
+  
+  # call abnormalities function 
+  abnormal <- abnormal(X_variables)
+  
+  return(list("prediction" = mean_output, "outlook" = poor_outlook, "abnormal" = abnormal))
 }
 
-aggregate_output(GDPGrowth_ts, ADL_variables, 2)
+```
 
+
+## TEST 
+
+```{r aggregate test}
+
+advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
+aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
 
 ```
 
