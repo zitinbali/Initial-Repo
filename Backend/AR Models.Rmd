@@ -40,7 +40,7 @@ advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
 advanced_AR_output <- fitAR(advanced_AR_input, example_fhorizon, covid_dummy)
 
 ar2_prediction = advanced_AR_output$pred
-ar2_rmsfe = advanced_AR_output$msfe
+ar2_rmsfe = advanced_AR_output$rmsfe
 
 ```
 
