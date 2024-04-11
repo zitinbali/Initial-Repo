@@ -79,7 +79,8 @@ ui <- navbarPage(
                                         ),
                                tabPanel("AR Model with Revised Values", 
                                         plotOutput("model2"),
-                                        textOutput("desc2"))
+                                        textOutput("desc2"),
+                                        tableOutput("table2"))
                            )
                            )
                          ),
@@ -101,7 +102,8 @@ ui <- navbarPage(
                                       tabPanel("Combined ADL Model", plotOutput("model4"),
                                                textOutput("desc4")),
 
-                                      tabPanel("Aggregate Model", plotOutput("model5"),
+                                      tabPanel("Aggregate Model", actionButton("temp", "Show Prediction"),
+                                               plotOutput("model5"),
                                                headerPanel(""), # adds space btwn text and inputs
                                                textOutput("agg_model_prediction"),
                                                headerPanel(""), # adds space btwn text and inputs
@@ -438,7 +440,7 @@ server <- function(input, output, session) {
             panel.grid = element_blank(),
             panel.border = element_blank(),  # Remove panel border
             axis.line = element_line(color = "black"),
-            plot.margin = margin(20,20,20,20))
+            plot.margin = margin(20,20,20,20)) 
     plot(model_1)
   })
     
@@ -677,10 +679,64 @@ server <- function(input, output, session) {
           panel.grid = element_blank(),
           panel.border = element_blank(),  # Remove panel border
           axis.line = element_line(color = "black"),
-          plot.margin = margin(20,20,20,20))
+          plot.margin = margin(20,20,20,20)) +
+    labs(color = "Category")
     
     plot(model_2)
   })
+    
+    output$table2 <- renderTable({
+      
+      example_startq = gsub(":", " ", input$year[1])
+      example_endq = gsub(":", " ", input$year[2])
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
+      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
+      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
+      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+      
+      covid = c("2020 Q2", "2020 Q3")
+      covid_start = as.yearqtr(covid[1])
+      covid_end = as.yearqtr(covid[2])
+      covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+      
+      sliced_perc_change <- data_splice(perc_change_df, "1947 Q2", "2023 Q4", 
+                                        "1965 Q4", "2024 Q1", 
+                                        gsub(":", " ", input$year[1]), gsub(":", " ", input$year[2]), 2, 1)
+      all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta, 
+                                    gsub(":", " ", input$year[1]), gsub(":", " ", input$year[2]))
+      
+      advanced_AR_input <- as.matrix(all_GDP_data)
+      
+      if (example_startyq <= covid_start & example_endyq == covid_start){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+      }
+      
+      # Dummy if timeframe includes all of covid
+      if (example_startyq <= covid_start & example_endyq >= covid_end){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+        covid_dummy[index + 1] = 1
+      }
+      
+      start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
+      end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
+
+      
+      h = as.numeric(input$h)
+      
+      predictions <- check %>% 
+        mutate(Dates = as.yearqtr(Dates)) %>%
+        filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+        head(n = h) %>%
+        mutate("Predicted Growth Rate" = c(fitAR_preds(advanced_AR_input, h, covid_dummy))) %>%
+        select(Dates, "Predicted Growth Rate")
+      
+      predictions
+      
+    })
 })
   
   
@@ -1306,7 +1362,7 @@ observeEvent(input$show_prediction, {
   
     ## OUTPUT MESSAGES 
   
-  observeEvent(input$show_prediction, {
+  observeEvent(input$temp, {
     advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
     text <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
     
