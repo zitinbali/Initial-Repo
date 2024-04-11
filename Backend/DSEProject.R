@@ -1112,7 +1112,6 @@ observeEvent(input$show_prediction, {
     }
     
     X_dataframe = rename_variable(input$select_ADL) 
-    #X_dataframe = paste0(X_dataframe, "_ts")
     
     ADL_preds <- function(GDPGrowth_ts, X_dataframe, h) {
       preds = numeric(h)
@@ -1731,9 +1730,6 @@ observeEvent(input$show_prediction, {
     return(list("prediction" = mean_output, "outlook" = poor_outlook, "abnormal" = abnormal))
   }
   
-  
-  ##aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, h, covid_dummy)
-  
   observeEvent(input$show_prediction, {
   example_startq = gsub(":", " ", input$year[1])
   example_endq = gsub(":", " ", input$year[2])
@@ -1744,15 +1740,16 @@ observeEvent(input$show_prediction, {
   end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
   end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
   
-  
-  
-  
-  output$model4 <- renderPlot({
+  output$model5 <- renderPlot({
+    advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
+    aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    ##aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, h, covid_dummy)
     
     covid = c("2020 Q2", "2020 Q3")
     covid_start = as.yearqtr(covid[1])
     covid_end = as.yearqtr(covid[2])
     covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+    
     
     # Timeframe cannot start from during covid or after
     # Dummy if timeframe ends on 2020 Q2, start of covid
@@ -1774,6 +1771,7 @@ observeEvent(input$show_prediction, {
                          end = c(end_y, end_q), 
                          frequency = 4)
     
+    
     ##############
     # Predictor data
     ##############
@@ -1785,6 +1783,242 @@ observeEvent(input$show_prediction, {
       
       return(output)
     }
+    
+    
+    baa_aaa <- read_excel("FRED BAA-AAA Data.xls", 
+                          col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+    
+    baa_aaa_ts <- ts(baa_aaa$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    
+    
+    tspread <- read_excel("FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    # NOTE: tspread is only from 1976 Q4 onward, so we can't accept forecast horizons earlier, at least not for this ADL model
+    
+    tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+    
+    tspread_ts <- ts(tspread$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    fred_hstarts <- read_excel("FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    fred_hstarts <- ADL_splice(fred_hstarts, example_startyq, example_endyq)
+    
+    fred_hstarts_ts <- ts(fred_hstarts$Spread, 
+                          start = c(start_y, start_q), 
+                          end = c(end_y, end_q), 
+                          frequency = 4)
+    
+    
+    consent <- read_excel("FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    consent <- ADL_splice(consent, example_startyq, example_endyq)
+    
+    consent_ts <- ts(consent$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    nasdaq <- read_excel("NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
+      mutate(Date = as.yearqtr(Date), 
+             Spread = as.numeric(Spread))
+    
+    nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
+    
+    nasdaq_ts <- ts(nasdaq$Spread, 
+                    start = c(start_y, start_q), 
+                    end = c(end_y, end_q), 
+                    frequency = 4)
+    
+    
+    
+    ##############
+    # GDP prep
+    ##############
+    
+    spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
+                               "2024 Q1", as.yearqtr(gsub(":", " ", "1985:Q4")), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
+    
+    post_prep_gdp <- prep_func(spliced_GDP, 40)
+    post_prep_gdp_df <- post_prep_gdp$df
+    post_prep_gdp_delta = post_prep_gdp$delta
+    
+    # revise GDP values
+    
+    # note that the last input should be in a string format
+    ###################
+    
+    sliced_perc_change <- data_splice(perc_change_df, "1947 Q2", "2023 Q4", 
+                                      "1965 Q4", "2024 Q1", 
+                                      example_startq, example_endq, 2, 1)
+    all_GDP_data <- revise_values(sliced_perc_change, post_prep_gdp_delta, 
+                                  example_startq, example_endq)
+    
+    GDPGrowth_ts <- ts(all_GDP_data, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+    
+    GDPGrowth_ts_df <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+      rename("Time" = "time") %>%
+      rename("growth_rate" = "value")
+    
+    start_rownum = which(grepl(as.yearqtr(example_startq), GDPGrowth_ts_df$Time))
+    end_rownum = which(grepl(as.yearqtr(example_endq), GDPGrowth_ts_df$Time))
+    #indiv_ADL_input <- as.matrix(all_GDP_data)
+    
+    X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
+    
+    h = as.numeric(input$h)
+    
+    X_dataframe = X_comb_df
+    #X_dataframe = paste0(X_dataframe, "_ts")
+    
+    ADL_preds <- function(GDPGrowth_ts, ADL_variables, advanced_AR_input, h) {
+      preds = numeric(h)
+      rmsfe = numeric(h)
+      for(i in 1:h){
+        adl_predicting = aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+        preds[i] = adl_predicting$prediction
+        #rmsfe[i] = adl_predicting$rmsfe
+      }
+      return(list("preds" = preds)) #, "rmsfe" = rmsfe))
+    }
+    
+    ### graph plotting
+    
+    start_plot = GDPGrowth_ts_df$Time[end_rownum - 10]
+    #h=2
+    
+    training <- check %>%
+      #mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time > as.yearqtr(example_startq)) %>%
+      filter(Time <= as.yearqtr(example_endq)) %>% 
+      tail(10) %>% 
+      select(Time, growth_rate) %>%
+      mutate(growth_rate = as.numeric(growth_rate)) %>%
+      mutate(category = 1) 
+    
+    joining_value <- check %>%
+      #mutate(Time = as.yearqtr(Time)) %>%
+      filter(Time == as.yearqtr(example_endq)) %>% 
+      select(Time, growth_rate) %>%
+      mutate(growth_rate = as.numeric(growth_rate)) %>%
+      mutate(category = 3) 
+    
+    training_t <- bind_rows(training, joining_value) %>%
+      mutate(category = 1) 
+    
+    training_p <- bind_rows(training, joining_value)
+    
+    predictions <- check %>% 
+      mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time > as.yearqtr(gsub(":", " ", "2001:Q3"))) %>% 
+      head(n = h) %>%
+      mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, ADL_variables, advanced_AR_input, h)$preds)
+    
+    # Separate predictions into actual and predicted dataframes for plotting
+    actual_test_values <- predictions %>% 
+      select(Time, growth_rate) %>%
+      mutate(category = 2)
+    
+    predicted_test_values <- predictions %>%
+      select(Time, new_growth_rate) %>% 
+      rename("growth_rate" = "new_growth_rate") %>% 
+      #l_join(joining_value, by = "growth_rate") %>%
+      mutate(category = 3) 
+    
+    
+    original_data <- rbind(training_t, actual_test_values)
+    predicted_data <- rbind(training_p, predicted_test_values)
+    
+    # creating data for fanplot
+    predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
+    
+    fanplot_rmsfe <- function(GDPGrowth_ts, advanced_AR_input, predictions, h) {
+      predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
+                                      upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
+      predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
+      predictions_rmsfe$lower_bound_80[1] = joining_value$growth_rate
+      predictions_rmsfe$upper_bound_50[1] = joining_value$growth_rate
+      predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
+      
+      for(i in 2:(h+1)){
+        rmsfe = ADL_preds(GDPGrowth_ts, ADL_variables, advanced_AR_input, i-1)$rmsfe
+        predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
+        predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
+        predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
+        predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
+      }
+      return(predictions_rmsfe)
+    }
+    
+    ##create fanplot dataframe with time column
+    time_data <- check %>%
+      mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time >= as.yearqtr(example_endq)) %>%
+      select(Time) %>%
+      head(h+1)
+    
+    data <- check %>%
+      mutate(Time = as.yearqtr(Dates)) %>%
+      filter(Time < as.yearqtr(example_endq)) %>%
+      select(Time) %>% 
+      mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
+    
+    rmsfe_data <- cbind(time_data, fanplot_rmsfe(GDPGrowth_ts, advanced_AR_input, predictions, h)) 
+    
+    fanplot_data <- rbind(data, rmsfe_data) %>%
+      filter(Time >= as.yearqtr(example_endq)) %>%
+      head(h+1)
+    
+    
+    # recession blocks
+    recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                    2001, 2007:2008)
+    
+    rectangles <- data.frame(
+      xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
+      xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
+      ymin = -Inf,
+      ymax = Inf
+    )
+    recession_block = rectangles %>%
+      filter(xmin >= start_plot & xmax <= as.yearqtr(example_endq)) #replace w range of lineplot
+    
+    model_5 <- ggplot() +
+      geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
+      geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+      geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+      geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
+      geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
+      labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
+           color = "Legend") +  # Set the legend title
+      theme_minimal() +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+            panel.grid = element_blank(),
+            panel.border = element_blank(),  # Remove panel border
+            axis.line = element_line(color = "black"),
+            plot.margin = margin(20,20,20,20))
+    
+    print(model_5)
 
   })
   })
