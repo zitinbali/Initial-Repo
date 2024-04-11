@@ -67,7 +67,7 @@ ADL_predict_all(GDPGrowth_ts, consent_ts, 4, covid_dummy)
 
 # ADL Model - NASDAQ Composite Index 
 
-```{r adl model baa-aaa}
+```{r adl model nasdaq}
 
 nasdaq_prediction <- ADL_predict_all(GDPGrowth_ts, nasdaq_ts, example_fhorizon, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, nasdaq_ts, 1, covid_dummy)
@@ -80,13 +80,26 @@ ADL_predict_all(GDPGrowth_ts, nasdaq_ts, 4, covid_dummy)
 
 # ADL Model - Unemployment Insurance Claims
 
-```{r adl model baa-aaa}
+```{r adl model unemp}
 
 unemp_prediction <- ADL_predict_all(GDPGrowth_ts, unemp_ts, example_fhorizon, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, unemp_ts, 1, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, unemp_ts, 2, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, unemp_ts, 3, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, unemp_ts, 4, covid_dummy)
+
+```
+
+
+# ADL Model - Yield Curve 
+
+```{r adl model yield}
+
+yield_prediction <- ADL_predict_all(GDPGrowth_ts, yield_ts, example_fhorizon, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, yield_ts, 1, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, yield_ts, 2, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, yield_ts, 3, covid_dummy)
+ADL_predict_all(GDPGrowth_ts, yield_ts, 4, covid_dummy)
 
 ```
 
@@ -99,6 +112,7 @@ rw_hstarts = rolling_window_adl(perc_change_df_spliced, fred_hstarts_ts, window_
 rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_unemp = rolling_window_adl(perc_change_df_spliced, unemp_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_yield = rolling_window_adl(perc_change_df_spliced, yield_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 
 ```
 
@@ -110,8 +124,9 @@ rw_hstarts$formula
 rw_consent$formula
 rw_nasdaq$formula
 rw_unemp$formula
+rw_yield$formula
 
-pred2 = rw_nasdaq$pred
+pred2 = rw_yield$pred
 
 dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
 # Basic vs Advanced values, Plots loss of basic - loss of advanced
