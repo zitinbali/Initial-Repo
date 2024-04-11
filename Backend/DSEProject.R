@@ -106,7 +106,7 @@ ui <- navbarPage(
                                                textOutput("poor_outlook"),
                                                htmlOutput("abnormal_indicators"),
                                                textOutput("abnormal_message")
-                                      ),
+                                      )
                                     )
                                   )
                          ),
@@ -440,22 +440,46 @@ server <- function(input, output, session) {
     
     output$table1 <- renderTable({
       
-      dummy = covid_dum(as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", input$year[2])))
+      example_startq = gsub(":", " ", input$year[1])
+      example_endq = gsub(":", " ", input$year[2])
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
+      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
+      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
+      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+      
+      covid = c("2020 Q2", "2020 Q3")
+      covid_start = as.yearqtr(covid[1])
+      covid_end = as.yearqtr(covid[2])
+      covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+
+      if (example_startyq <= covid_start & example_endyq == covid_start){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+      }
+      
+      # Dummy if timeframe includes all of covid
+      if (example_startyq <= covid_start & example_endyq >= covid_end){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+        covid_dummy[index + 1] = 1
+      }
       
       start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
       end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
-      
-      h = as.numeric(input$h)
       
       basic_AR_input <- check[start_rownum:end_rownum, ] %>% 
         select(growth_rate) %>% 
         as.matrix()
       
+      h = as.numeric(input$h)
+      
       predictions <- check %>% 
         mutate(Dates = as.yearqtr(Dates)) %>%
         filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
         head(n = h) %>%
-        mutate("Predicted Growth Rate" = c(fitAR_preds(basic_AR_input, h, dummy))) %>%
+        mutate("Predicted Growth Rate" = c(fitAR_preds(basic_AR_input, h, covid_dummy))) %>%
         select(Dates, "Predicted Growth Rate")
       
       predictions
@@ -1304,7 +1328,7 @@ observeEvent(input$show_prediction, {
     })
   })
   
-}
+
 
   
   poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
