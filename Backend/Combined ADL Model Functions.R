@@ -91,7 +91,7 @@ comb_AICselector <- function(Y_df, X_combined_df, end_year, end_quarter, covid_d
   options <- c()
   
   # j refers to the number of lags of each variable that we will include.
-  for (j in 1:1){
+  for (j in 1:2){
     Y_string = paste("L(", "Y_df", ",", j, ")", sep = "")
     options <- append(options, Y_string)
     
@@ -116,7 +116,7 @@ comb_AICselector <- function(Y_df, X_combined_df, end_year, end_quarter, covid_d
     assign(name, X_combined_df[,i])
   }
   
-  for (i in 1:4){
+  for (i in 1:3){
     store = combn(options, i)
     length_store = ncol(store)
     
