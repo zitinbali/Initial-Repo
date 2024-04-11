@@ -930,9 +930,8 @@ server <- function(input, output, session) {
         filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
         head(n = h) %>%
         mutate("Predicted Growth Rate" = c(fitAR_preds(advanced_AR_input, h, covid_dummy))) %>%
+        mutate(Dates = as.character(Dates)) %>% 
         select(Dates, "Predicted Growth Rate")
-      
-      predictions
       
     })
 })
