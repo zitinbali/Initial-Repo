@@ -68,6 +68,7 @@ ui <- navbarPage(
                                tabPanel("Basic AR Model",
                                         plotOutput("model1"),
                                         textOutput("desc1"),
+                                        tableOutput("table1")
                                         headerPanel(""), # adds space btwn text and inputs
                                         helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
                                         div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
@@ -436,6 +437,30 @@ server <- function(input, output, session) {
             plot.margin = margin(20,20,20,20))
     plot(model_1)
   })
+    
+    output$table1 <- renderTable({
+      
+      dummy = covid_dum(as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", input$year[2])))
+      
+      start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
+      end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
+      
+      h = as.numeric(input$h)
+      
+      basic_AR_input <- check[start_rownum:end_rownum, ] %>% 
+        select(growth_rate) %>% 
+        as.matrix()
+      
+      predictions <- check %>% 
+        mutate(Dates = as.yearqtr(Dates)) %>%
+        filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+        head(n = h) %>%
+        mutate("Predicted Growth Rate" = c(fitAR_preds(basic_AR_input, h, dummy))) %>%
+        select(Dates, "Predicted Growth Rate")
+      
+      predictions
+      
+    })
 })
   
   
