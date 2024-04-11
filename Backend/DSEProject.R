@@ -101,7 +101,6 @@ ui <- navbarPage(
                                                textOutput("desc4")),
 
                                       tabPanel("Aggregate Model", plotOutput("model5"),
-                                               actionButton("temp", "temp"),
                                                headerPanel(""), # adds space btwn text and inputs
                                                textOutput("poor_outlook"),
                                                htmlOutput("abnormal_indicators"),
