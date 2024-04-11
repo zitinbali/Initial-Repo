@@ -238,7 +238,7 @@ legend("topright",
 
 
 ##############
-# test
+# test 1
 ##############
 
 
@@ -249,6 +249,23 @@ consent2 <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Dat
 consent2 <- ADL_splice(consent2, example_startyq, example_endyq)
 
 consent2_ts <- ts(consent$Spread, 
+                  start = c(start_y, start_q), 
+                  end = c(end_y, end_q), 
+                  frequency = 4)
+
+
+##############
+# test 2
+##############
+
+
+yield <- read_excel("../Data/FRED Treasury Maturity.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+yield <- ADL_splice(yield, example_startyq, example_endyq)
+
+yield_ts <- ts(yield$Spread, 
                   start = c(start_y, start_q), 
                   end = c(end_y, end_q), 
                   frequency = 4)

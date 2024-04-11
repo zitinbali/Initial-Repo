@@ -185,6 +185,5 @@ model_1 <- ggplot() +
         axis.line = element_line(color = "black"),
         plot.margin = margin(20,20,20,20))
 plot(model_1)
-})
-})
+
 
