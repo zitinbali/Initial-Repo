@@ -101,10 +101,12 @@ ui <- navbarPage(
                                                textOutput("desc4")),
 
                                       tabPanel("Aggregate Model", plotOutput("model5"),
+                                               actionButton("temp", "temp"),
+                                               headerPanel(""), # adds space btwn text and inputs
                                                textOutput("poor_outlook"),
                                                htmlOutput("abnormal_indicators"),
                                                textOutput("abnormal_message")
-                                               ),
+                                      ),
                                     )
                                   )
                          ),
@@ -1250,14 +1252,36 @@ observeEvent(input$show_prediction, {
   ## AGGREGATE MODEL
   ##################
   
+    ## OUTPUT MESSAGES 
   
+  observeEvent(input$temp, {
+    advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
+    text <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    
+    output$poor_outlook <- renderText({
+      return(text$outlook$message)
+    })
+    
+    output$abnormal_indicators <- renderText({
+      value <- text$abnormal$indicators
+      if(is.null(value)){value = 0}
+      
+      color <- ifelse(value == 0, "#00b392",
+                      ifelse(value == 1, "#729a5a",
+                             ifelse(value == 2, "#d48f3b",
+                                    ifelse(value == 3, "#f07a32",
+                                           ifelse(value == 4, "#ed6435", "#e7463a")))))
+      
+      return(paste("Number of abnormal indicators: ", "<span style='color:", color, "\'>", value, "</span>"))
+    })
+    
+    output$abnormal_message <- renderText({
+      return(text$abnormal$message)
+    })
+  })
   
-  
-  
-  
-  
-  
-  
+}
+
   
   poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
     
