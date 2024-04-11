@@ -62,19 +62,19 @@ baa_aaa_ts <- ts(baa_aaa$Spread,
                  end = c(end_y, end_q), 
                  frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(baa_aaa_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "BAA-AAA Spread & GDP Growth over Time")
+#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(baa_aaa_ts)), 
+#     plot.type = "single", 
+#     col = c("darkred", "steelblue"),
+#     lwd = 2,
+#     xlab = "Date",
+#     ylab = "",
+#     main = "BAA-AAA Spread & GDP Growth over Time")
 
-legend("topright", 
-       legend = c("GDP Growth", "BAA-AAA Spread"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
+#legend("topright", 
+#       legend = c("GDP Growth", "BAA-AAA Spread"),
+#       col = c("darkred", "steelblue"),
+#       lwd = c(1, 1),
+#       cex = 0.5)
 
 
 
@@ -97,18 +97,18 @@ tspread_ts <- ts(tspread$Spread,
                  end = c(end_y, end_q), 
                  frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(tspread_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Treasury Spread & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Treasury Spread"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
+#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(tspread_ts)), 
+#     plot.type = "single", 
+#     col = c("darkred", "steelblue"),
+#     lwd = 2,
+#     xlab = "Date",
+#     ylab = "",
+#     main = "Treasury Spread & GDP Growth over Time")
+#legend("topright", 
+ #      legend = c("GDP Growth", "Treasury Spread"),
+ #      col = c("darkred", "steelblue"),
+#       lwd = c(1, 1),
+ #      cex = 0.5)
 
 
 ##############
@@ -127,18 +127,18 @@ fred_hstarts_ts <- ts(fred_hstarts$Spread,
                       end = c(end_y, end_q), 
                       frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Housing Starts & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Housing Starts"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
+#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(fred_hstarts_ts)), 
+ #    plot.type = "single", 
+ #    col = c("darkred", "steelblue"),
+ #    lwd = 2,
+ #    xlab = "Date",
+ #    ylab = "",
+ #    main = "Housing Starts & GDP Growth over Time")
+#legend("topright", 
+  #     legend = c("GDP Growth", "Housing Starts"),
+  #     col = c("darkred", "steelblue"),
+  #     lwd = c(1, 1),
+   #    cex = 0.5)
 
 
 
@@ -159,18 +159,18 @@ consent_ts <- ts(consent$Spread,
                  end = c(end_y, end_q), 
                  frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Consumer Sentiment & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Consumer Sentiment"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
+#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(consent_ts)), 
+ #    plot.type = "single", 
+  #   col = c("darkred", "steelblue"),
+#     lwd = 2,
+ #    xlab = "Date",
+  #   ylab = "",
+   #  main = "Consumer Sentiment & GDP Growth over Time")
+#legend("topright", 
+ #      legend = c("GDP Growth", "Consumer Sentiment"),
+  #     col = c("darkred", "steelblue"),
+  #     lwd = c(1, 1),
+   #    cex = 0.5)
 
 
 
@@ -191,18 +191,18 @@ nasdaq_ts <- ts(nasdaq$Spread,
                  end = c(end_y, end_q), 
                  frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(nasdaq_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "NASDAQ Composite Index & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "NASDAQ Composite Index"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
+#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(nasdaq_ts)), 
+  #   plot.type = "single", 
+   #  col = c("darkred", "steelblue"),
+    # lwd = 2,
+     #xlab = "Date",
+#     ylab = "",
+ #    main = "NASDAQ Composite Index & GDP Growth over Time")
+#legend("topright", 
+ #      legend = c("GDP Growth", "NASDAQ Composite Index"),
+  #     col = c("darkred", "steelblue"),
+   #    lwd = c(1, 1),
+    #   cex = 0.5)
 
 
 #########################################
@@ -221,18 +221,18 @@ unemp_ts <- ts(unemp$Spread,
                 end = c(end_y, end_q), 
                 frequency = 4)
 
-plot(merge(as.zoo(GDPGrowth_ts), as.zoo(unemp_ts)), 
-     plot.type = "single", 
-     col = c("darkred", "steelblue"),
-     lwd = 2,
-     xlab = "Date",
-     ylab = "",
-     main = "Unemployment Insurance Claims & GDP Growth over Time")
-legend("topright", 
-       legend = c("GDP Growth", "Unemployment Insurance Claims"),
-       col = c("darkred", "steelblue"),
-       lwd = c(1, 1),
-       cex = 0.5)
+#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(unemp_ts)), 
+   #  plot.type = "single", 
+   #  col = c("darkred", "steelblue"),
+   #  lwd = 2,
+   #  xlab = "Date",
+   #  ylab = "",
+    # main = "Unemployment Insurance Claims & GDP Growth over Time")
+#legend("topright", 
+     #  legend = c("GDP Growth", "Unemployment Insurance Claims"),
+     #  col = c("darkred", "steelblue"),
+     #  lwd = c(1, 1),
+    #   cex = 0.5)
 
 
 

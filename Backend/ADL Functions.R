@@ -177,7 +177,7 @@ ADL_predict_1 <- function(Y_dataframe, X_dataframe, Y_string, X_string,
 ###############################################################
 
 # note that Y_dataframe and X_dataframe are in ts form
-ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon, covid_dummy = covid_dummy_ts){
+ADL_predict_all <- function(Y_dataframe, X_dataframe, f_horizon, covid_dummy){
   selectors_AIC <- AICselector(Y_dataframe, X_dataframe, end_y, end_q, covid_dummy)
   
   Y_string <- as.character(substitute(Y_dataframe))

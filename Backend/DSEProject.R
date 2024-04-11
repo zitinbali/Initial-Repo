@@ -326,6 +326,8 @@ server <- function(input, output, session) {
   h = as.numeric(input$h)
   
   p = as.numeric(fitAR(basic_AR_input, h, covid_dummy)$p)
+  
+  h = 2
       
   training <- check %>%
     mutate(Time = as.yearqtr(Dates)) %>%
@@ -382,11 +384,11 @@ server <- function(input, output, session) {
       predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
         
       for(i in 2:(h+1)){
-        rmsfe = fitAR(input_df, i, covid_dummy_ts)$rmsfe 
-        predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
-        predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
-        predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
-        predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate - 0.67*rmsfe
+        rmsfe = fitAR(input_df, (i-1), covid_dummy_ts)$rmsfe 
+        predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
+        predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
+        predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
+        predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
       }
         return(predictions_rmsfe)
     }
@@ -573,11 +575,11 @@ server <- function(input, output, session) {
           predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
           
           for(i in 2:(h+1)){
-            rmsfe = fitAR(input_df, i, covid_dummy_ts)$rmsfe 
-            predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
-            predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
-            predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
-            predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate - 0.67*rmsfe
+            rmsfe = fitAR(input_df, i-1, covid_dummy_ts)$rmsfe 
+            predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
+            predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
+            predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
+            predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
           }
           return(predictions_rmsfe)
         }
@@ -681,10 +683,6 @@ server <- function(input, output, session) {
         filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
         head(n = h) %>%
         mutate("Predicted Growth Rate" = c(fitAR_preds(basic_AR_input, h, covid_dummy))) %>%
-        #mutate(year = substr(as.character(Dates), 1, 4), quarter = substr(as.character(Dates), 6, 7)) %>% 
-        #mutate(quarter = as.numeric(quarter)*4) %>% 
-        #mutate(quarter = paste0("Q", as.character(quarter))) %>% 
-        #mutate(Dates = paste(year, quarter)) %>% 
         mutate(Dates = as.character(Dates)) %>% 
         select(Dates, "Predicted Growth Rate") 
       
@@ -758,8 +756,8 @@ server <- function(input, output, session) {
     
   #dummy = covid_dum(as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", input$year[2])))
   
-  #start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
-  #end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
+  start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
+  end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
   advanced_AR_input <- as.matrix(all_GDP_data)
   
   h = as.numeric(input$h)
@@ -820,11 +818,11 @@ server <- function(input, output, session) {
     predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
     
     for(i in 2:(h+1)){
-      rmsfe = fitAR(input_df, i, covid_dummy)$rmsfe 
-      predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
-      predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
-      predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
-      predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate - 0.67*rmsfe
+      rmsfe = fitAR(input_df, i-1, covid_dummy_ts)$rmsfe 
+      predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
+      predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
+      predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
+      predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
     }
     return(predictions_rmsfe)
   }
@@ -938,7 +936,7 @@ server <- function(input, output, session) {
   
   
   #####################
-  ## ADL functions
+  ## ADL MODEL
   #####################
   #source("Backend/GDP Cleaning.R")
   #source("Backend/ADL Data.R")
@@ -1064,7 +1062,7 @@ observeEvent(input$show_prediction, {
     ##############
     
     spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                               "2024 Q1", as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", input$year[2])), 3, 0)
+                               "2024 Q1", as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
     
     post_prep_gdp <- prep_func(spliced_GDP, 40)
     post_prep_gdp_df <- post_prep_gdp$df
@@ -1117,18 +1115,15 @@ observeEvent(input$show_prediction, {
     }
     
     X_dataframe = rename_variable(input$select_ADL) 
-    X_dataframe = paste0(X_dataframe, "_ts")
+    #X_dataframe = paste0(X_dataframe, "_ts")
     
     ADL_preds <- function(GDPGrowth_ts, X_dataframe, h) {
       preds = numeric(h)
       rmsfe = numeric(h)
-      #X_dataframe = paste0(X_dataframe, "_ts")
       for(i in 1:h){
-        #test_AR <- as.matrix(check$growth_rate)
-        adl_predicting = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy_ts)
+        adl_predicting = ADL_predict_all(GDPGrowth_ts, X_dataframe, i, covid_dummy)
         preds[i] = adl_predicting$prediction
         rmsfe[i] = adl_predicting$rmsfe
-        ##2 is placeholder for input$lags
       }
       return(list("preds" = preds, "rmsfe" = rmsfe))
     }
@@ -1136,7 +1131,7 @@ observeEvent(input$show_prediction, {
     ### graph plotting
     
     start_plot = GDPGrowth_ts_df$Time[end_rownum - 10]
-    
+    #h=2
     
     training <- check %>%
       #mutate(Time = as.yearqtr(Dates)) %>%
@@ -1163,7 +1158,7 @@ observeEvent(input$show_prediction, {
       mutate(Time = as.yearqtr(Dates)) %>%
       filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
       head(n = h) %>%
-      mutate(new_growth_rate = c(ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds))
+      mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds)
     
     # Separate predictions into actual and predicted dataframes for plotting
     actual_test_values <- predictions %>% 
@@ -1183,7 +1178,7 @@ observeEvent(input$show_prediction, {
     # creating data for fanplot
     predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
     
-    fanplot_rmsfe <- function(X_dataframe, predictions, h) {
+    fanplot_rmsfe <- function(full_df, input_df, predictions, h) {
       predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
                                       upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
       predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
@@ -1192,11 +1187,11 @@ observeEvent(input$show_prediction, {
       predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
       
       for(i in 2:(h+1)){
-        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, i)$rmsfe
-        predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate + 1.28*rmsfe
-        predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate - 1.28*rmsfe
-        predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate + 0.67*rmsfe
-        predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate - 0.67*rmsfe
+        rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, i-1)$rmsfe
+        predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
+        predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
+        predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
+        predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
       }
       return(predictions_rmsfe)
     }
@@ -1214,7 +1209,7 @@ observeEvent(input$show_prediction, {
       select(Time) %>% 
       mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
     
-    rmsfe_data <- cbind(time_data, fanplot_rmsfe(X_dataframe, predictions, h)) 
+    rmsfe_data <- cbind(time_data, fanplot_rmsfe(GDPGrowth_ts, X_dataframe, predictions, h)) 
     
     fanplot_data <- rbind(data, rmsfe_data) %>%
       filter(Time >= as.yearqtr(example_endq)) %>%
@@ -1264,14 +1259,14 @@ observeEvent(input$show_prediction, {
   ##################
 #ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, end_yq)
 observeEvent(input$show_prediction, {
-  example_startq = gsub(":", " ", input$year[1])
-  example_endq = gsub(":", " ", input$year[2])
-  example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-  example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+  example_startq = gsub(":", " ", "1985:Q4")
+  example_endq = gsub(":", " ", "2001:Q3")
+  example_startyq = as.yearqtr(gsub(":", " ", "1985:Q4"))
+  example_endyq = as.yearqtr(gsub(":", " ", "2001:Q3"))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1985:Q4"))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1985:Q4"))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2001:Q3"))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2001:Q3"))))
   
   
   
@@ -1382,7 +1377,7 @@ observeEvent(input$show_prediction, {
     ##############
     
     spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                               "2024 Q1", as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", input$year[2])), 3, 0)
+                               "2024 Q1", as.yearqtr(gsub(":", " ", "1985:Q4")), as.yearqtr(gsub(":", " ", "2001:Q3")), 3, 0)
     
     post_prep_gdp <- prep_func(spliced_GDP, 40)
     post_prep_gdp_df <- post_prep_gdp$df
@@ -1457,7 +1452,7 @@ observeEvent(input$show_prediction, {
     
     predictions <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      filter(Time > as.yearqtr(gsub(":", " ", "2001:Q3"))) %>% 
       head(n = h) %>%
       mutate(new_growth_rate = c(ADL_preds(GDPGrowth_ts, X_combined_dataframe, h)$preds))
     
