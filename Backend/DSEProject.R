@@ -68,7 +68,7 @@ ui <- navbarPage(
                                tabPanel("Basic AR Model",
                                         plotOutput("model1"),
                                         textOutput("desc1"),
-                                        tableOutput("table1")
+                                        tableOutput("table1"),
                                         headerPanel(""), # adds space btwn text and inputs
                                         helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
                                         div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
