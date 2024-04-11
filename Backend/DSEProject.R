@@ -103,7 +103,11 @@ ui <- navbarPage(
 
                                       tabPanel("Aggregate Model", plotOutput("model5"),
                                                headerPanel(""), # adds space btwn text and inputs
+                                               textOutput("agg_model_prediction"),
+                                               headerPanel(""), # adds space btwn text and inputs
+                                               htmlOutput("outlook_indicators"), 
                                                textOutput("poor_outlook"),
+                                               headerPanel(""), # adds space btwn text and inputs
                                                htmlOutput("abnormal_indicators"),
                                                textOutput("abnormal_message")
                                       )
@@ -453,7 +457,7 @@ server <- function(input, output, session) {
       covid_start = as.yearqtr(covid[1])
       covid_end = as.yearqtr(covid[2])
       covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
-
+      
       if (example_startyq <= covid_start & example_endyq == covid_start){
         index = (covid_start - example_startyq) * 4 + 1
         covid_dummy[index] = -1
@@ -1302,16 +1306,33 @@ observeEvent(input$show_prediction, {
   
     ## OUTPUT MESSAGES 
   
-  observeEvent(input$temp, {
+  observeEvent(input$show_prediction, {
     advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
     text <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    
+    output$agg_model_prediction <- renderText({
+      paste("The predicted value is:", text$prediction)
+    })
+    
+    output$outlook_indicators <- renderText({
+      value <- length(text$outlook$indicators)
+      if(is.null(value)){value = 0}
+      
+      color <- ifelse(value == 0, "#00b392",
+                      ifelse(value == 1, "#729a5a",
+                             ifelse(value == 2, "#d48f3b",
+                                    ifelse(value == 3, "#f07a32",
+                                           ifelse(value == 4, "#ed6435", "#e7463a")))))
+      
+      return(paste("Number of indicators that forecast negative growth: ", "<span style='color:", color, "\'>", value, "</span>"))
+    })
     
     output$poor_outlook <- renderText({
       return(text$outlook$message)
     })
     
     output$abnormal_indicators <- renderText({
-      value <- text$abnormal$indicators
+      value <- length(text$abnormal$indicators)
       if(is.null(value)){value = 0}
       
       color <- ifelse(value == 0, "#00b392",
