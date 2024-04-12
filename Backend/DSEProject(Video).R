@@ -108,10 +108,12 @@ ui <- navbarPage(
                                         headerPanel(""), # adds space btwn text and inputs
                                         textOutput("agg_model_prediction"),
                                         headerPanel(""), # adds space btwn text and inputs
-                                        htmlOutput("outlook_indicators"), 
+                                        htmlOutput("outlook_num_indicators"),
+                                        textOutput("outlook_indicators"), 
                                         textOutput("poor_outlook"),
                                         headerPanel(""), # adds space btwn text and inputs
-                                        htmlOutput("abnormal_indicators"),
+                                        htmlOutput("abnormal_num_indicators"),
+                                        textOutput("abnormal_indicators"),
                                         textOutput("abnormal_message")
                                )
                              )
@@ -1521,15 +1523,20 @@ print(model_3)
   ## OUTPUT MESSAGES 
   
   observeEvent(input$temp, {
-    advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
-    text <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq) #CHANGE TO PULL INPUTS
+    text <- aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 1, covid_dummy) #PULL HORIZON INPUT
+    
+    
+    text$outlook$message = "None of the ADL predictors forecast a negative GDP growth rate."
+    text$abnormal$indicators = c("nasdaq_ts")
+    
     
     output$agg_model_prediction <- renderText({
       paste("The predicted value is:", text$prediction)
     })
     
-    output$outlook_indicators <- renderText({
-      value <- length(text$outlook$indicators)
+    output$outlook_num_indicators <- renderText({
+      value <- 0
       if(is.null(value)){value = 0}
       
       color <- ifelse(value == 0, "#00b392",
@@ -1541,11 +1548,16 @@ print(model_3)
       return(paste("Number of indicators that forecast negative growth: ", "<span style='color:", color, "\'>", value, "</span>"))
     })
     
+    output$outlook_indicators <- renderText({
+      #indicators <- paste(text$outlook$indicators, collapse = ", ")
+      return(paste("Indicators that forecast negative growth:", "NULL"))
+    })
+    
     output$poor_outlook <- renderText({
       return(text$outlook$message)
     })
     
-    output$abnormal_indicators <- renderText({
+    output$abnormal_num_indicators <- renderText({
       value <- length(text$abnormal$indicators)
       if(is.null(value)){value = 0}
       
@@ -1556,6 +1568,11 @@ print(model_3)
                                            ifelse(value == 4, "#ed6435", "#e7463a")))))
       
       return(paste("Number of abnormal indicators: ", "<span style='color:", color, "\'>", value, "</span>"))
+    })
+    
+    output$abnormal_indicators <- renderText({
+      indicators <- paste(text$abnormal$indicators, collapse = ", ")
+      return(paste("Abnormal indicators: ", indicators))
     })
     
     output$abnormal_message <- renderText({
