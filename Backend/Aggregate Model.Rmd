@@ -86,6 +86,7 @@ abnormal <- function(X_variables){
     
     # median of the X variable
     median_value <- median(X_temp)
+    
     # calculate the median absolute deviation (MAD)
     mad_value <- mad(X_temp)
     
@@ -101,8 +102,12 @@ abnormal <- function(X_variables){
     # subset last 4 entries
     last_4_entries <- tail(X_temp, 4)
     
+    # NEED TO CHANGE THIS LATER 
+    # ONLY APPLICABLE TO POSITIVE INDICATORS (WHERE GROWTH > 0 IS A GOOD THING)
+    count_true <- sum(last_4_entries < 0)
+    
     # check if any of the outliers correspond to the last 4 entries
-    if(any(last_4_entries %in% outliers)){
+    if(any(last_4_entries %in% outliers) | count_true == 4){
       indicators <- append(indicators, name_indicator)
     }
   }
