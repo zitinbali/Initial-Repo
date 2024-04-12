@@ -202,78 +202,21 @@ server <- function(input, output, session) {
     }
   )
   
- ############## 
- ## fitAR PREP 
- ##############
-   
-  # Using the basic AR model from lecture 
-  # Inputs: Y - predicted variable, p - AR order, h - forecast horizon
+  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+    mutate(Time = as.yearqtr(Time)) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
   
+  check <- check %>%
+    mutate(Time = as.yearqtr(Dates)) %>%
+    mutate(growth_rate = as.numeric(growth_rate)) 
   
-  ##fitAR function for calculating predictions and models for aic
-  fitAR=function(Y,h, dum){
-    
-    minimum = Inf
-    
-    for (p in 1:4){
-      # create p lags + forecast horizon shift (=h option)
-      aux = embed(Y, p+h)
-      
-      #  Y variable aligned/adjusted for missing data due to lags
-      y = aux[,1] 
-      
-      # lags of Y (predictors) corresponding to forecast horizon (prevent leakage)
-      X = as.matrix(aux[,-c(1:(ncol(Y)*h))])
-      
-      # retrieve last p observations
-      X.out = tail(aux,1)[1:ncol(X)] 
-      
-      # cutting dummy to shape
-      dum = tail(dum, length(y))
-      
-      # estimate direct h-step AR(p) by OLS 
-      model = lm(y~X+dum) 
-      
-      # extract coefficients
-      coef = coef(model)[1:(ncol(X)+1)]
-      
-      #make a forecast using the last few observations: a direct h-step forecast.
-      pred = c(1,X.out)%*%coef 
-      
-      #note the addition of a constant to the test observation vector
-      
-      #get unadjusted rmsfe (ignoring estimation uncertainty)
-      rmsfe = sqrt(sum(model$residuals^2)/nrow(X))
-      aic = AIC(model)
-      
-      if(aic < minimum){
-        minimum = aic
-        best_rmsfe = rmsfe
-        best_p = p
-        best_model = model
-        best_pred = pred
-        best_coef = coef
-      }
-    }
-    #save estimated AR regression, prediction, and estimated coefficients
-    return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p)) 
-  }
+  check = rbind(check, edge)
 
-  
-  ##fitAR_preds for predictions at each step along forecast horizon h for line graph
-  fitAR_preds <- function(Y, h, dum) {
-    preds = numeric(h)
-    for(i in 1:h){
-      #test_AR <- as.matrix(check$growth_rate)
-      preds[i] = fitAR(Y, i, dum)$pred  
-    }
-    return(preds)
-  }
   
   #################
   ## MODEL 1 OUTPUT
   #################
-  
+
   observeEvent(input$show_prediction, {
     output$model1 <- renderPlot({
       example_startq = gsub(":", " ", input$year[1])
@@ -328,22 +271,22 @@ server <- function(input, output, session) {
   
   p = as.numeric(fitAR(basic_AR_input, h, covid_dummy)$p)
   
-  h = 2
+  #h = 2
       
   training <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>%
     filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     tail(n = 9) %>%
     select(Time, growth_rate) %>%
-    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    #mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 1) 
   
   joining_value <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time == as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     select(Time, growth_rate) %>%
-    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    #mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 3) 
 
   training_t <- bind_rows(training, joining_value) %>%
@@ -352,7 +295,7 @@ server <- function(input, output, session) {
   training_p <- bind_rows(training, joining_value)
   
   predictions <- check %>% 
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     head(n = h) %>%
     mutate(new_growth_rate = c(fitAR_preds(basic_AR_input, h, covid_dummy)))
@@ -365,16 +308,17 @@ server <- function(input, output, session) {
     predicted_test_values <- predictions %>%
       select(Time, new_growth_rate) %>% 
       rename("growth_rate" = "new_growth_rate") %>% 
-      #l_join(joining_value, by = "growth_rate") %>%
       mutate(category = 3) 
       
+    original_data_w2024 <- rbind(training_t, actual_test_values)
     
-    original_data <- rbind(training_t, actual_test_values)
+    original_data <- original_data_w2024 %>%
+      filter(Time <= as.yearqtr("2023 Q4"))
+    
     predicted_data <- rbind(training_p, predicted_test_values)
     
     # creating data for fanplot
     predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
-    
       
     fanplot_rmsfe <- function(full_df, input_df, predictions, h) {
       predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
@@ -396,12 +340,13 @@ server <- function(input, output, session) {
     
     ##create fanplot dataframe with time column
     time_data <- check %>%
-      mutate(Time = as.yearqtr(Dates)) %>%
+      #mutate(Time = as.yearqtr(Dates)) %>%
       filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
-      select(Time) 
+      select(Time) %>%
+      head(h+1)
     
     data <- check %>%
-      mutate(Time = as.yearqtr(Dates)) %>%
+      #mutate(Time = as.yearqtr(Dates)) %>%
       filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>%
       select(Time) %>% 
       mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
@@ -411,8 +356,7 @@ server <- function(input, output, session) {
     fanplot_data <- rbind(data, rmsfe_data) %>%
       filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
       head(h+1)
-    
-    
+
     # recession blocks
     recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
                             2001, 2007:2008)
@@ -497,7 +441,7 @@ server <- function(input, output, session) {
         
         example_endq <- "2024 Q4"
         
-        start_rownum = which(grepl(as.yearqtr("2000 Q1"), check$Time))
+        start_rownum = which(grepl(as.yearqtr(example_startq), check$Time))
         end_rownum = which(grepl(as.yearqtr(example_endq), check$Time))
         
         basic_AR_input <- check[start_rownum:end_rownum, ] %>% 
@@ -509,19 +453,19 @@ server <- function(input, output, session) {
         h = 4
         
         training <- check %>%
-          mutate(Time = as.yearqtr(Time)) %>%
+          #mutate(Time = as.yearqtr(Time)) %>%
           filter(Time > as.yearqtr("1999 Q4")) %>%
           filter(Time < as.yearqtr("2024 Q4")) %>% 
           tail(n = 9) %>%
           select(Time, growth_rate) %>%
-          mutate(growth_rate = as.numeric(growth_rate)) %>%
+          #mutate(growth_rate = as.numeric(growth_rate)) %>%
           mutate(category = 1) 
         
         joining_value <- check %>%
-          mutate(Time = as.yearqtr(Time)) %>%
+          #mutate(Time = as.yearqtr(Time)) %>%
           filter(Time == as.yearqtr("2024 Q4")) %>% 
           select(Time, growth_rate) %>%
-          mutate(growth_rate = as.numeric(growth_rate)) %>%
+          #mutate(growth_rate = as.numeric(growth_rate)) %>%
           mutate(category = 3) 
         
         training_t <- bind_rows(training, joining_value) %>%
@@ -541,7 +485,7 @@ server <- function(input, output, session) {
         pred_store <- c(fitAR_preds(basic_AR_input, h, upd_covid_dummy))
         
         predictions <- check %>% 
-          mutate(Time = as.yearqtr(Time)) %>%
+          #mutate(Time = as.yearqtr(Time)) %>%
           filter(Time > as.yearqtr("2024 Q4")) %>% 
           head(n = h) %>%
           mutate(new_growth_rate = as.vector(pred_store))
@@ -555,7 +499,6 @@ server <- function(input, output, session) {
         predicted_test_values <- predictions %>%
           select(Time, new_growth_rate) %>% 
           rename("growth_rate" = "new_growth_rate") %>% 
-          #l_join(joining_value, by = "growth_rate") %>%
           mutate(category = 3) 
         
         
@@ -680,11 +623,11 @@ server <- function(input, output, session) {
       h = as.numeric(input$h)
       
       predictions <- check %>% 
-        mutate(Dates = as.yearqtr(Dates)) %>%
-        filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+        #mutate(Dates = as.yearqtr(Dates)) %>%
+        filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
         head(n = h) %>%
         mutate("Predicted Growth Rate" = c(fitAR_preds(basic_AR_input, h, covid_dummy))) %>%
-        mutate(Dates = as.character(Dates)) %>% 
+        mutate(Dates = as.character(Time)) %>% 
         select(Dates, "Predicted Growth Rate") 
       
     })
@@ -766,19 +709,19 @@ server <- function(input, output, session) {
   start_plot = check$Time[end_rownum - 10]
   
   training <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>%
     filter(Time <= as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     tail(10) %>% 
     select(Time, growth_rate) %>%
-    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    #mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 1) 
   
   joining_value <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time == as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     select(Time, growth_rate) %>%
-    mutate(growth_rate = as.numeric(growth_rate)) %>%
+    #mutate(growth_rate = as.numeric(growth_rate)) %>%
     mutate(category = 3) 
 
   training_t <- bind_rows(training, joining_value) %>%
@@ -787,7 +730,7 @@ server <- function(input, output, session) {
   training_p <- bind_rows(training, joining_value)
   
   predictions <- check %>% 
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
     head(n = h) %>%
     mutate(new_growth_rate = c(fitAR_preds(advanced_AR_input, h, covid_dummy)))
@@ -804,7 +747,11 @@ server <- function(input, output, session) {
     mutate(category = 3) 
   
   
-  original_data <- rbind(training_t, actual_test_values)
+  original_data_w2024 <- rbind(training_t, actual_test_values)
+  
+  original_data <- original_data_w2024 %>%
+    filter(Time <= as.yearqtr("2023 Q4"))
+    
   predicted_data <- rbind(training_p, predicted_test_values)
   
   # creating data for fanplot
@@ -830,15 +777,17 @@ server <- function(input, output, session) {
   
   ##create fanplot dataframe with time column
   time_data <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
-    select(Time) 
+    select(Time) %>%
+    head(h+1)
   
   data <- check %>%
-    mutate(Time = as.yearqtr(Dates)) %>%
+    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>%
     select(Time) %>% 
     mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
+
   
   rmsfe_data <- cbind(time_data, fanplot_rmsfe(check, advanced_AR_input, predictions, h)) 
   
@@ -921,12 +870,12 @@ server <- function(input, output, session) {
       h = as.numeric(input$h)
       
       predictions <- check %>% 
-        mutate(Dates = as.yearqtr(Dates)) %>%
-        filter(Dates > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+        #mutate(Dates = as.yearqtr(Dates)) %>%
+        filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
         head(n = h) %>%
         mutate("Predicted Growth Rate" = c(fitAR_preds(advanced_AR_input, h, covid_dummy))) %>%
-        mutate(Dates = as.character(Dates)) %>% 
-        select(Dates, "Predicted Growth Rate")
+        #mutate(Dates = as.character(Dates)) %>% 
+        select(Time, "Predicted Growth Rate")
       
     })
 })

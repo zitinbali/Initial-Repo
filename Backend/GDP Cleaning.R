@@ -45,13 +45,13 @@ check <- check %>%
 
 check_xts <- xts(check$growth_rate, check$Time) 
 
-plot(as.zoo(check_xts), 
-     plot.type = "single", 
-     col = c("darkred"),
-     lwd = 1,
-     xlab = "Date",
-     ylab = "Growth Rate",
-     main = "Quarterly Growth Rate of GDP")
+#plot(as.zoo(check_xts), 
+   #  plot.type = "single", 
+   #  col = c("darkred"),
+   #  lwd = 1,
+   #  xlab = "Date",
+   #  ylab = "Growth Rate",
+   #  main = "Quarterly Growth Rate of GDP")
 
 # function that transform years to class 'yearqtr'
 YToYQTR <- function(years){
