@@ -14,6 +14,13 @@ library(dynlm)
 
 RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
 
+#source("Backend/GDP Cleaning.R")
+#source("Backend/inputs.R")
+#source("Backend/ADL Data.R")
+#source("Backend/AR_Model_Functions.R")
+#source("Backend/ADL Functions.R")
+#source("Backend/Combined ADL Model Functions.R")
+
 source("GDP Cleaning.R")
 source("inputs.R")
 source("ADL Data.R")
@@ -186,7 +193,7 @@ server <- function(input, output, session) {
   }
   
   observeEvent(input$year,{
-    updateSliderTextInput(session,"year", selected = adjust_year_quarters(input$year[1], input$year[2], RGDP_Data$DATE))
+    updateSliderTextInput(session,"year", selected = adjust_year_quarters("1990:Q1", "2010:Q1", RGDP_Data$DATE))
   })
   
   #######################
@@ -941,14 +948,14 @@ server <- function(input, output, session) {
   #source("Backend/ADL Functions.R")
   
 observeEvent(input$show_prediction, {
-  example_startq = gsub(":", " ", input$year[1])
-  example_endq = gsub(":", " ", input$year[2])
-  example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-  example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+  example_startq = gsub(":", " ", "1986:Q1")
+  example_endq = gsub(":", " ", "2010:Q1")
+  example_startyq = as.yearqtr(gsub(":", " ", "1986:Q1"))
+  example_endyq = as.yearqtr(gsub(":", " ", "2010:Q1"))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1986:Q1"))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1986:Q1"))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2010:Q1"))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2010:Q1"))))
   output$model3 <- renderPlot({
     
     covid = c("2020 Q2", "2020 Q3")
@@ -1059,7 +1066,7 @@ observeEvent(input$show_prediction, {
     ##############
     
     spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                               "2024 Q1", as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
+                               "2024 Q1", as.yearqtr(gsub(":", " ", "1990:Q1")), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
     
     post_prep_gdp <- prep_func(spliced_GDP, 40)
     post_prep_gdp_df <- post_prep_gdp$df
@@ -1088,30 +1095,12 @@ observeEvent(input$show_prediction, {
     start_rownum = which(grepl(as.yearqtr(example_startq), GDPGrowth_ts_df$Time))
     end_rownum = which(grepl(as.yearqtr(example_endq), GDPGrowth_ts_df$Time))
     #indiv_ADL_input <- as.matrix(all_GDP_data)
+  
     
-    h = as.numeric(input$h)
-    
-    rename_variable <- function(input_string) { 
-      var = NULL
-      if (input_string == "BAA-AAA Spread"){
-        var = baa_aaa_ts
-      }
-      if (input_string == "Treasury Spread"){
-        var = tspread_ts
-      }
-      if (input_string == "Housing Starts"){
-        var = fred_hstarts_ts
-      }
-      if (input_string == "Consumer Sentiment"){
-        var = consent_ts
-      }
-      if (input_string == "NASDAQ Composite Index"){
-        var = nasdaq_ts
-      }
-      return(var)
-    }
-    
-    X_dataframe = rename_variable(input$select_ADL) 
+    h=2
+  
+    X_dataframe = baa_aaa_ts
+    #X_dataframe = rename_variable(input$select_ADL) 
     
     ADL_preds <- function(GDPGrowth_ts, X_dataframe, h) {
       preds = numeric(h)
@@ -1152,7 +1141,7 @@ observeEvent(input$show_prediction, {
     
     predictions <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      filter(Time > as.yearqtr(gsub(":", " ", "2010:Q1"))) %>% 
       head(n = h) %>%
       mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds)
     
@@ -1731,14 +1720,14 @@ observeEvent(input$show_prediction, {
   }
   
   observeEvent(input$show_prediction, {
-  example_startq = gsub(":", " ", input$year[1])
-  example_endq = gsub(":", " ", input$year[2])
-  example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-  example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+  example_startq = gsub(":", " ", "1990:Q1")
+  example_endq = gsub(":", " ", "2010:Q1")
+  example_startyq = as.yearqtr(gsub(":", " ", "1990:Q1"))
+  example_endyq = as.yearqtr(gsub(":", " ", "2010:Q1"))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1990:Q1"))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1990:Q1"))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2010:Q1"))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2010:Q1"))))
   
   output$model5 <- renderPlot({
     advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
