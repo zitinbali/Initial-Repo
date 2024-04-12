@@ -17,7 +17,7 @@ source("DM_test.R")
 ```{r adl model baa-aaa}
 
 BAA_AAA_prediction <- ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, example_fhorizon, covid_dummy)
-ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 1, covid_dummy_ts)
+ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 1, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 2, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 3, covid_dummy)
 ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, 4, covid_dummy)

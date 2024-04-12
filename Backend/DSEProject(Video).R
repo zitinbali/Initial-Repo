@@ -14,6 +14,13 @@ library(dynlm)
 
 RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
 
+#source("Backend/GDP Cleaning.R")
+#source("Backend/inputs.R")
+#source("Backend/ADL Data.R")
+#source("Backend/AR_Model_Functions.R")
+#source("Backend/ADL Functions.R")
+#source("Backend/Combined ADL Model Functions.R")
+
 source("GDP Cleaning.R")
 source("inputs.R")
 source("ADL Data.R")
@@ -186,7 +193,7 @@ server <- function(input, output, session) {
   }
   
   observeEvent(input$year,{
-    updateSliderTextInput(session,"year", selected = adjust_year_quarters(input$year[1], input$year[2], RGDP_Data$DATE))
+    updateSliderTextInput(session,"year", selected = adjust_year_quarters("1980 Q4", "2020 Q3", RGDP_Data$DATE))
   })
   
   #######################
@@ -941,14 +948,14 @@ server <- function(input, output, session) {
   #source("Backend/ADL Functions.R")
   
 observeEvent(input$show_prediction, {
-  example_startq = gsub(":", " ", input$year[1])
-  example_endq = gsub(":", " ", input$year[2])
-  example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-  example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+  example_startq = gsub(":", " ", "1986:Q1")
+  example_endq = gsub(":", " ", "2010:Q1")
+  example_startyq = as.yearqtr(gsub(":", " ", "1986:Q1"))
+  example_endyq = as.yearqtr(gsub(":", " ", "2010:Q1"))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1986:Q1"))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1986:Q1"))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2010:Q1"))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2010:Q1"))))
   output$model3 <- renderPlot({
     
     covid = c("2020 Q2", "2020 Q3")
@@ -1059,7 +1066,7 @@ observeEvent(input$show_prediction, {
     ##############
     
     spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                               "2024 Q1", as.yearqtr(gsub(":", " ", input$year[1])), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
+                               "2024 Q1", as.yearqtr(gsub(":", " ", "1980 Q4")), as.yearqtr(gsub(":", " ", "2020 Q3")), 3, 0)
     
     post_prep_gdp <- prep_func(spliced_GDP, 40)
     post_prep_gdp_df <- post_prep_gdp$df
@@ -1088,30 +1095,12 @@ observeEvent(input$show_prediction, {
     start_rownum = which(grepl(as.yearqtr(example_startq), GDPGrowth_ts_df$Time))
     end_rownum = which(grepl(as.yearqtr(example_endq), GDPGrowth_ts_df$Time))
     #indiv_ADL_input <- as.matrix(all_GDP_data)
+  
     
-    h = as.numeric(input$h)
-    
-    rename_variable <- function(input_string) { 
-      var = NULL
-      if (input_string == "BAA-AAA Spread"){
-        var = baa_aaa_ts
-      }
-      if (input_string == "Treasury Spread"){
-        var = tspread_ts
-      }
-      if (input_string == "Housing Starts"){
-        var = fred_hstarts_ts
-      }
-      if (input_string == "Consumer Sentiment"){
-        var = consent_ts
-      }
-      if (input_string == "NASDAQ Composite Index"){
-        var = nasdaq_ts
-      }
-      return(var)
-    }
-    
-    X_dataframe = rename_variable(input$select_ADL) 
+    h=2
+  
+    X_dataframe = baa_aaa_ts
+    #X_dataframe = rename_variable(input$select_ADL) 
     
     ADL_preds <- function(GDPGrowth_ts, X_dataframe, h) {
       preds = numeric(h)
@@ -1152,7 +1141,7 @@ observeEvent(input$show_prediction, {
     
     predictions <- check %>% 
       mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      filter(Time > as.yearqtr(gsub(":", " ", "2020 Q3"))) %>% 
       head(n = h) %>%
       mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds)
     
@@ -1252,14 +1241,14 @@ observeEvent(input$show_prediction, {
   ##################
 #ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, end_yq)
 observeEvent(input$show_prediction, {
-  example_startq = gsub(":", " ", "1987:Q4")
-  example_endq = gsub(":", " ", "2001:Q3")
-  example_startyq = as.yearqtr(gsub(":", " ", "1987:Q4"))
-  example_endyq = as.yearqtr(gsub(":", " ", "2001:Q3"))
-  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1987:Q4"))))
-  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1987:Q4"))))
-  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2001:Q3"))))
-  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2001:Q3"))))
+  example_startq = gsub(":", " ", "1980 Q4")
+  example_endq = gsub(":", " ", "2020 Q3")
+  example_startyq = as.yearqtr(gsub(":", " ", "1980 Q4"))
+  example_endyq = as.yearqtr(gsub(":", " ", "2020 Q3"))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1980 Q4"))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1980 Q4"))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2020 Q3"))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2020 Q3"))))
   
   output$model4 <- renderPlot({
       covid = c("2020 Q2", "2020 Q3")
@@ -1370,7 +1359,7 @@ observeEvent(input$show_prediction, {
       ##############
       
       spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                                 "2024 Q1", as.yearqtr(gsub(":", " ", "1985:Q4")), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
+                                 "2024 Q1", as.yearqtr(gsub(":", " ", "1980 Q4")), as.yearqtr(gsub(":", " ", "2020 Q3")), 3, 0)
       
       post_prep_gdp <- prep_func(spliced_GDP, 40)
       post_prep_gdp_df <- post_prep_gdp$df
@@ -1403,7 +1392,7 @@ observeEvent(input$show_prediction, {
       X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
       
       
-      h = as.numeric(input$h)
+      h = 2
       
       X_dataframe = X_comb_df
       #X_dataframe = paste0(X_dataframe, "_ts")
@@ -1426,9 +1415,9 @@ observeEvent(input$show_prediction, {
       #h=2
       
       training <- check %>%
-        #mutate(Time = as.yearqtr(Dates)) %>%
+        mutate(Time = as.yearqtr(Dates)) %>%
         filter(Time > as.yearqtr(example_startq)) %>%
-        filter(Time <= as.yearqtr(example_endq)) %>% 
+        filter(Time < as.yearqtr(example_endq)) %>% 
         tail(10) %>% 
         select(Time, growth_rate) %>%
         mutate(growth_rate = as.numeric(growth_rate)) %>%
@@ -1448,7 +1437,7 @@ observeEvent(input$show_prediction, {
       
       predictions <- check %>% 
         mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time > as.yearqtr(gsub(":", " ", "2001:Q3"))) %>% 
+        filter(Time > as.yearqtr(gsub(":", " ", "2020:Q3"))) %>% 
         head(n = h) %>%
         mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds)
       
@@ -1591,161 +1580,22 @@ observeEvent(input$show_prediction, {
     })
   })
   
-
-
-  
-  poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
-    
-    m <- length(X_variables)
-    
-    forecast_output <- c() 
-    for (i in 1:m){
-      X_temp <- get(X_variables[i])
-      for (j in 1:f_horizon){
-        forecast <- (ADL_predict_all(Y_dataframe, X_temp, j, covid_dummy = covid_dummy))$prediction
-        forecast_output <- append(forecast_output, forecast)
-      }
-    }
-    
-    # what is the number of forecasts that are less than 0
-    num_poor_forecast <- sum(forecast_output < 0)
-    
-    # what is the percentage of forecasts < 0
-    perc_poor_forecast <- num_poor_forecast/length(forecast_output)
-    
-    # identifying which indicators show a poor forecast
-    
-    # indexes of the indicators predicting GDP growth rate < 0
-    less_than_zero <- which(forecast_output < 0)
-    less_than_zero <- ifelse(less_than_zero > 5, less_than_zero %% 5, less_than_zero)
-    less_than_zero[less_than_zero == 0] <- 5
-    
-    # names of unique indicators which predict GDP growth rate < 0
-    less_than_zero <- unique(less_than_zero)
-    indicators_poor <- X_variables[less_than_zero]
-    
-    if (is_empty(unique(indicators_poor))){
-      output_message = "None of the ADL predictors forecast a negative GDP growth rate."
-      indicators_output = NULL
-    } else {
-      output_message = "Some of the ADL predictors forecast a negative GDP growth rate."
-      indicators_output = unique(indicators_poor)
-    }
-    return(list("message" = output_message, "indicators" = indicators_output))
-  }
-  
-  
-  abnormal <- function(X_variables){
-    
-    m <- length(X_variables)
-    indicators <- c()
-    
-    for (i in 1:m){
-      X_temp <- get(X_variables[i])
-      name_indicator <- X_variables[i]
-      
-      # median of the X variable
-      median_value <- median(X_temp)
-      # calculate the median absolute deviation (MAD)
-      mad_value <- mad(X_temp)
-      
-      # set the threshold for outlier detection (3 times the MAD)
-      threshold <- 3 * mad_value
-      
-      # calculate the absolute deviations from the median
-      absolute_deviations <- abs(X_temp - median_value)
-      
-      # identify outliers 
-      outliers <- X_temp[absolute_deviations > threshold]
-      
-      # subset last 4 entries
-      last_4_entries <- tail(X_temp, 4)
-      
-      # check if any of the outliers correspond to the last 4 entries
-      if(any(last_4_entries %in% outliers)){
-        indicators <- append(indicators, name_indicator)
-      }
-    }
-    
-    if (length(indicators) == 0){
-      output_message = "All good!"
-    } 
-    else {
-      output_message = "Markets have been deviating from the norm severely in the last year. If a recession or rapid economic boom is not already taking place, one might occur soon. Conduct deeper analysis into the deviating predictors to arrive at more conclusive results."
-    }
-    
-    return(list("message" = output_message, "indicators" = indicators))
-  }
-  
-  aggregate_output <- function(Y_dataframe, X_variables, AR_input, f_horizon, dum){
-    
-    forecast_output <- c() 
-    
-    # Advanced AR prediction
-    advanced_AR_output <- fitAR(AR_input, example_fhorizon, dum)
-    ar2_prediction = advanced_AR_output$pred
-    
-    forecast_output <- append(forecast_output, ar2_prediction)
-    
-    
-    # ADL outputs 
-    m <- length(X_variables)
-    
-    forecast_output <- c() 
-    for (i in 1:m){
-      X_temp <- get(X_variables[i])
-      for (j in 1:f_horizon){
-        forecast <- (ADL_predict_all(Y_dataframe, X_temp, j, covid_dummy = covid_dummy))$prediction
-        forecast_output <- append(forecast_output, forecast)
-      }
-    }
-    
-    # Combined ADL output 
-    
-    # Creating combined dataset 
-    name_ts_first <- ADL_variables[1]
-    X_comb <- get(name_ts_first)
-    
-    for (j in 2:m){
-      X_temp <- get(X_variables[i])
-      for (j in 1:f_horizon){
-        name_ts <- ADL_variables[m]
-        X_new <- get(name_ts)
-        X_comb <- ts.union(X_comb, X_new)
-      }
-    }
-    
-    # comb ADL output 
-    comb_ADL_output <- ADL_comb_predict_all(Y_dataframe, X_comb, f_horizon, example_endq)$prediction
-    forecast_output <- append(forecast_output, comb_ADL_output)
-    
-    mean_output <- mean(forecast_output)
-    
-    # call poor outlook function 
-    poor_outlook <- poor_outlook(Y_dataframe, X_variables, f_horizon)
-    
-    # call abnormalities function 
-    abnormal <- abnormal(X_variables)
-    
-    return(list("prediction" = mean_output, "outlook" = poor_outlook, "abnormal" = abnormal))
-  }
-  
   observeEvent(input$show_prediction, {
-  example_startq = gsub(":", " ", input$year[1])
-  example_endq = gsub(":", " ", input$year[2])
-  example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-  example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+  example_startq = gsub(":", " ", "1980 Q1")
+  example_endq = gsub(":", " ", "2007 Q4")
+  example_startyq = as.yearqtr(gsub(":", " ", "1980 Q1"))
+  example_endyq = as.yearqtr(gsub(":", " ", "2007 Q4"))
+  start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1980 Q1"))))
+  start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1980 Q1"))))
+  end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2007 Q4"))))
+  end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2007 Q4"))))
   
   output$model5 <- renderPlot({
     advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
-    aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+    #aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
     ##aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, h, covid_dummy)
     
-    covid = c("2020 Q2", "2020 Q3")
+    covid = c("2020 Q2", "2007 Q4")
     covid_start = as.yearqtr(covid[1])
     covid_end = as.yearqtr(covid[2])
     covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
@@ -1853,7 +1703,7 @@ observeEvent(input$show_prediction, {
     ##############
     
     spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                               "2024 Q1", as.yearqtr(gsub(":", " ", "1985:Q4")), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
+                               "2024 Q1", as.yearqtr(gsub(":", " ", "1980:Q1")), as.yearqtr(gsub(":", " ", "2007:Q3")), 3, 0)
     
     post_prep_gdp <- prep_func(spliced_GDP, 40)
     post_prep_gdp_df <- post_prep_gdp$df
@@ -1885,7 +1735,7 @@ observeEvent(input$show_prediction, {
     
     X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
     
-    h = as.numeric(input$h)
+    h = 2
     
     X_dataframe = X_comb_df
     #X_dataframe = paste0(X_dataframe, "_ts")
@@ -1894,7 +1744,7 @@ observeEvent(input$show_prediction, {
       preds = numeric(h)
       rmsfe = numeric(h)
       for(i in 1:h){
-        adl_predicting = aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
+        adl_predicting = aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, h, covid_dummy)
         preds[i] = adl_predicting$prediction
         #rmsfe[i] = adl_predicting$rmsfe
       }
