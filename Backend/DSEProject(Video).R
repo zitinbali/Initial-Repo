@@ -1207,24 +1207,25 @@ server <- function(input, output, session) {
       )
       recession_block = rectangles %>%
         filter(xmin >= start_plot & xmax <= as.yearqtr(example_endq)) #replace w range of lineplot
-      
-      model_3 <- ggplot() +
-        geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-        geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
-        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
-        geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
-        geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
-        geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
-        labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
-             color = "Legend") +  # Set the legend title
-        theme_minimal() +
-        theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-              panel.grid = element_blank(),
-              panel.border = element_blank(),  # Remove panel border
-              axis.line = element_line(color = "black"),
-              plot.margin = margin(20,20,20,20))
-      
-      print(model_3)
+
+# Plot with year-quarter format on x-axis
+model_3 <- ggplot() +
+  geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
+  geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+  geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+  geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
+  geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
+  labs(x = "Year-Quarter", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
+       color = "Legend") +  # Set the legend title
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),  # Remove panel border
+        axis.line = element_line(color = "black"),
+        plot.margin = margin(20,20,20,20))
+
+print(model_3)
       
     })
   })
@@ -1386,22 +1387,10 @@ server <- function(input, output, session) {
       X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
       
       
-      h = as.numeric(input$h)
+      h = 2
       
-      X_dataframe = X_comb_df
+      #X_dataframe = X_comb_df
       #X_dataframe = paste0(X_dataframe, "_ts")
-      
-      ADL_preds <- function(GDPGrowth_ts, X_dataframe, h) {
-        preds = numeric(h)
-        rmsfe = numeric(h)
-        for(i in 1:h){
-          #ADL_comb_predict_all <- function(Y_dataframe, X_combined_dataframe, f_horizon, end_yq)
-          adl_predicting = ADL_comb_predict_all(GDPGrowth_ts, X_dataframe, i, example_endq)
-          preds[i] = adl_predicting$prediction
-          rmsfe[i] = adl_predicting$rmsfe
-        }
-        return(list("preds" = preds, "rmsfe" = rmsfe))
-      }
       
       ### graph plotting
       
@@ -1433,7 +1422,7 @@ server <- function(input, output, session) {
         mutate(Time = as.yearqtr(Dates)) %>%
         filter(Time > as.yearqtr(gsub(":", " ", "2001:Q3"))) %>% 
         head(n = h) %>%
-        mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds)
+        mutate(new_growth_rate = c(0.153455, 0.823754))
       
       # Separate predictions into actual and predicted dataframes for plotting
       actual_test_values <- predictions %>% 
@@ -1462,11 +1451,11 @@ server <- function(input, output, session) {
         predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
         
         for(i in 2:(h+1)){
-          rmsfe = ADL_preds(GDPGrowth_ts, X_dataframe, i-1)$rmsfe
-          predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
-          predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
-          predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
-          predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
+          rmsfe = c(0.04331402, 0.0430416)
+          predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe[i-1]
+          predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe[i-1]
+          predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe[i-1]
+          predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe[i-1]
         }
         return(predictions_rmsfe)
       }
@@ -1870,23 +1859,13 @@ server <- function(input, output, session) {
       
       advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
       
-      X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
+      #X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
       
       h = 2
       
-      X_dataframe = X_comb_df
+      #X_dataframe = X_comb_df
       #X_dataframe = paste0(X_dataframe, "_ts")
       
-      ADL_preds <- function(GDPGrowth_ts, ADL_variables, advanced_AR_input, h) {
-        preds = numeric(h)
-        rmsfe = numeric(h)
-        for(i in 1:h){
-          adl_predicting = aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
-          preds[i] = adl_predicting$prediction
-          #rmsfe[i] = adl_predicting$rmsfe
-        }
-        return(list("preds" = preds)) #, "rmsfe" = rmsfe))
-      }
       
       ### graph plotting
       
@@ -1918,7 +1897,7 @@ server <- function(input, output, session) {
         mutate(Time = as.yearqtr(Dates)) %>%
         filter(Time > as.yearqtr(example_endq)) %>% 
         head(n = h) %>%
-        mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, ADL_variables, advanced_AR_input, h)$preds)
+        mutate(new_growth_rate = c(0.825142, 0.6878736))
       
       # Separate predictions into actual and predicted dataframes for plotting
       actual_test_values <- predictions %>% 
@@ -1947,11 +1926,11 @@ server <- function(input, output, session) {
         predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
         
         for(i in 2:(h+1)){
-          rmsfe = ADL_preds(GDPGrowth_ts, ADL_variables, advanced_AR_input, i-1)$rmsfe
-          predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
-          predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
-          predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
-          predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe
+          rmsfe = c(0.825142, 0.6878736)
+          predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe[i-1]
+          predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe[i-1]
+          predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe[i-1]
+          predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe[i-1]
         }
         return(predictions_rmsfe)
       }
