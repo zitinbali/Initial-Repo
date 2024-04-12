@@ -169,7 +169,7 @@ recession_block = rectangles %>%
 
 model_1 <- ggplot() +
   geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = category)) +
-  geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
+  #geom_line(data = original_data, aes(x = Time, y = growth_rate, color = category)) +
   scale_colour_gradientn(colours = c("#465B84", "#1C5079", "#FF0000"), 
                          limits = c(1, 3), guide = "none") +
   geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
