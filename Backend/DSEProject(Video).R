@@ -1578,7 +1578,6 @@ server <- function(input, output, session) {
   ## AGGREGATE FUNCTIONS
   ###########################
   
-  # X variables is a vector; input would be ADL variables
   poor_outlook <- function(Y_dataframe, X_variables, f_horizon){
     
     m <- length(X_variables)
@@ -1646,12 +1645,8 @@ server <- function(input, output, session) {
       # subset last 4 entries
       last_4_entries <- tail(X_temp, 4)
       
-      # NEED TO CHANGE THIS LATER 
-      # ONLY APPLICABLE TO POSITIVE INDICATORS (WHERE GROWTH > 0 IS A GOOD THING)
-      count_true <- sum(last_4_entries < 0)
-      
       # check if any of the outliers correspond to the last 4 entries
-      if(any(last_4_entries %in% outliers) | count_true == 4){
+      if(any(last_4_entries %in% outliers)){
         indicators <- append(indicators, name_indicator)
       }
     }
@@ -1665,6 +1660,7 @@ server <- function(input, output, session) {
     
     return(list("message" = output_message, "indicators" = indicators))
   }
+  
   
   aggregate_output <- function(Y_dataframe, X_variables, AR_input, f_horizon, dum){
     
@@ -1720,19 +1716,18 @@ server <- function(input, output, session) {
   }
   
   
+  
   observeEvent(input$show_prediction, {
     example_startq = gsub(":", " ", "1980:Q1")
-    example_endq = gsub(":", " ", "2007:Q1")
+    example_endq = gsub(":", " ", "2000:Q3")
     example_startyq = as.yearqtr(gsub(":", " ", "1980:Q1"))
-    example_endyq = as.yearqtr(gsub(":", " ", "2007:Q1"))
+    example_endyq = as.yearqtr(gsub(":", " ", "2000:Q3"))
     start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1980:Q1"))))
     start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1980:Q1"))))
-    end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2007:Q1"))))
-    end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2007:Q1"))))
+    end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2000:Q3"))))
+    end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2000:Q3"))))
     
     output$model5 <- renderPlot({
-      advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
-      a = aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, 2, covid_dummy)
       ##aggregate_output(GDPGrowth_ts, ADL_variables, advanced_AR_input, h, covid_dummy)
       
       covid = c("2020 Q2", "2020 Q3")
@@ -1843,7 +1838,7 @@ server <- function(input, output, session) {
       ##############
       
       spliced_GDP <- data_splice(RGDP_Data, "1947 Q1", "2023 Q4", "1965 Q4", 
-                                 "2024 Q1", as.yearqtr(gsub(":", " ", "1985:Q4")), as.yearqtr(gsub(":", " ", "2003:Q1")), 3, 0)
+                                 "2024 Q1", as.yearqtr(example_startq), as.yearqtr(example_endq), 3, 0)
       
       post_prep_gdp <- prep_func(spliced_GDP, 40)
       post_prep_gdp_df <- post_prep_gdp$df
@@ -1873,9 +1868,11 @@ server <- function(input, output, session) {
       end_rownum = which(grepl(as.yearqtr(example_endq), GDPGrowth_ts_df$Time))
       #indiv_ADL_input <- as.matrix(all_GDP_data)
       
+      advanced_AR_input <- adv_ar_input(RGDP_Data, example_startq, example_endq)
+      
       X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, fred_hstarts_ts, consent_ts, nasdaq_ts)
       
-      h = as.numeric(input$h)
+      h = 2
       
       X_dataframe = X_comb_df
       #X_dataframe = paste0(X_dataframe, "_ts")
@@ -1919,7 +1916,7 @@ server <- function(input, output, session) {
       
       predictions <- check %>% 
         mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time > as.yearqtr(gsub(":", " ", "2001:Q3"))) %>% 
+        filter(Time > as.yearqtr(example_endq)) %>% 
         head(n = h) %>%
         mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, ADL_variables, advanced_AR_input, h)$preds)
       
