@@ -169,7 +169,7 @@ function(input, output, session) {
     select(Time) %>% 
     mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
   
-  rmsfe_data <- cbind(time_data, fanplot_rmsfe(GDPGrowth_ts_df, basic_AR_input, predictions, h)) 
+  #rmsfe_data <- cbind(time_data, fanplot_rmsfe(GDPGrowth_ts_df, basic_AR_input, predictions, h)) 
   rmsfe_data <- cbind(time_data, rmsfe_test)
   
   fanplot_data <- rbind(data, rmsfe_data) %>%

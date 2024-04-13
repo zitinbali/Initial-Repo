@@ -1,4 +1,16 @@
 library(shiny)
+library(tidyverse)
+library(ggplot2)
+library(zoo)
+library(dplyr)
+library(shinyWidgets)
+library(shinythemes)
+library(readxl)
+library(xts)
+library(AICcmodavg)
+library(fresh)
+library(RColorBrewer)
+library(dynlm)
 
 navbarPage(
   theme = shinythemes::shinytheme('flatly'),
