@@ -18,7 +18,9 @@ library(broom)
 library(flexmix)
 
 # reading the GDP data
-RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
+#RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
+
+RGDP_Data <- read_excel("RGDP Data.xlsx")
 
 # extracting the most revised values/recent data (2024 Q1) 
 latest_data <- RGDP_Data[, ncol(RGDP_Data)]
@@ -69,9 +71,9 @@ recessions_covid <- append(recessions,
                              as.yearqtr("2020 Q2")))
 
 # colour shading for recessions
-xblocks(time(as.zoo(check_xts)), 
-        c(time(check_xts) %in% recessions_covid), 
-        col = alpha("steelblue", alpha = 0.3))
+#xblocks(time(as.zoo(check_xts)), 
+        #c(time(check_xts) %in% recessions_covid), 
+        #col = alpha("steelblue", alpha = 0.3))
 
 # Variance is higher in the earlier years prior to the GDP calculation methodology being changed 
 
@@ -240,7 +242,5 @@ revise_values = function(data, delta, window_start, window_end){
   return (revised_data)
   
 }
-
-
 
 

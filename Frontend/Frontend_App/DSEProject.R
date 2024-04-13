@@ -1100,7 +1100,7 @@ observeEvent(input$show_prediction, {
     training_p <- bind_rows(training, joining_value)
     
     predictions <- check %>% 
-      mutate(Time = as.yearqtr(Dates)) %>%
+      #mutate(Time = as.yearqtr(Dates)) %>%
       filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
       head(n = h) %>%
       mutate(new_growth_rate = ADL_preds(GDPGrowth_ts, X_dataframe, h)$preds)
