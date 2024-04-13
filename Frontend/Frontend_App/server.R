@@ -1,12 +1,3 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
 library(tidyverse)
 library(ggplot2)
@@ -22,15 +13,14 @@ library(RColorBrewer)
 library(dynlm)
 
 
-RGDP_Data <- read_excel("RGDP Data.xlsx")
-
-source("GDP Cleaning.R")
-source("inputs.R")
-source("ADL Data.R")
-source("AR_Model_Functions.R")
-source("ADL Functions.R")
-source("Combined ADL Model Functions.R")
-source("Graph Functions.R")
+RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
+#source("../../Backend/inputs.R")
+#source("../../Backend/GDP Cleaning.R")
+#source("../../Backend/ADL Data.R")
+#source("../../Backend/AR_Model_Functions.R")
+#source("../../Backend/ADL Functions.R")
+#source("../../Backend/Combined ADL Model Functions.R")
+#source("Graph Functions.R")
 
 # Define server logic required to draw a histogram
 function(input, output, session) {
@@ -136,7 +126,8 @@ function(input, output, session) {
   
   #####within model
   
-  
+  observeEvent(input$button1, {
+    output$model1 <- renderPlot({
   
    h = as.numeric(input$h)
   
@@ -216,6 +207,10 @@ function(input, output, session) {
           plot.margin = margin(20,20,20,20))
   
   print(model_1)
+  
+    })
+    
+  })
   
 
 }
