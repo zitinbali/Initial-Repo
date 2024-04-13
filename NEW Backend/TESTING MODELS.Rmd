@@ -202,8 +202,6 @@ p_value
 
 ```{r aggregate test}
 
-abnormal(ADL_variables)
-
 aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
                  example_endq, example_fhorizon, covid_dummy)
 

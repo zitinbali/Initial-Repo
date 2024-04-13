@@ -135,13 +135,16 @@ abnormal <- function(ADL_var){
 aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   
   forecast_output <- c() 
+  mean_output <- c() 
   
   ################################
   ### INSERT AGGREGATION FUNCTION
   ################################
   
   # placeholder
-  mean_output = 1.0
+  for (i in 1:f_horizon){
+    mean_output <- append(mean_output, 1)
+  }
   
   # call poor outlook function 
   poor_outlook <- poor_outlook(Y_ts, ADL_var, start, end,
@@ -150,7 +153,7 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   # call abnormalities function 
   abnormal <- abnormal(ADL_var)
   
-  return(list("prediction" = mean_output, 
+  return(list("predictions" = mean_output, 
               "outlook" = poor_outlook, 
               "abnormal" = abnormal))
 }
