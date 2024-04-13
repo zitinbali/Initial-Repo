@@ -8,7 +8,29 @@
 #
 
 library(shiny)
+library(tidyverse)
+library(ggplot2)
+library(zoo)
+library(dplyr)
+library(shinyWidgets)
+library(shinythemes)
+library(readxl)
+library(xts)
+library(AICcmodavg)
+library(fresh)
+library(RColorBrewer)
+library(dynlm)
+
+
 RGDP_Data <- read_excel("RGDP Data.xlsx")
+
+source("GDP Cleaning.R")
+source("inputs.R")
+source("ADL Data.R")
+source("AR_Model_Functions.R")
+source("ADL Functions.R")
+source("Combined ADL Model Functions.R")
+source("Graph Functions.R")
 
 # Define server logic required to draw a histogram
 function(input, output, session) {
@@ -91,92 +113,73 @@ function(input, output, session) {
                          end = c(end_y, end_q), 
                          frequency = 4)
   
+  all_GDP_ts <- ts(all_GDP_data, 
+                   start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                   end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+        frequency = 4)
   
-  # formatting the data variable in terms of year and quarters
+  all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+    
+  all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
   
-  #start_rownum = which(grepl(as.yearqtr("2000 Q1"), check$Time))
-  #end_rownum = which(grepl(as.yearqtr(example_endq), check$Time))
-  
-  GDPGrowth_ts_df <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+  GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
     rename("Time" = "time") %>%
     rename("growth_rate" = "value")
   
+  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+    mutate(Time = as.yearqtr(Time)) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
   
-  start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df$Time))
-  end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df$Time))
+  GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
   
-  basic_AR_input <- GDPGrowth_ts_df[start_rownum:end_rownum, ] %>% 
+  #####within model
+  
+  
+  
+   h = as.numeric(input$h)
+  
+  #h = 2
+  start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
+  end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
+  
+  basic_AR_input <- GDPGrowth_ts_df_sliced[start_rownum:end_rownum, ] %>% 
     select(growth_rate) %>% 
     as.matrix()
   
-  start_plot = GDPGrowth_ts_df$Time[end_rownum - 10]
+  start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
+  end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + h]
   
-  h = as.numeric(input$h)
+ 
   
-  #p = as.numeric(fitAR(basic_AR_input, h, covid_dummy)$p)
-  
-  #h = 2
-  
-  #Graph fn
-  actual_values_graph <- function(example_startyq, example_endyq){
-    
-    training <- GDPGrowth_ts_df %>%
-      #mutate(Time = as.yearqtr(Time)) %>%
-      filter(Time > example_startyq) %>%
-      filter(Time < example_endyq) %>% 
-      tail(n = 9) %>%
-      select(Time, growth_rate) %>%
-      #mutate(growth_rate = as.numeric(growth_rate)) %>%
-      mutate(category = 1) 
-    
-    joining_value <- GDPGrowth_ts_df %>%
-      #mutate(Time = as.yearqtr(Dates)) %>%
-      filter(Time == example_endyq) %>% 
-      select(Time, growth_rate) %>%
-      #mutate(growth_rate = as.numeric(growth_rate)) %>%
-      mutate(category = 3) 
-    
-    training_t <- bind_rows(training, joining_value) %>%
-      mutate(category = 1) 
-    
-    training_p <- bind_rows(training, joining_value)
-    
-    return(list("training_p" = training_p))
-  }
-  
-  
-  predictions <- GDPGrowth_ts_df %>% 
-    #mutate(Time = as.yearqtr(Dates)) %>%
+  ## generating values for prediction graph
+  predictions <- all_GDP_ts_df %>% 
     filter(Time > example_endyq) %>% 
     head(n = h) %>%
-    mutate(new_growth_rate = 1)
-  
-  # Separate predictions into actual and predicted dataframes for plotting
-  
-  actual_test_values <- predictions %>% 
-    select(Time, growth_rate) %>%
-    mutate(category = 2)
-  
-  original_data <- rbind(training_t, actual_test_values)
+    mutate(new_growth_rate = c(1, 2)) #### 
   
   predicted_test_values <- predictions %>%
     select(Time, new_growth_rate) %>% 
     rename("growth_rate" = "new_growth_rate") %>% 
-    mutate(category = 3) 
+    mutate(category = 2) 
   
-  predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq)$training_p, predicted_test_values)
+  predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq, h)$training_p, predicted_test_values)
   
-  time_data <- GDPGrowth_ts_df %>%
+  # fanplot
+  
+  time_data <- all_GDP_ts_df %>%
     filter(Time >= example_endyq) %>%
-    select(Time) 
+    select(Time) %>%
+    head(h+1)
   
   data <- GDPGrowth_ts_df %>%
-    #mutate(Time = as.yearqtr(Dates)) %>%
     filter(Time < example_endyq) %>%
     select(Time) %>% 
     mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
   
   rmsfe_data <- cbind(time_data, fanplot_rmsfe(GDPGrowth_ts_df, basic_AR_input, predictions, h)) 
+  rmsfe_data <- cbind(time_data, rmsfe_test)
   
   fanplot_data <- rbind(data, rmsfe_data) %>%
     filter(Time >= example_endyq) %>%
@@ -194,13 +197,11 @@ function(input, output, session) {
   )
   
   recession_block = rectangles %>%
-    filter(xmin >= start_plot & xmax <= as.yearqtr(gsub(":", " ", input$year[2]))) #replace w start and end of lineplot
+    filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
   
   model_1 <- ggplot() +
-        
-    geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
     geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-
+    geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
     geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
