@@ -14,7 +14,7 @@ navbarPage(
       .tabbable > .nav > li > a[data-value='ADL Models'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Aggregate Model'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: transparent;  color:#79818c; border: 1px solid #79818c}
-      .tabbable > .nav > li > a[data-value='AR Model with Revised Values'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Revised AR Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
@@ -33,20 +33,20 @@ navbarPage(
                 selectInput('h', 'Select Forecast Horizon (Number of Quarters ahead)', 
                             choices = c("1","2", "3", "4"), 
                             selected = "2", width = '50%'),
-                actionButton("show_prediction", "Show Prediction",
-                             style="background-color: #79818c")
               ),
               mainPanel(
                 width = 14,
                 tabsetPanel(
                   tabPanel("AR Models",
                            icon = icon("calculator"),
-                           helpText("Our Basic AR model serves as a benchmark. For the revised AR model, we revise some of the data points before putting it through the model to improve accuracy. Compare the two models below!"),
+                           helpText("Our Basic AR model serves as a benchmark. For the Revised AR model, we revise some of the data points before putting it through the model to improve accuracy. Compare the two models below!"),
                            wellPanel(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
                                type = "pills",
                                tabPanel("Basic AR Model",
+                                        actionButton("button1", "Show Prediction",
+                                                     style="background-color: #79818c"),
                                         plotOutput("model1"),
                                         textOutput("desc1"),
                                         tableOutput("table1"),
@@ -58,10 +58,13 @@ navbarPage(
                                         div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
                                         actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
                                ),
-                               tabPanel("AR Model with Revised Values", 
+                               tabPanel("Revised AR Model",
+                                        actionButton("button2", "Show Prediction",
+                                                     style="background-color: #79818c"),
                                         plotOutput("model2"),
                                         textOutput("desc2"),
-                                        tableOutput("table2"))
+                                        tableOutput("table2")
+                                        )
                              )
                            )
                   ),
@@ -77,12 +80,19 @@ navbarPage(
                                         selectInput("select_ADL", "Select ADL Predictors",
                                                     choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment", "NASDAQ Composite Index"),
                                                     selected = "BAA-AAA Spread"),
+                                        actionButton("button3", "Show Prediction",
+                                                     style="background-color: #79818c"),
                                         headerPanel(""), # adds space btwn text and inputs
                                         plotOutput("model3"),
-                                        textOutput("desc3")),
+                                        textOutput("desc3")
+                                        ),
                                
-                               tabPanel("Combined ADL Model", plotOutput("model4"),
-                                        textOutput("desc4")),
+                               tabPanel("Combined ADL Model", 
+                                        actionButton("button4", "Show Prediction",
+                                                     style="background-color: #79818c"),
+                                        plotOutput("model4"),
+                                        textOutput("desc4")
+                                        ),
                                
                                tabPanel("Add A Predictor", 
                                         headerPanel(""), # adds space btwn text and inputs
@@ -92,9 +102,18 @@ navbarPage(
                                         helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
                                         downloadButton("download_data", "Download a Sample File",
                                                        style="background-color: #79818c"),
-                                        actionButton("show_ADL", "Generate ADL Model",
+                                        headerPanel(""), 
+                                        actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
-                                        plotOutput("model6"))
+                                        plotOutput("model5")
+                                        ),
+                               
+                               tabPanel("Rolling Test Window",
+                                        uiOutput("rolling_ADL"), 
+                                        actionButton("button6", "Show Prediction",
+                                                     style="background-color: #79818c"),
+                                        plotOutput("model6")
+                                        )
                                
                              )
                            )
@@ -105,8 +124,9 @@ navbarPage(
                            wellPanel(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
-                               actionButton("temp", "Show Prediction"),
-                               plotOutput("model5"),
+                               actionButton("button7", "Show Prediction",
+                                            style="background-color: #79818c"),
+                               plotOutput("model7"),
                                #headerPanel(""), # adds space btwn text and inputs
                                textOutput("agg_model_prediction"),
                                #headerPanel(""), # adds space btwn text and inputs
