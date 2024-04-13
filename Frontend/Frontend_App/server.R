@@ -15,7 +15,7 @@ library(dynlm)
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 source("../../Backend/inputs.R")
 source("../../Backend/GDP Cleaning.R")
-#source("../../Backend/ADL Data.R")
+source("../../Backend/ADL Data.R")
 source("../../Backend/AR_Model_Functions.R")
 source("../../Backend/ADL Functions.R")
 source("../../Backend/Combined ADL Model Functions.R")
@@ -106,10 +106,31 @@ function(input, output, session) {
   
   observeEvent(input$button1, {
     output$model1 <- renderPlot({
+       edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+        mutate(Time = as.yearqtr(Time)) %>%
+        mutate(growth_rate = as.numeric(growth_rate))
+       
+      all_GDP_ts <- ts(all_GDP_data, 
+                       start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                       end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                       frequency = 4)
+      
+      all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+        rename("Time" = "time") %>%
+        rename("growth_rate" = "value")
+      
+      all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+      
+      GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+        rename("Time" = "time") %>%
+        rename("growth_rate" = "value")
+      
+     
+      
+      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
   
-   h = as.numeric(input$h)
-  
-  #h = 2
+    #h = as.numeric(input$h)
+    h = 2
   start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
   end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
   
@@ -120,7 +141,6 @@ function(input, output, session) {
   start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
   end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + h]
   
- 
   
   ## generating values for prediction graph
   predictions <- all_GDP_ts_df %>% 
@@ -142,10 +162,15 @@ function(input, output, session) {
     select(Time) %>%
     head(h+1)
   
-  data <- GDPGrowth_ts_df %>%
+  data <- GDPGrowth_ts_df_sliced %>%
     filter(Time < example_endyq) %>%
     select(Time) %>% 
     mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
+  
+  actual_values = actual_values_graph(example_startyq, example_endyq, h)
+  joining_value = actual_values$joining_value
+  
+  rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
   
   #rmsfe_data <- cbind(time_data, fanplot_rmsfe(GDPGrowth_ts_df, basic_AR_input, predictions, h)) 
   rmsfe_data <- cbind(time_data, rmsfe_test)
@@ -170,7 +195,7 @@ function(input, output, session) {
   
   model_1 <- ggplot() +
     geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-    geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+    geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
     geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +

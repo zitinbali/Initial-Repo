@@ -28,6 +28,9 @@ covid_dummy_fn <- function(example_startyq, example_endyq){
 
 #Graph fn
 actual_values_graph <- function(example_startyq, example_endyq, h){
+   edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+    mutate(Time = as.yearqtr(Time)) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
   
   
   all_GDP_ts <- ts(all_GDP_data, 
@@ -45,10 +48,7 @@ actual_values_graph <- function(example_startyq, example_endyq, h){
     rename("Time" = "time") %>%
     rename("growth_rate" = "value")
   
-  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
-    mutate(Time = as.yearqtr(Time)) %>%
-    mutate(growth_rate = as.numeric(growth_rate))
-  
+ 
   GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
   
   training <- GDPGrowth_ts_df_sliced %>%
@@ -75,7 +75,7 @@ actual_values_graph <- function(example_startyq, example_endyq, h){
   
   training_p <- bind_rows(training, joining_value)
   
-  return(list("original_data" = original_data, "training_p" = training_p)) 
+  return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
   #original data returns true value graph, training_p returns values of training data before prediction values
 }
 
@@ -86,9 +86,9 @@ actual_values_graph <- function(example_startyq, example_endyq, h){
 # fanplot rmsfe generating fn
 # rmsfe_df from fn that generates rmsfe for h horizons
 
-#rmsfe_df_test = c(0.2, 0.4)
+rmsfe_df_test = c(0.2, 0.4)
 
-fanplot_rmsfe <- function(rmsfe_df, predictions, h) {
+fanplot_rmsfe <- function(rmsfe_df, joining_value, predictions, h) {
   predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
                                   upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
   predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
