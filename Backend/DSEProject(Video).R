@@ -289,6 +289,8 @@ server <- function(input, output, session) {
       
       test <- as.matrix(check$growth_rate)
       
+      covid_dummy_fn <- function(example_startyq, example_endyq){
+      
       covid = c("2020 Q2", "2020 Q3")
       covid_start = as.yearqtr(covid[1])
       covid_end = as.yearqtr(covid[2])
@@ -308,6 +310,8 @@ server <- function(input, output, session) {
         covid_dummy[index] = -1
         covid_dummy[index + 1] = 1
       }
+      return(covid_dummy)
+      }
       
       
       covid_dummy_ts <- ts(covid_dummy,
@@ -317,35 +321,38 @@ server <- function(input, output, session) {
       
       # formatting the data variable in terms of year and quarters
       
-      start_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[1])), check$Time))
-      end_rownum = which(grepl(as.yearqtr(gsub(":", " ", input$year[2])), check$Time))
+      start_rownum = which(grepl(example_startyq), GDPGrowth_ts_df$Time)
+      end_rownum = which(grepl(example_endyq), GDPGrowth_ts_df$Time)
       
-      basic_AR_input <- check[start_rownum:end_rownum, ] %>% 
+      basic_AR_input <- GDPGrowth_ts_df[start_rownum:end_rownum, ] %>% 
         select(growth_rate) %>% 
         as.matrix()
       
-      start_plot = check$Time[end_rownum - 10]
+      start_plot = GDPGrowth_ts_df$Time[end_rownum - 10]
       
       h = as.numeric(input$h)
       
-      p = as.numeric(fitAR(basic_AR_input, h, covid_dummy)$p)
+      #p = as.numeric(fitAR(basic_AR_input, h, covid_dummy)$p)
       
-      h = 2
+      #h = 2
       
-      training <- check %>%
-        mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time > as.yearqtr(gsub(":", " ", input$year[1]))) %>%
-        filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      #Graph fn
+      actual_values_graph <- function(example_startyq, example_endyq){
+      
+      training <- GDPGrowth_ts_df %>%
+        #mutate(Time = as.yearqtr(Time)) %>%
+        filter(Time > example_startyq) %>%
+        filter(Time < example_endyq) %>% 
         tail(n = 9) %>%
         select(Time, growth_rate) %>%
-        mutate(growth_rate = as.numeric(growth_rate)) %>%
+        #mutate(growth_rate = as.numeric(growth_rate)) %>%
         mutate(category = 1) 
       
-      joining_value <- check %>%
-        mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time == as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      joining_value <- GDPGrowth_ts_df %>%
+        #mutate(Time = as.yearqtr(Dates)) %>%
+        filter(Time == example_endyq) %>% 
         select(Time, growth_rate) %>%
-        mutate(growth_rate = as.numeric(growth_rate)) %>%
+        #mutate(growth_rate = as.numeric(growth_rate)) %>%
         mutate(category = 3) 
       
       training_t <- bind_rows(training, joining_value) %>%
@@ -353,30 +360,33 @@ server <- function(input, output, session) {
       
       training_p <- bind_rows(training, joining_value)
       
-      predictions <- check %>% 
-        mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+      return(list("training_p" = training_p))
+      }
+      
+       
+      predictions <- GDPGrowth_ts_df %>% 
+        #mutate(Time = as.yearqtr(Dates)) %>%
+        filter(Time > example_endyq) %>% 
         head(n = h) %>%
-        mutate(new_growth_rate = c(fitAR_preds(basic_AR_input, h, covid_dummy)))
+        mutate(new_growth_rate = c(1, 2))
       
       # Separate predictions into actual and predicted dataframes for plotting
+      
       actual_test_values <- predictions %>% 
         select(Time, growth_rate) %>%
         mutate(category = 2)
       
+      original_data <- rbind(training_t, actual_test_values)
+      
       predicted_test_values <- predictions %>%
         select(Time, new_growth_rate) %>% 
         rename("growth_rate" = "new_growth_rate") %>% 
-        #l_join(joining_value, by = "growth_rate") %>%
         mutate(category = 3) 
       
-      
-      original_data <- rbind(training_t, actual_test_values)
-      predicted_data <- rbind(training_p, predicted_test_values)
+      predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq)$training_p, predicted_test_values)
       
       # creating data for fanplot
-      predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
-      
+      #predictions_actual_values_only <- predictions %>% select(Time, growth_rate)
       
       fanplot_rmsfe <- function(full_df, input_df, predictions, h) {
         predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
@@ -387,7 +397,7 @@ server <- function(input, output, session) {
         predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
         
         for(i in 2:(h+1)){
-          rmsfe = fitAR(input_df, (i-1), covid_dummy_ts)$rmsfe 
+          rmsfe = fitAR(input_df, (i-1), covid_dummy_ts)$rmsfe ################
           predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
           predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
           predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
@@ -397,21 +407,20 @@ server <- function(input, output, session) {
       }
       
       ##create fanplot dataframe with time column
-      time_data <- check %>%
-        mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+      time_data <- GDPGrowth_ts_df %>%
+        filter(Time >= example_endyq) %>%
         select(Time) 
       
-      data <- check %>%
-        mutate(Time = as.yearqtr(Dates)) %>%
-        filter(Time < as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+      data <- GDPGrowth_ts_df %>%
+        #mutate(Time = as.yearqtr(Dates)) %>%
+        filter(Time < example_endyq) %>%
         select(Time) %>% 
         mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
       
       rmsfe_data <- cbind(time_data, fanplot_rmsfe(check, basic_AR_input, predictions, h)) 
       
       fanplot_data <- rbind(data, rmsfe_data) %>%
-        filter(Time >= as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+        filter(Time >= example_endyq) %>%
         head(h+1)
       
       
