@@ -12,15 +12,14 @@ library(fresh)
 library(RColorBrewer)
 library(dynlm)
 
-
-RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
-#source("../../Backend/inputs.R")
-#source("../../Backend/GDP Cleaning.R")
+RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
+source("../../Backend/inputs.R")
+source("../../Backend/GDP Cleaning.R")
 #source("../../Backend/ADL Data.R")
-#source("../../Backend/AR_Model_Functions.R")
-#source("../../Backend/ADL Functions.R")
-#source("../../Backend/Combined ADL Model Functions.R")
-#source("Graph Functions.R")
+source("../../Backend/AR_Model_Functions.R")
+source("../../Backend/ADL Functions.R")
+source("../../Backend/Combined ADL Model Functions.R")
+source("Graph Functions.R")
 
 # Define server logic required to draw a histogram
 function(input, output, session) {
@@ -102,27 +101,6 @@ function(input, output, session) {
                          start = c(start_y, start_q), 
                          end = c(end_y, end_q), 
                          frequency = 4)
-  
-  all_GDP_ts <- ts(all_GDP_data, 
-                   start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
-                   end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
-        frequency = 4)
-  
-  all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
-    rename("Time" = "time") %>%
-    rename("growth_rate" = "value")
-    
-  all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
-  
-  GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
-    rename("Time" = "time") %>%
-    rename("growth_rate" = "value")
-  
-  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
-    mutate(Time = as.yearqtr(Time)) %>%
-    mutate(growth_rate = as.numeric(growth_rate))
-  
-  GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
   
   #####within model
   

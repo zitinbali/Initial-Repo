@@ -12,6 +12,8 @@ library(fresh)
 library(RColorBrewer)
 library(dynlm)
 
+RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
+
 navbarPage(
   theme = shinythemes::shinytheme('flatly'),
   title = "GDP Growth Rate Predictor",

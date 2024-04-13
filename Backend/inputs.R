@@ -48,8 +48,3 @@ covid_dummy_fn <- function(example_startyq, example_endyq){
 }
 
 
-covid_dummy_ts <- ts(covid_dummy,
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q), 
-                     frequency = 4)
-
