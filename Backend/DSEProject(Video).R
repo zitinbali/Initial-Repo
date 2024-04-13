@@ -397,7 +397,7 @@ server <- function(input, output, session) {
         predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
         
         for(i in 2:(h+1)){
-          rmsfe = fitAR(input_df, (i-1), covid_dummy_ts)$rmsfe ################
+          rmsfe = fitAR(input_df, (i-1), covid_dummy_fn)$rmsfe ################
           predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe
           predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe
           predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe
