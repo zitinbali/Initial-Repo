@@ -18,6 +18,7 @@ navbarPage(
       .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Rolling Test Window'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
     ")
   ),
@@ -45,6 +46,7 @@ navbarPage(
                              tabsetPanel(
                                type = "pills",
                                tabPanel("Basic AR Model",
+                                        headerPanel(""),
                                         actionButton("button1", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         plotOutput("model1"),
@@ -59,6 +61,7 @@ navbarPage(
                                         actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
                                ),
                                tabPanel("Revised AR Model",
+                                        headerPanel(""),
                                         actionButton("button2", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         plotOutput("model2"),
@@ -75,8 +78,8 @@ navbarPage(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
                                type = "pills", 
-                               tabPanel("Individual ADL Model", 
-                                        headerPanel(""), # adds space btwn text and inputs
+                               tabPanel("Individual ADL Model",
+                                        headerPanel(""),
                                         selectInput("select_ADL", "Select ADL Predictors",
                                                     choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment", "NASDAQ Composite Index"),
                                                     selected = "BAA-AAA Spread"),
@@ -88,6 +91,7 @@ navbarPage(
                                         ),
                                
                                tabPanel("Combined ADL Model", 
+                                        headerPanel(""),
                                         actionButton("button4", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         plotOutput("model4"),
@@ -109,6 +113,7 @@ navbarPage(
                                         ),
                                
                                tabPanel("Rolling Test Window",
+                                        headerPanel(""),
                                         uiOutput("rolling_ADL"), 
                                         actionButton("button6", "Show Prediction",
                                                      style="background-color: #79818c"),
