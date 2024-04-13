@@ -14,14 +14,14 @@ source("Combined ADL Functions.R")
 
 
 # X variables is a vector; input would be ADL variables
-poor_outlook <- function(Y_ts, X_variables, start, end, f_horizon, dum){
+poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   
-  m <- length(X_variables)
+  m <- length(ADL_var)
   
   forecast_output <- c() 
   
   for (i in 1:m){
-    X_temp <- get(X_variables[i])
+    X_temp <- get(ADL_var[i])
     forecast_h <- (ADL_predict_all(Y_ts, X_temp, start, end, f_horizon, dum))$predictions
     for (j in 1:f_horizon){
       forecast <- forecast_h[j]
@@ -41,7 +41,7 @@ poor_outlook <- function(Y_ts, X_variables, start, end, f_horizon, dum){
   
   # names of unique indicators which predict GDP growth rate < 0
   less_than_zero <- unique(less_than_zero)
-  indicators_poor <- X_variables[less_than_zero]
+  indicators_poor <- ADL_var[less_than_zero]
   
   if (is_empty(unique(indicators_poor))){
     output_message = "None of the ADL predictors forecast a negative GDP growth rate."
@@ -67,15 +67,15 @@ poor_outlook <- function(Y_ts, X_variables, start, end, f_horizon, dum){
 # the output for indicators will be NULL.
 
 
-abnormal <- function(X_variables){
+abnormal <- function(ADL_var){
   
-  m <- length(X_variables)
+  m <- length(ADL_var)
   high_dev_indicators <- c()
   medium_dev_indicators <- c()
   
   for (i in 1:m){
-    X_temp <- get(X_variables[i])
-    name_indicator <- X_variables[i]
+    X_temp <- get(ADL_var[i])
+    name_indicator <- ADL_var[i]
     
     # median of the X variable
     median_value <- median(X_temp)
@@ -132,7 +132,7 @@ abnormal <- function(X_variables){
 
 # X_variables refers to a vector comprising the string names of all X variables.
 # The input for X_variable is ADL_variables
-aggregate_output <- function(Y_dataframe, X_variables, start, end, f_horizon, dum){
+aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   
   forecast_output <- c() 
   
@@ -144,11 +144,11 @@ aggregate_output <- function(Y_dataframe, X_variables, start, end, f_horizon, du
   mean_output = 1.0
   
   # call poor outlook function 
-  poor_outlook <- poor_outlook(Y_dataframe, X_variables, start, end,
+  poor_outlook <- poor_outlook(Y_ts, ADL_var, start, end,
                                f_horizon, covid_dummy)
   
   # call abnormalities function 
-  abnormal <- abnormal(X_variables)
+  abnormal <- abnormal(ADL_var)
   
   return(list("prediction" = mean_output, 
               "outlook" = poor_outlook, 

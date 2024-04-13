@@ -7,7 +7,7 @@ source("AR_Model_Functions.R")
 source("ADL Data.R")
 source("ADL Functions.R")
 source("ADL_Rolling.R")
-source("Combined ADL Model Functions.R")
+source("Aggregate Functions.R")
 source("DM_test.R")
 
 ```
@@ -201,6 +201,8 @@ p_value
 # Aggregate Model 
 
 ```{r aggregate test}
+
+abnormal(ADL_variables)
 
 aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
                  example_endq, example_fhorizon, covid_dummy)
