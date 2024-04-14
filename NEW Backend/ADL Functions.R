@@ -165,8 +165,13 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
   predictions <- c()
   rmsfe_values <- c()
   
+  covid_dummy_ts <- ts(covid_dummy,
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
   
   selectors_AIC <- AICselector(Y_ts, X_ts, start, end, dum)
+  selectors_AIC <- gsub("dum", "covid_dummy_ts", selectors_AIC) 
   
   model_formula = as.formula(selectors_AIC)
   
@@ -176,7 +181,7 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
   
   output_model <- model_AIC$residuals
   
-  pred <- ADL_predict_1(Y_ts, X_ts, dum, model_AIC$coefficients)
+  pred <- ADL_predict_1(Y_ts, X_ts, covid_dummy_ts, model_AIC$coefficients)
   resid <- as.matrix(output_model)
   rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(X_ts)))
   
@@ -221,10 +226,15 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
       # Updating COVID dummy
       upd_covid_dummy = c(dum, rep(0, i - 1))
       
+      upd_covid_dummy_ts <- ts(upd_covid_dummy,
+                               start = c(start_y, start_q), 
+                               end = c(upd_end_y, upd_end_q), 
+                               frequency = 4)
+      
       # Formula recommended by AIC selector
       selectors_AIC_local <- gsub("Y_ts", "gdp_ts", selectors_AIC) 
       selectors_AIC_local <- gsub("X_ts", "X_ts_upd", selectors_AIC_local) 
-      selectors_AIC_local <- gsub("dum", "upd_covid_dummy", selectors_AIC_local)
+      selectors_AIC_local <- gsub("covid_dummy_ts", "upd_covid_dummy_ts", selectors_AIC_local)
       
       # model based on AIC selection
       model_AIC_local <- dynlm(as.formula(selectors_AIC_local),
@@ -236,7 +246,7 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
       resid <- as.matrix(output_model)
       rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(X_ts_upd)))
       
-      pred <- ADL_predict_1(gdp_ts, X_ts_upd, upd_covid_dummy, 
+      pred <- ADL_predict_1(gdp_ts, X_ts_upd, upd_covid_dummy_ts, 
                             model_AIC_local$coefficients)
       
       predictions <- append(predictions, pred)

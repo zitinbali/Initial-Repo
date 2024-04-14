@@ -104,25 +104,6 @@ ADL_predict_all(GDPGrowth_ts, nasdaq_ts, example_startq,
 
 ```
 
-## ADL: Unemployment Insurance Claims
-
-```{r adl model unemp}
-
-ADL_predict_all(GDPGrowth_ts, unemp_ts, example_startq,
-                example_endq, example_fhorizon, covid_dummy)
-
-```
-
-
-## ADL: Yield Curve 
-
-```{r adl model yield}
-
-ADL_predict_all(GDPGrowth_ts, yield_ts, example_startq,
-                example_endq, example_fhorizon, covid_dummy)
-
-```
-
 
 ## ADL: Rolling Window
 
@@ -133,8 +114,6 @@ rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, co
 rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-rw_unemp = rolling_window_adl(perc_change_df_spliced, unemp_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-rw_yield = rolling_window_adl(perc_change_df_spliced, yield_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 
 ```
 
