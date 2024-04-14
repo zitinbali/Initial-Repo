@@ -36,7 +36,7 @@ ADL_splice <- function(data, window_start, window_end){
   start_rownum = which(grepl(window_start, data$Date))
   end_rownum = which(grepl(window_end, data$Date))
   
-  output <- data[start_rownum:end_rownum+1, ]
+  output <- data[start_rownum:end_rownum, ]
   
   return(output)
 }
@@ -210,69 +210,5 @@ nasdaq_ts <- ts(nasdaq$Spread,
     #   cex = 0.5)
 
 
-#########################################
-# Unemployment Insurance Claims Index
-#########################################
-
-
-unemp <- read_excel("../Data/FRED Unemployment.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-unemp <- ADL_splice(unemp, example_startyq, example_endyq)
-
-unemp_ts <- ts(unemp$Spread, 
-                start = c(start_y, start_q), 
-                end = c(end_y, end_q), 
-                frequency = 4)
-
-#plot(merge(as.zoo(GDPGrowth_ts), as.zoo(unemp_ts)), 
-   #  plot.type = "single", 
-   #  col = c("darkred", "steelblue"),
-   #  lwd = 2,
-   #  xlab = "Date",
-   #  ylab = "",
-    # main = "Unemployment Insurance Claims & GDP Growth over Time")
-#legend("topright", 
-     #  legend = c("GDP Growth", "Unemployment Insurance Claims"),
-     #  col = c("darkred", "steelblue"),
-     #  lwd = c(1, 1),
-    #   cex = 0.5)
-
-
-
-
-##############
-# test 1
-##############
-
-
-consent2 <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-consent2 <- ADL_splice(consent2, example_startyq, example_endyq)
-
-consent2_ts <- ts(consent$Spread, 
-                  start = c(start_y, start_q), 
-                  end = c(end_y, end_q), 
-                  frequency = 4)
-
-
-##############
-# test 2
-##############
-
-
-yield <- read_excel("../Data/FRED Treasury Maturity.xls", col_names = c("Date", "Spread")) %>% 
-  mutate(Date = as.yearqtr(Date), 
-         Spread = as.numeric(Spread))
-
-yield <- ADL_splice(yield, example_startyq, example_endyq)
-
-yield_ts <- ts(yield$Spread, 
-                  start = c(start_y, start_q), 
-                  end = c(end_y, end_q), 
-                  frequency = 4)
 
 
