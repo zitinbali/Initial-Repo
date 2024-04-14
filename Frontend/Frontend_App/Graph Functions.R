@@ -28,7 +28,7 @@ covid_dummy_fn <- function(example_startyq, example_endyq){
 
 #Graph fn
 actual_values_graph <- function(example_startyq, example_endyq, h){
-   edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+   edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(NA,NA,NA,NA)) %>%
     mutate(Time = as.yearqtr(Time)) %>%
     mutate(growth_rate = as.numeric(growth_rate))
   
@@ -72,6 +72,9 @@ actual_values_graph <- function(example_startyq, example_endyq, h){
     mutate(category = 1) 
   
   original_data <- bind_rows(training_t, original_test_values)
+  
+  original_data <- original_data %>%
+    filter(Time <= as.yearqtr("2023 Q4"))
   
   training_p <- bind_rows(training, joining_value)
   
