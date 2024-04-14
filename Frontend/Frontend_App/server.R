@@ -569,11 +569,55 @@ function(input, output, session) {
   ## ADD PREDICTOR MODEL
   ####################
  
+  ##################
+  ## AGGREGATE MODEL
+  ##################
   
+  ## OUTPUT MESSAGE
   
+  observeEvent(input$button7, {
+    text <- aggregate_output(GDPGrowth_ts, ADL_variables, input$year[1], 
+                     input$year[2], input$h, covid_dummy)
+    
+    output$agg_model_prediction <- renderText({
+      paste("The predicted value is:", text$predictions)
+    })
+    
+    output$outlook_indicators <- renderText({
+      indicators <- paste(text$outlook$indicators, collapse = ", ")
+      return(paste("Indicators that forecast negative growth:", indicators))
+    })
+    
+    output$poor_outlook <- renderText({
+      return(text$outlook$message)
+    })
+    
+    output$abnormal_high_indicators <- renderText({
+      indicators <- if(is.null(text$abnormal$high_dev_indicators)){
+        "None"
+      } else {
+        paste(text$abnormal$high_dev_indicators, collapse = ", ")
+      }
+      return(paste("Indicators with High Level Deviation:", indicators))
+    })
+    
+    output$abnormal_med_indicators <- renderText({
+      indicators <- if(is.null(text$abnormal$medium_dev_indicators)){
+        "None"
+      } else {
+        paste(text$abnormal$medium_dev_indicators, collapse = ", ")
+      }
+      return(paste("Indicators with Medium Level Deviation:", indicators))
+    })
+    
+    output$abnormal_message <- renderText({
+      return(text$abnormal$message)
+    })
+  })
   
-  
-  
+  output$help <- renderTable({
+    cars
+  })
   
 
 }

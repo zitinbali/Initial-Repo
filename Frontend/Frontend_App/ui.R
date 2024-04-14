@@ -152,12 +152,11 @@ navbarPage(
                                #headerPanel(""), # adds space btwn text and inputs
                                textOutput("agg_model_prediction"),
                                #headerPanel(""), # adds space btwn text and inputs
-                               htmlOutput("outlook_num_indicators"),
                                textOutput("outlook_indicators"), 
                                textOutput("poor_outlook"),
                                #headerPanel(""), # adds space btwn text and inputs
-                               htmlOutput("abnormal_num_indicators"),
-                               textOutput("abnormal_indicators"),
+                               textOutput("abnormal_high_indicators"),
+                               textOutput("abnormal_med_indicators"),
                                textOutput("abnormal_message")
                              )
                            )
@@ -166,4 +165,10 @@ navbarPage(
               )
             )
   ),
+  navbarMenu("More",
+             wellPanel("Help",
+                       tableOutput("help")
+             )
+  ),
+
 )
