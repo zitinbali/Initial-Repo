@@ -200,6 +200,7 @@ function(input, output, session) {
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
+    scale_x_yearqtr(format = '%Y Q%q')+ 
     labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
          color = "Legend") +  # Set the legend title
     theme_minimal() +
