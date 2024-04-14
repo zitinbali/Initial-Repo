@@ -105,3 +105,25 @@ fanplot_rmsfe <- function(rmsfe_df, joining_value, predictions, h) {
   }
   return(predictions_rmsfe)
 }
+
+
+#rename variable for indiv ADL model
+rename_variable <- function(input_string) { 
+  var = NULL
+  if (input_string == "BAA-AAA Spread"){
+    var = baa_aaa_ts
+  }
+  if (input_string == "Treasury Spread"){
+    var = tspread_ts
+  }
+  if (input_string == "Housing Starts"){
+    var = fred_hstarts_ts
+  }
+  if (input_string == "Consumer Sentiment"){
+    var = consent_ts
+  }
+  if (input_string == "NASDAQ Composite Index"){
+    var = nasdaq_ts
+  }
+  return(var)
+}
