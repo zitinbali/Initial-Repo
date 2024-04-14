@@ -37,9 +37,9 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
                        start = start + (test_length - i) * 1/4, 
                        end = window_start - 1/4, 
                        frequency = 4)
-
+    
     if (i == test_length){
-      selection = AICselector(GDPGrowth_ts, X.window, year(window_start - 1/4), quarter(window_start -1/4), dummy.window)
+      selection = AICselector(GDPGrowth_ts, X.window, start, window_start - 1/4, dummy.window)
     }
     
     Y_string = as.character(substitute(GDPGrowth_ts))
@@ -47,10 +47,11 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
     
     formula = gsub("Y_df", "GDPGrowth_ts", selection)
     
+
     model_temp = dynlm(as.formula(formula), start = start + (test_length - i) * 1/4, end = window_start - 1/4)
 
-    winfit = ADL_predict_1(GDPGrowth_ts, X.window, "GDPGrowth_ts", "X.window", formula, model_temp$coefficients)
-    
+    winfit = ADL_predict_1(GDPGrowth_ts, X.window, dummy.window, model_temp$coefficients)
+
     save.pred[(1+test_length-i),] = winfit
     
     window_start = window_start + 1/4
@@ -63,6 +64,7 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
   rmse = sqrt(mean((tail(real,test_length)-save.pred)^2)) 
   mae = mean(abs(tail(real,test_length)-save.pred))
   errors = c("rmse"=rmse,"mae"=mae) 
+  formula = gsub("X.window", as.character(substitute(X_df)), formula)
   
   return(list("pred"=save.pred,"errors"=errors, "formula" = formula))
   

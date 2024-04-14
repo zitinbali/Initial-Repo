@@ -31,6 +31,8 @@ AICselector <- function(Y_ts, X_ts, start, end, dum){
   dum_name <- as.character(substitute(dum))
   
   assign(dum_name, dum)
+  assign(Y_name, Y_ts)
+  assign(X_name, X_ts)
   
   for (j in 1:4){
     Y_string = paste("L(", Y_name, ",", j, ")", sep = "")
@@ -66,12 +68,11 @@ AICselector <- function(Y_ts, X_ts, start, end, dum){
         
         model_string = paste(start_string, body_string_up, sep = "")
         model_formula = as.formula(model_string)
-        
         # create dynlm model 
         model_local <- dynlm(model_formula,
                              start = c(start_y, start_q), 
                              end = c(end_y, end_q))
-        
+
         # AIC of model 
         AIC_local <- AIC(model_local)
         

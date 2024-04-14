@@ -119,23 +119,27 @@ rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, 
 
 ```{r adl dm test}
 
-rw_baa$formula
-rw_tsp$formula
-rw_hstarts$formula
-rw_consent$formula
-rw_nasdaq$formula
-rw_unemp$formula
-rw_yield$formula
+rw_options = list(rw_baa, rw_tsp, rw_hstarts, rw_consent, rw_nasdaq)
+dm_results = rep(0, length(rw_options))
+p_value_results = rep(0, length(rw_options))
 
-pred2 = rw_yield$pred
+for (i in 1:length(rw_options)){
+  current = rw_options[[i]]
+  print(paste("Formula is", as.character(current$formula)))
+  
+  pred2 = current$pred
+  
+  dm_test_result = dm_test(tail(real_values, window_length), 
+                           pred1, pred2, window_start, example_endyq)[1]
+  
+  p_value = pt(dm_test_result, df = window_length - 1) * 100
+  
+  dm_results[i] = dm_test_result
+  p_value_results[i] = p_value
+}
 
-dm_test_result = dm_test(tail(real_values, window_length), pred1, pred2, window_start, example_endyq)[1]
-# Basic vs Advanced values, Plots loss of basic - loss of advanced
-
-p_value = pt(dm_test_result, df = window_length - 1) * 100
-
-dm_test_result
-p_value
+dm_results
+p_value_results
 
 ```
 
