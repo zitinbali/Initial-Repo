@@ -183,7 +183,7 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
   predictions <- c()
   rmsfe_values <- c()
   
-  covid_dummy_ts <- ts(covid_dummy,
+  covid_dummy_ts <- ts(dum,
                        start = c(start_y, start_q), 
                        end = c(end_y, end_q), 
                        frequency = 4)
@@ -230,7 +230,7 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
     
     assign(name_df, X_df)
     
-    AR_output <- fitAR(get(name_df), 1, covid_dummy)
+    AR_output <- fitAR(get(name_df), 1, dum)
     pred_name = paste("X", i,"_pred", sep = "")
     
     assign(pred_name, AR_output$pred)
@@ -298,7 +298,7 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
       colnames(X_comb_upd) <- ADL_var
       
       # Updating COVID dummy
-      upd_covid_dummy = c(covid_dummy, rep(0, i - 1))
+      upd_covid_dummy = c(dum, rep(0, i - 1))
       
       upd_covid_dummy_ts <- ts(upd_covid_dummy,
                                start = c(start_y, start_q), 
