@@ -67,12 +67,6 @@ navbarPage(
                                         textOutput("desc1"),
                                         tableOutput("table1"),
                                         headerPanel(""), # adds space btwn text and inputs
-                                        helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
-                                        div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
-                                        div(style="display:inline-block", textInput("data2" ,"2024 Q2:")),
-                                        div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
-                                        div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
-                                        actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
                                ),
                                tabPanel("Revised AR Model",
                                         headerPanel(""),
@@ -80,7 +74,14 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         plotOutput("model2"),
                                         textOutput("desc2"),
-                                        tableOutput("table2")
+                                        tableOutput("table2"),
+                                        headerPanel(""), # adds space btwn text and inputs
+                                        helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
+                                        div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
+                                        div(style="display:inline-block", textInput("data2" ,"2024 Q2:")),
+                                        div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
+                                        div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
+                                        actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
                                         )
                              )
                            )
@@ -101,6 +102,7 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         headerPanel(""), # adds space btwn text and inputs
                                         plotOutput("model3"),
+                                        tableOutput("table3"),
                                         textOutput("desc3")
                                         ),
                                
@@ -109,6 +111,7 @@ navbarPage(
                                         actionButton("button4", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         plotOutput("model4"),
+                                        tableOutput("table4"),
                                         textOutput("desc4")
                                         ),
                                
