@@ -19,6 +19,7 @@ navbarPage(
   title = "GDP Growth Rate Predictor",
   fluid = TRUE,
   tags$style(
+    type="text/css", ".dataTables_filter {display: none;    }",
     HTML("
       .navbar-nav > li > a {
         padding-top: 15px;
@@ -184,7 +185,9 @@ navbarPage(
                                                     selected = "BAA-AAA Spread"),
                                         actionButton("button8", "Show Prediction",
                                                      style="background-color: #79818c"),
-                                        plotOutput("model8")
+                                        plotOutput("model8"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table8")
                                         
                                ),
                                tabPanel("Combined ADL",
@@ -203,7 +206,7 @@ navbarPage(
                   
                   tabPanel("Help",
                            icon = icon("info"),
-                           includeMarkdown("../../NEW Backend/TESTING MODELS.Rmd")
+                           includeMarkdown("../../NEW Backend/Help Page.Rmd")
                   )
                   
                 )
