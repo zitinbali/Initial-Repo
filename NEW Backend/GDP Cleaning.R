@@ -206,39 +206,39 @@ data_splice = function(data, row_start, row_end, col_start, col_end,
 # col_end = "2024 Q1"
 # window_start = "2004 Q3"
 # window_end = "2014 Q4"
-# 
-# revise_values = function(data, delta, window_start, window_end){
-# 
-#   window_start_yq = as.yearqtr(window_start)
-#   window_end_yq = as.yearqtr(window_end)
-#   
-#   # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
-#   ten_year_mark = (window_end_yq - 10 - window_start_yq)*4 + 1
-#   end_of_row_mark = (window_end_yq - window_start_yq)*4 + 1
-#   
-#   end_qtr = as.character(window_end_yq + 1/4)
-#   
-#   # Most recent values for start of time to 10 years before target date
-#   ancient_values <- data[1:ten_year_mark,][[`end_qtr`]]
-#   
-#   # All other values
-#   recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`end_qtr`]]
-#   
-#   # Applying approximation of final growth numbers on recent values
-#   forecast_growth = recent_values 
-#   for (i in 1:length(recent_values)){
-#     if (forecast_growth[i] < 0){
-#       for (j in 1:i){
-#         forecast_growth[i] = forecast_growth[i] + (1 / (1 + exp(-abs(forecast_growth[i]))) - 0.5) * delta[41 - j]
-#       }
-#     }
-#   }
-#   
-#   revised_data = c(ancient_values, forecast_growth)
-#   
-#   return (revised_data)
-#   
-# }
+
+revise_values = function(data, delta, window_start, window_end){
+
+  window_start_yq = as.yearqtr(window_start)
+  window_end_yq = as.yearqtr(window_end)
+
+  # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
+  ten_year_mark = (window_end_yq - 10 - window_start_yq)*4 + 1
+  end_of_row_mark = (window_end_yq - window_start_yq)*4 + 1
+
+  end_qtr = as.character(window_end_yq + 1/4)
+
+  # Most recent values for start of time to 10 years before target date
+  ancient_values <- data[1:ten_year_mark,][[`end_qtr`]]
+
+  # All other values
+  recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`end_qtr`]]
+
+  # Applying approximation of final growth numbers on recent values
+  forecast_growth = recent_values
+  for (i in 1:length(recent_values)){
+    if (forecast_growth[i] < 0){
+      for (j in 1:i){
+        forecast_growth[i] = forecast_growth[i] + (1 / (1 + exp(-abs(forecast_growth[i]))) - 0.5) * delta[41 - j]
+      }
+    }
+  }
+
+  revised_data = c(ancient_values, forecast_growth)
+
+  return (revised_data)
+
+}
 
 
 ##############
