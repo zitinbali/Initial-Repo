@@ -208,7 +208,7 @@ function(input, output, session) {
     geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
     geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
     geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
-    geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+    geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
     scale_x_yearqtr(format = '%Y Q%q')+ 
     labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
@@ -363,7 +363,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
         geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
-        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
         labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
@@ -518,7 +518,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
         geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
-        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
         labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
@@ -684,7 +684,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
         geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
-        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "lightblue", alpha = 0.3) + 
+        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
         labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
