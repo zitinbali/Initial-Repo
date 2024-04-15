@@ -108,7 +108,7 @@ rolling_window_comb_adl = function(Y_df, X_df, window_start, dummy, real, start,
                    frequency = 4)
     
     if (i == test_length){
-      selection = comb_AICselector(GDPGrowth_ts, X.window, year(window_start - 1/4), quarter(window_start -1/4), dummy.window)
+      selection = comb_AICselector(GDPGrowth_ts, X.window, ADL_variables, start, window_start - 1/4, dummy.window)
     }
     
     Y_string = as.character(substitute(GDPGrowth_ts))
@@ -118,7 +118,7 @@ rolling_window_comb_adl = function(Y_df, X_df, window_start, dummy, real, start,
     
     model_temp = dynlm(as.formula(formula), start = start + (test_length - i) * 1/4, end = window_start - 1/4)
     
-    winfit = ADL_comb_predict(GDPGrowth_ts, X.window, formula, model_temp$coefficients, dummy.window, )
+    winfit = ADL_comb_predict(GDPGrowth_ts, X.window, ADL_variables, dummy.window, model_temp$coefficients)
     
     save.pred[(1+test_length-i),] = winfit
     
