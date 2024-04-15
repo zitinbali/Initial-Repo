@@ -121,7 +121,7 @@ navbarPage(
                                         fileInput("excel_data", "Upload a .xlsx file following the sample format.",
                                                   multiple = FALSE,
                                                   accept = c(".xlsx")),
-                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
+                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary."),
                                         downloadButton("download_data", "Download a Sample File",
                                                        style="background-color: #79818c"),
                                         headerPanel(""), 
@@ -167,7 +167,7 @@ navbarPage(
                   ),
                   tabPanel("Help",
                            icon = icon("info"),
-                           includeMarkdown("../../NEW Backend/TESTING MODELS.Rmd")
+                           includeMarkdown("../../NEW Backend/Help Page.Rmd")
                   )
                   
                 )

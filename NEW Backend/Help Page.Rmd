@@ -1,0 +1,74 @@
+*This page provides information on how to use the app and interpret results. Scroll to the bottom for basic information regarding the model methodologies.* 
+
+## Using the App and Interpreting Results
+
+&nbsp;
+
+### **AR Models**
+
+1. Select the start and end of your training window on the slider.
+* As this suggests, the data selected in this interval will be used to train our models. 
+* The window has to be at least 20 years long to ensure the models have sufficient data to be trained on. 
+
+2. Select either the "Basic AR Model" or "Revised AR Model". 
+
+3. Click "Show Prediction". 
+
+&nbsp;
+
+### **ADL Models**
+
+1. Select the start and end of your training window on the slider. If you had already selected it for other models, you need not select it again. 
+
+2. Select either "Individual ADL Model" or "Combined ADL Model"
+* If you select "Individual ADL Model", you then also have to select an ADL predictor from the dropdown menu. 
+
+3. Click "Show Prediction". 
+
+Additional Notes:
+
+* If you would like to test your own ADL indicator, you may upload it under the "Add a Predictor" tab. 
+  + The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Please refer to the sample file under the "Add a Predictor" tab for reference. 
+  
+* [YAP ABOUT ROLLING TEST WINDOW HERE]
+
+&nbsp;
+
+### **Aggregate Model**
+
+1. Select the start and end of your training window on the slider. If you had already selected it for other models, you need not select it again. 
+
+2. Click "Show Prediction". 
+
+&nbsp;
+
+### **Results of AR & ADL Models**
+
+* The output graph comprises recent actual growth rates, and an additional red line depicting the predicted growth rate. 
+* The shaded blue regions around the prediction line are the 50% and 80% fan plots. It shows what the mean square forecast error, and we expect the majority of our forecasts to be within those intervals.
+* If there is a [INSERT COLOUR NAME] shaded block in the window, that denotes a recession period in the past.
+* Predicted growth rate values can be found below the plot. 
+
+&nbsp;
+
+### **Results of Aggregate Model**
+
+* The results include those mentioned for AR and ADL Models, as well as some additional details.
+* [WHAT IS IT DESCRIBED AS IN THE APP]
+
+&nbsp;
+&nbsp;
+
+## Model Methodologies
+
+### **AR Models**
+
+* The Basic AR Model is a simple autoregression model, using a maximum of 4 lags of GDP Growth rates.
+* The Revised AR Model uses the same algorithm as the Basic AR Model, however, it modifies the inputted data. The data is modified using a Sigmoid function to better represent [CONTINUE YAPPING HERE]
+
+### **ADL Models**
+
+* The individual ADL (Autoregressive Distributed Lag) models combine lags of GDP Growth Rates as well as lags of the chosen ADL predictor. 
+* O
+
+

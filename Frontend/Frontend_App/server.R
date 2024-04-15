@@ -11,6 +11,7 @@ library(AICcmodavg)
 library(fresh)
 library(RColorBrewer)
 library(dynlm)
+library(markdown)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 source("../../NEW Backend/inputs.R")
