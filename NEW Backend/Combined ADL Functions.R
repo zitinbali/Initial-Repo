@@ -42,6 +42,9 @@ comb_AICselector <- function(Y_ts, X_combined_ts, ADL_var, start, end, dum){
   
   num_X <- length(ADL_var)
   
+  assign(Y_name, Y_ts)
+  assign(dum_name, dum)
+  
   # j refers to the number of lags of each variable that we will include.
   for (j in 1:2){
     Y_string = paste("L(", Y_name, ",", j, ")", sep = "")
