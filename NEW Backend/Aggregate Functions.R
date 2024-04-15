@@ -196,20 +196,26 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   all_constant <- as.matrix(rep(gru2[1], (min_row+f_horizon)))
   all_predictions <- all_constant + (gru2[2]*new_baa) + (gru2[3]*new_tsp) + (gru2[4]*new_hstarts) + (gru2[5]*new_consent) + (gru2[6]*new_nasdaq) + (gru2[7]*new_comb)
   
-  print(all_predictions)
-  # combine them then find rmsfe 
-  # rmsfe should divide by diff rows to get diff horizons 
+  resid <- all_predictions - true_values
   
+  # rmsfe should divide by diff rows to get diff horizons 
+  sum_residuals <- sum(resid^2)
+  
+  rmsfe <- c() 
+  for (i in 1:f_horizon){
+    curr_num_rows <- nrow(resid) - f_horizon + i
+    curr_rmsfe <- sqrt(sum_residuals/curr_num_rows)
+    rmsfe <- append(rmsfe, curr_rmsfe)
+  }
   
   # call abnormalities function 
   abnormal <- abnormal(ADL_var)
   
   return(list("predictions" = forecasts, 
+              "rmsfe" = rmsfe,
               "outlook_message" = poor_outlook$message,
               "outlook_indicators" = poor_outlook$indicators,
               "abnormal" = abnormal))
 }
 
-aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
-                 example_endq, 4, covid_dummy)
   

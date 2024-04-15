@@ -44,9 +44,9 @@ Additional Notes:
 
 ### **Results of AR & ADL Models**
 
-* The output graph comprises recent actual growth rates, and an additional red line depicting the predicted growth rate. 
+* The output graph comprises recent actual growth rates, and an additional red line depicting the predicted growth rate. The graph only shows the last 10 quarters for easier visualisation
 * The shaded blue regions around the prediction line are the 50% and 80% fan plots. It shows what the mean square forecast error, and we expect the majority of our forecasts to be within those intervals.
-* If there is a [INSERT COLOUR NAME] shaded block in the window, that denotes a recession period in the past.
+* If there is a pink shaded block in the window, that denotes a recession period in the past.
 * Predicted growth rate values can be found below the plot. 
 
 &nbsp;
