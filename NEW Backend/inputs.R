@@ -1,6 +1,10 @@
 library(zoo)
 library(lubridate)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5fc77c0 (adding rolling window for adl)
 example_startq = "1980 Q1"
 example_endq = "2023 Q4"
 
