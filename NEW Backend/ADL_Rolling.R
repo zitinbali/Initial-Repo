@@ -4,6 +4,7 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
   test_length = (end - window_start) * 4 + 1
 
   save.pred = matrix(NA, test_length, 1)
+  rmse = rep(NA, test_length)
   
   start_str = format(start, "%Y Q%q")
   temp = window_start
@@ -54,6 +55,8 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
 
     save.pred[(1+test_length-i),] = winfit
     
+    rmse[1+test_length-i] = sqrt(mean(model_temp$residuals ^ 2))
+    
     window_start = window_start + 1/4
   }
 
@@ -61,12 +64,10 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
   plot.ts(real_ts, main = "Real values against predicted values", cex.axis = 1.8)
   lines(ts(save.pred, temp, end, freq = 4),col="red") 
   
-  rmse = sqrt(mean((tail(real,test_length)-save.pred)^2)) 
   mae = mean(abs(tail(real,test_length)-save.pred))
-  errors = c("rmse"=rmse,"mae"=mae) 
   formula = gsub("X.window", as.character(substitute(X_df)), formula)
   
-  return(list("pred"=save.pred,"errors"=errors, "formula" = formula))
+  return(list("pred"=save.pred,"rmse"=rmse, "mae" = mae, "formula" = formula))
   
 }
 
@@ -75,6 +76,7 @@ rolling_window_comb_adl = function(Y_df, X_df, window_start, dummy, real, start,
   test_length = (end - window_start) * 4 + 1
   
   save.pred = matrix(NA, test_length, 1)
+  rmse = rep(NA, test_length)
   
   start_str = format(start, "%Y Q%q")
   temp = window_start
@@ -122,6 +124,8 @@ rolling_window_comb_adl = function(Y_df, X_df, window_start, dummy, real, start,
     
     save.pred[(1+test_length-i),] = winfit
     
+    rmse[1+test_length-i] = sqrt(mean(model_temp$residuals ^ 2))
+    
     window_start = window_start + 1/4
   }
   
@@ -129,10 +133,8 @@ rolling_window_comb_adl = function(Y_df, X_df, window_start, dummy, real, start,
   plot.ts(real_ts, main = "Real values against predicted values", cex.axis = 1.8)
   lines(ts(save.pred, temp, end, freq = 4),col="red") 
   
-  rmse = sqrt(mean((tail(real,test_length)-save.pred)^2)) 
   mae = mean(abs(tail(real,test_length)-save.pred))
-  errors = c("rmse"=rmse,"mae"=mae) 
   
-  return(list("pred"=save.pred,"errors"=errors, "formula" = formula))
+  return(list("pred"=save.pred,"rmse"=rmse, "mae" = mae, "formula" = formula))
   
 }
