@@ -88,7 +88,7 @@ function(input, output, session) {
   output$rolling_ADL <- renderUI({
     
     selectInput("rolling_ADL",
-                "Select a Date: ",
+                "Select End of Test Window: ",
                 choices = RGDP_Data$DATE[which(input$year[2]==RGDP_Data$DATE):length(RGDP_Data$DATE)],
                 selected = RGDP_Data$DATE[length(RGDP_Data$DATE)]
     )
@@ -614,10 +614,6 @@ function(input, output, session) {
       return(text$abnormal$message)
     })
   })
-  
-  output$help <- renderTable({
-    cars
-  })
-  
+
 
 }

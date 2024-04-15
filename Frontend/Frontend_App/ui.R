@@ -27,6 +27,7 @@ navbarPage(
       .tabbable > .nav > li > a[data-value='AR Models'] {background-color: #9ba7a8;   color:white}
       .tabbable > .nav > li > a[data-value='ADL Models'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Aggregate Model'] {background-color: #9ba7a8;  color:white}
+      .tabbable > .nav > li > a[data-value='Help'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Revised AR Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
@@ -132,6 +133,9 @@ navbarPage(
                                tabPanel("Rolling Test Window",
                                         headerPanel(""),
                                         uiOutput("rolling_ADL"), 
+                                        selectInput("select_rolling_ADL", "Select ADL Predictors",
+                                                    choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment", "NASDAQ Composite Index"),
+                                                    selected = "BAA-AAA Spread"),
                                         actionButton("button6", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         plotOutput("model6")
@@ -160,15 +164,14 @@ navbarPage(
                                textOutput("abnormal_message")
                              )
                            )
+                  ),
+                  tabPanel("Help",
+                           icon = icon("info"),
+                           includeMarkdown("../../NEW Backend/TESTING MODELS.Rmd")
                   )
+                  
                 )
               )
             )
   ),
-  navbarMenu("More",
-             wellPanel("Help",
-                       tableOutput("help")
-             )
-  ),
-
 )
