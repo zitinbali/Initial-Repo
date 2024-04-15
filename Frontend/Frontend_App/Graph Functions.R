@@ -174,7 +174,7 @@ rename_variable <- function(input_string) {
     var = tspread_ts
   }
   if (input_string == "Housing Starts"){
-    var = fred_hstarts_ts
+    var = hstarts_ts
   }
   if (input_string == "Consumer Sentiment"){
     var = consent_ts

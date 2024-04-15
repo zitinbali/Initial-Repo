@@ -17,6 +17,7 @@ RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 source("../../NEW Backend/inputs.R")
 source("../../NEW Backend/GDP Cleaning.R")
 source("../../NEW Backend/ADL Data.R")
+source("../../NEW Backend/ADL_Rolling.R")
 source("../../NEW Backend/AR_Model_Functions.R")
 source("../../NEW Backend/ADL Functions.R")
 source("../../NEW Backend/Combined ADL Functions.R")
@@ -91,8 +92,8 @@ function(input, output, session) {
     
     selectInput("rolling_ADL",
                 "Select Start of Test Window: ",
-                choices = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+20:which(input$year[2]==RGDP_Data$DATE)],
-                selected = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+20]
+                choices = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80:which(input$year[2]==RGDP_Data$DATE)],
+                selected = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80]
     )
   })
   
@@ -104,6 +105,17 @@ function(input, output, session) {
                          start = c(start_y, start_q), 
                          end = c(end_y, end_q), 
                          frequency = 4)
+  
+  # recession blocks
+  recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
+                  2001, 2007:2008)
+  
+  rectangles <- data.frame(
+    xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
+    xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
+    ymin = -Inf,
+    ymax = Inf
+  )
   #################
   ## BASIC AR MODEL
   #################
@@ -569,8 +581,8 @@ function(input, output, session) {
   ## ROLLING WINDOW COMBINED ADL
   ###############################
   
-  observeEvent(input$buttonX, {
-    output$modelX <- renderPlot({
+  observeEvent(input$button9, {
+    output$model9 <- renderPlot({
       example_startq = gsub(":", " ", input$year[1])
       example_endq = gsub(":", " ", input$year[2])
       example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
@@ -580,7 +592,7 @@ function(input, output, session) {
       end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
-      window_start_str = input$select_rolling_ADL
+      window_start_str = input$rolling_ADL
       window_start = as.yearqtr(gsub(":", " ", window_start_str))
       #window_start = as.yearqtr("2000 Q1")
       window_length = (example_endyq - window_start) * 4 + 1
@@ -609,7 +621,7 @@ function(input, output, session) {
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
       
-      start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 120]
+      start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - window_length -10]
       end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum]
       
       pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
@@ -645,7 +657,7 @@ function(input, output, session) {
       joining_value = actual_values$joining_value
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
-      rmsfe_df = pred_df$errors ########
+      rmsfe_df = pred_df$rmse
       
       rmsfe_data <- cbind(time_data, fanplot_rmsfe(rmsfe_df, joining_value, predictions, window_length)) 
       #rmsfe_data <- cbind(time_data, rmsfe_test)
@@ -668,7 +680,7 @@ function(input, output, session) {
       recession_block = rectangles %>%
         filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
       
-      model_X <- ggplot() +
+      model_9 <- ggplot() +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
@@ -685,7 +697,7 @@ function(input, output, session) {
               axis.line = element_line(color = "black"),
               plot.margin = margin(20,20,20,20))
       
-      print(model_X)
+      print(model_9)
     })
   })
   
@@ -706,8 +718,8 @@ function(input, output, session) {
   ## ROLLING WINDOW ADL
   ####################
   
-  observeEvent(input$button6, {
-    output$model6 <- renderPlot({
+  observeEvent(input$button8, {
+    output$model8 <- renderPlot({
       example_startq = gsub(":", " ", input$year[1])
       example_endq = gsub(":", " ", input$year[2])
       example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
@@ -717,12 +729,12 @@ function(input, output, session) {
       end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
-      window_start_str = input$select_rolling_ADL
+      window_start_str = input$rolling_ADL
       window_start = as.yearqtr(gsub(":", " ", window_start_str))
       #window_start = as.yearqtr("2000 Q1")
       window_length = (example_endyq - window_start) * 4 + 1
       
-      
+      #X_df = baa_aaa_ts
       X_df = rename_variable(input$select_rolling_ADL)
       
       edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
@@ -749,7 +761,7 @@ function(input, output, session) {
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
       
-      start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 120]
+      start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - window_length - 10]
       end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum]
       
       pred_df = rolling_window_adl(perc_change_df_spliced, X_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
@@ -785,7 +797,7 @@ function(input, output, session) {
       joining_value = actual_values$joining_value
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
-      rmsfe_df = pred_df$errors ########
+      rmsfe_df = pred_df$rmse
       
       rmsfe_data <- cbind(time_data, fanplot_rmsfe(rmsfe_df, joining_value, predictions, window_length)) 
       #rmsfe_data <- cbind(time_data, rmsfe_test)
@@ -794,21 +806,11 @@ function(input, output, session) {
         filter(Time >= window_start) %>%
         head(window_length+1)
       
-      # recession blocks
-      recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                      2001, 2007:2008)
-      
-      rectangles <- data.frame(
-        xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
-        xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
-        ymin = -Inf,
-        ymax = Inf
-      )
       
       recession_block = rectangles %>%
         filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
       
-      model_6 <- ggplot() +
+      model_8 <- ggplot() +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
@@ -825,7 +827,7 @@ function(input, output, session) {
               axis.line = element_line(color = "black"),
               plot.margin = margin(20,20,20,20))
       
-      print(model_6)
+      print(model_8)
     })
   })
  
