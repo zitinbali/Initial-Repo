@@ -87,12 +87,12 @@ function(input, output, session) {
   ## ROLLING WINDOW INPUT
   #######################
   
-  output$rolling_ADL <- renderUI({
+  output$rolling_input <- renderUI({
     
     selectInput("rolling_ADL",
-                "Select End of Test Window: ",
-                choices = RGDP_Data$DATE[which(input$year[2]==RGDP_Data$DATE):length(RGDP_Data$DATE)],
-                selected = RGDP_Data$DATE[length(RGDP_Data$DATE)]
+                "Select Start of Test Window: ",
+                choices = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+20:which(input$year[2]==RGDP_Data$DATE)],
+                selected = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+20]
     )
   })
   

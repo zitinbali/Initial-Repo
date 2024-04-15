@@ -27,13 +27,16 @@ navbarPage(
       .tabbable > .nav > li > a[data-value='AR Models'] {background-color: #9ba7a8;   color:white}
       .tabbable > .nav > li > a[data-value='ADL Models'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Aggregate Model'] {background-color: #9ba7a8;  color:white}
+      .tabbable > .nav > li > a[data-value='Rolling Test Window'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Help'] {background-color: #9ba7a8;  color:white}
       .tabbable > .nav > li > a[data-value='Basic AR Model'] {background-color: transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Revised AR Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
-      .tabbable > .nav > li > a[data-value='Rolling Test Window'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='AR'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='ADL'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Combined ADL'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
     ")
   ),
@@ -83,7 +86,7 @@ navbarPage(
                                         div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
                                         div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
                                         actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
-                                        )
+                               )
                              )
                            )
                   ),
@@ -105,7 +108,7 @@ navbarPage(
                                         plotOutput("model3"),
                                         tableOutput("table3"),
                                         textOutput("desc3")
-                                        ),
+                               ),
                                
                                tabPanel("Combined ADL Model", 
                                         headerPanel(""),
@@ -114,33 +117,21 @@ navbarPage(
                                         plotOutput("model4"),
                                         tableOutput("table4"),
                                         textOutput("desc4")
-                                        ),
+                               ),
                                
                                tabPanel("Add A Predictor", 
                                         headerPanel(""), # adds space btwn text and inputs
                                         fileInput("excel_data", "Upload a .xlsx file following the sample format.",
                                                   multiple = FALSE,
                                                   accept = c(".xlsx")),
-                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary."),
+                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
                                         downloadButton("download_data", "Download a Sample File",
                                                        style="background-color: #79818c"),
                                         headerPanel(""), 
                                         actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
                                         plotOutput("model5")
-                                        ),
-                               
-                               tabPanel("Rolling Test Window",
-                                        headerPanel(""),
-                                        uiOutput("rolling_ADL"), 
-                                        selectInput("select_rolling_ADL", "Select ADL Predictors",
-                                                    choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment", "NASDAQ Composite Index"),
-                                                    selected = "BAA-AAA Spread"),
-                                        actionButton("button6", "Show Prediction",
-                                                     style="background-color: #79818c"),
-                                        plotOutput("model6")
-                                        )
-                               
+                               )
                              )
                            )
                   ),
@@ -150,9 +141,9 @@ navbarPage(
                            wellPanel(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
-                               actionButton("button7", "Show Prediction",
+                               actionButton("button6", "Show Prediction",
                                             style="background-color: #79818c"),
-                               plotOutput("model7"),
+                               plotOutput("model6"),
                                #headerPanel(""), # adds space btwn text and inputs
                                textOutput("agg_model_prediction"),
                                #headerPanel(""), # adds space btwn text and inputs
@@ -165,9 +156,46 @@ navbarPage(
                              )
                            )
                   ),
+                  tabPanel("Rolling Test Window", 
+                           icon = icon("plus"),
+                           headerPanel(" "),
+                           uiOutput("rolling_input"),
+                           wellPanel(
+                             style = "background-color: #f8f9fa",
+                             tabsetPanel(
+                               type = "pills",
+                               tabPanel(
+                                 "AR",
+                                 headerPanel(""), 
+                                 actionButton("button7", "Show Prediction",
+                                              style="background-color: #79818c"),
+                                 plotOutput("model7")
+                               ),
+                               tabPanel("ADL",
+                                        headerPanel(""),
+                                        selectInput("select_rolling_ADL", "Select ADL Predictors",
+                                                    choices = c("BAA-AAA Spread", "Treasury Spread", "Housing Starts", "Consumer Sentiment", "NASDAQ Composite Index"),
+                                                    selected = "BAA-AAA Spread"),
+                                        actionButton("button8", "Show Prediction",
+                                                     style="background-color: #79818c"),
+                                        plotOutput("model8")
+                                        
+                               ),
+                               tabPanel("Combined ADL",
+                                        headerPanel(""),
+                                        actionButton("button9", "Show Prediction",
+                                                     style="background-color: #79818c"),
+                                        plotOutput("model9")
+                                        
+                               )
+                             )
+                             
+                           )
+                  ),
+                  
                   tabPanel("Help",
                            icon = icon("info"),
-                           includeMarkdown("../../NEW Backend/Help Page.Rmd")
+                           includeMarkdown("../../NEW Backend/TESTING MODELS.Rmd")
                   )
                   
                 )
