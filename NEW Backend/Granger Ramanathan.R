@@ -39,13 +39,25 @@ temp[1,1]=0
 gru2=lsei(X2, oosy2, c=c(0,rep(1,6)), d=1, e=temp, f=rep(0,7))
 
 # Predictions from the individual models 
-advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
-p_rev_AR <- AR_predict_all(advanced_AR_input, example_fhorizon, covid_dummy)$predictions
+rev_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
+rev_AR_output <- AR_predict_all(rev_AR_input, example_fhorizon, covid_dummy)
+p_rev_AR <- rev_AR_output$predictions
+old_rev_AR <-rev_AR_output$fitted_values
+
+
 comb_output <- ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
                                example_startq, example_endq, example_fhorizon, covid_dummy)
 p_comb <- comb_output$predictions
-comb_original <- comb_output$fitted.values
+old_comb <- comb_output$fitted_values
 
 # currently missing revised AR predictor (it should be gru2[2])
 # gru2[1] + (gru2[2]*p_baa) + (gru2[3]*p_tsp) + (gru[4]*p_hstarts) + (gru[5]*p_consent) +
 #   (gru[6]*p_nasdaq) + (gru[7]*p_comb)
+
+
+####################################################
+# calculations to be used in the aggregate function 
+####################################################
+
+
+

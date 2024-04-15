@@ -69,6 +69,9 @@ fitAR=function(Y,h, dum){
 AR_predict_all <- function(Y_matrix, h, dum){
   pred = c()
   rmsfe = c()
+  h_1 = fitAR(Y_matrix, 1, dum) 
+  fitted_values <- h_1$fitted_values
+  
   for (i in 1:h){
     curr_output = fitAR(Y_matrix, i, dum) 
     curr_pred = curr_output$pred
@@ -76,7 +79,7 @@ AR_predict_all <- function(Y_matrix, h, dum){
     pred <- append(pred, curr_pred)
     rmsfe <- append(rmsfe, curr_rmsfe)
   }
-  return(list("predictions" = pred, "rmsfe" = rmsfe))
+  return(list("predictions" = pred, "rmsfe" = rmsfe, "fitted_values"=fitted_values))
 }
 
 

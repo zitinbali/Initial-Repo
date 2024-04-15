@@ -179,10 +179,13 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
   
   pred <- ADL_predict_1(Y_ts, X_ts, covid_dummy_ts, model_AIC$coefficients)
   resid <- as.matrix(output_model)
-  rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(X_ts)))
+  rmsfe <- sqrt(sum(resid^2)/nrow(resid))
+  
   
   predictions <- append(predictions, pred)
   rmsfe_values <- append(rmsfe_values, rmsfe)
+  
+  fitted_values <- model_AIC$fitted.values
   
   X_df <- as.matrix(X_ts)
   GDP_df <- as.matrix(Y_ts)
@@ -239,8 +242,9 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
       
       
       output_model <- model_AIC_local$residuals
+      
       resid <- as.matrix(output_model)
-      rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(X_ts_upd)))
+      rmsfe <- sqrt(sum(resid^2)/nrow(resid))
       
       pred <- ADL_predict_1(gdp_ts, X_ts_upd, upd_covid_dummy_ts, 
                             model_AIC_local$coefficients)
@@ -253,5 +257,6 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
     }
   }
   
-  return (list("predictions" = predictions, "rmsfe" = rmsfe_values))
+  return (list("predictions" = predictions, "rmsfe" = rmsfe_values,
+               "fitted_values" = fitted_values))
 }

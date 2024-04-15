@@ -224,7 +224,7 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
   pred <- ADL_comb_predict(Y_ts, X_combined_ts, ADL_var, 
                            covid_dummy_ts, model_AIC$coefficients)
   resid <- as.matrix(output_model)
-  rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(Y_ts)))
+  rmsfe <- sqrt(sum(resid^2)/nrow(resid))
   
   predictions <- append(predictions, pred[[1]])
   rmsfe_values <- append(rmsfe_values, rmsfe)
@@ -248,6 +248,8 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
     assign(pred_name, AR_output$pred)
     # to call the new X value, you have to call get(paste(X, i,"_pred", sep = ""))
   }
+  
+  fitted_values <- model_AIC$fitted.values
   
   if (f_horizon == 1){
     pred = pred
@@ -327,10 +329,9 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
                                end = c(upd_end_y, upd_end_q))
       
       output_model <- model_AIC_local$residuals
-      fitted_values <- model_AIC_local$fitted.values
       
       resid <- as.matrix(output_model)
-      rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(gdp_ts)))
+      rmsfe <- sqrt(sum(resid^2)/nrow(resid))
       
       
       pred <- ADL_comb_predict(gdp_ts, X_comb_upd, ADL_var, 

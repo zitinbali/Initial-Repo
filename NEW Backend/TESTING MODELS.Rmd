@@ -59,8 +59,10 @@ p_value
 
 ```{r adl model baa-aaa}
 
-ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, example_startq,
+test <- ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, example_startq,
                 example_endq, example_fhorizon, covid_dummy)
+
+test$fitted_values
 
 ```
 
@@ -177,11 +179,6 @@ p_value
 ```{r aggregate test}
 
 source("Aggregate Functions.R")
-
-
-# YOU NEED to source the Granger Ramanathan file before running aggregate output
-source("Granger Ramanathan.R")
-# above source takes 50 seconds to load
 
 aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
                  example_endq, example_fhorizon, covid_dummy)

@@ -1,4 +1,8 @@
 
+# YOU NEED to source the Granger Ramanathan file before running aggregate output
+source("Granger Ramanathan.R")
+# above source takes 50 seconds to load
+
 ##########################
 # Poor Outlook Function
 ##########################
@@ -14,10 +18,15 @@ poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   
   forecast_output <- c() 
   empty_list <- list() 
+  fitted_values_list <- list() 
   
   for (i in 1:m){
     X_temp <- get(ADL_var[i])
-    forecast_h <- (ADL_predict_all(Y_ts, X_temp, start, end, f_horizon, dum))$predictions
+    curr_model <- ADL_predict_all(Y_ts, X_temp, start, end, f_horizon, dum)
+    forecast_h <- curr_model$predictions
+    
+    curr_fitted_values <- curr_model$fitted_values
+    
     curr_indicator <- c()
     for (j in 1:f_horizon){
       forecast <- forecast_h[j]
@@ -25,6 +34,7 @@ poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
       curr_indicator <- append(curr_indicator, forecast)
     }
     empty_list[[i]] <- curr_indicator
+    fitted_values_list[[i]] <- curr_fitted_values
   }
   
   # what is the number of forecasts that are less than 0
@@ -50,10 +60,9 @@ poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   }
   
   return(list("message" = output_message, "indicators" = indicators_output,
-              "ADL_predictions" = empty_list))
+              "ADL_predictions" = empty_list, "fitted_values" = fitted_values_list))
 }
-
-
+  
 ##########################
 # Abnormalities Function
 ##########################
@@ -131,11 +140,9 @@ abnormal <- function(ADL_var){
 
 # X_variables refers to a vector comprising the string names of all X variables.
 # The input for X_variable is ADL_variables
-aggregate_output <- function(Y_ts, X_comb_df, start, end, f_horizon, dum){
+aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   
   # call poor outlook function 
-  ADL_var <- as.vector(colnames(X_comb_df))
-  
   poor_outlook <- poor_outlook(Y_ts, ADL_var, start, end,
                                f_horizon, covid_dummy)
   
@@ -161,14 +168,35 @@ aggregate_output <- function(Y_ts, X_comb_df, start, end, f_horizon, dum){
   ####################
   
   # append new prediction values to the existing dataframes 
-  new_rev_AR <- append(advanced_AR_input, p_rev_AR)
-  new_baa <- append(as.matrix(X_comb_df[,1]), p_baa)
-  new_tsp <- append(as.matrix(X_comb_df[,2]), p_tsp)
-  new_hstarts <- append(as.matrix(X_comb_df[,3]), p_hstarts)
-  new_consent <- append(as.matrix(X_comb_df[,4]), p_consent)
-  new_nasdaq <- append(as.matrix(X_comb_df[,5]), p_nasdaq)
-  new_comb <- append(as.matrix(comb_original), p_comb)
+  ADL_fitted_values <- poor_outlook$fitted_values
   
+  old_baa <- as.matrix(ADL_fitted_values[[1]])
+  old_tsp <- as.matrix(ADL_fitted_values[[2]])
+  old_hstarts <- as.matrix(ADL_fitted_values[[3]])
+  old_consent <- as.matrix(ADL_fitted_values[[4]])
+  old_nasdaq <- as.matrix(ADL_fitted_values[[5]])
+  
+  # since all of them use lags, they might not have the same number of rows
+  # the objective here is to find the common starting point
+  min_row <- min(nrow(old_rev_AR), nrow(old_baa), nrow(old_tsp), 
+                 nrow(old_hstarts), nrow(old_consent), nrow(old_nasdaq),
+                 nrow(old_comb))
+  
+  # ensure that they are all the same size + combine with new predicted values 
+  new_rev_AR <- as.matrix(append(tail(as.matrix(old_rev_AR), min_row), p_rev_AR))
+  new_baa <- as.matrix(append(tail(old_baa, min_row), p_baa))
+  new_tsp <- as.matrix(append(tail(old_tsp, min_row), p_tsp))
+  new_hstarts <- as.matrix(append(tail(old_hstarts, min_row), p_hstarts))
+  new_consent <- as.matrix(append(tail(old_consent, min_row), p_consent))
+  new_nasdaq <- as.matrix(append(tail(old_nasdaq, min_row), p_nasdaq))
+  new_comb <- as.matrix(append(tail(old_comb, min_row), p_comb))
+  
+  true_values <- as.matrix(append(tail(real_values, min_row), forecasts))
+  
+  all_constant <- as.matrix(rep(gru2[1], (min_row+f_horizon)))
+  all_predictions <- all_constant + (gru2[2]*new_baa) + (gru2[3]*new_tsp) + (gru2[4]*new_hstarts) + (gru2[5]*new_consent) + (gru2[6]*new_nasdaq) + (gru2[7]*new_comb)
+  
+  print(all_predictions)
   # combine them then find rmsfe 
   # rmsfe should divide by diff rows to get diff horizons 
   
