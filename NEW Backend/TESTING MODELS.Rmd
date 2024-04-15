@@ -150,12 +150,7 @@ p_value_results
 
 ```{r combined adl}
 
-# NEED TO FORM THE COMBINED DATASET FIRST
-X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts) 
-# set colnames 
-colnames(X_comb_df) <- ADL_variables
-
-
+# X_comb_df is created in the Combined ADL Functions. R file 
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
                  example_startq, example_endq, example_fhorizon, covid_dummy)
 

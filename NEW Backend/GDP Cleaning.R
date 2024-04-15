@@ -18,6 +18,8 @@ library(lmtest)
 library(stringr)
 library(broom)
 library(flexmix)
+library(lsei)
+library(sandwich)
 
 # reading the GDP data
 RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
@@ -97,6 +99,68 @@ lagged_working_df = lag(working_df)
 perc_change_df = (100 * (working_df - lagged_working_df) / lagged_working_df)[-c(1),]
 
 
+#####################
+#### ADVANCED AR
+#### MODEL FUNC
+#####################
+
+# n refers to the number of periods that sum up to 10 years for a given dataset. For instance, n = 40 for a dataset arranged by quarters, and n = 120 for a dataset arranged by months.
+
+prep_func = function(dataset, n){
+  
+  nrow_dataset = nrow(dataset)
+  
+  # cut dataset into relevant ranges
+  data_across_q <- dataset %>%
+    mutate_all(as.numeric)
+  
+  colnames(data_across_q) <- NULL
+  
+  data_across_q <- as.matrix(data_across_q) 
+  
+  lagged_data_across_q <- lag(data_across_q)
+  
+  df <- 100 * (data_across_q - lagged_data_across_q)/(lagged_data_across_q)
+  
+  # Removing the first and last row since we had added those to compute the lag.
+  df <- df[-c(1, nrow_dataset),]
+  
+  # Revised values is a data frame that shows the growth rate of each quarter as compared to the previous quarter, across revisions. For instance, revision0 is the initial growth rate for each quarter, and revision1 shows the growth rate after values have been revised. 
+  
+  revised_growth <- data.frame(matrix(NA, nrow = nrow_dataset - 2, ncol = 0))
+  
+  for (i in 0:n){
+    na_vector = c(replicate(nrow_dataset - 2, NA)) 
+    na_vector = as.numeric(na_vector)
+    
+    values <- diag(df)
+    col_name = paste0("revision", i)
+    na_vector[1:(nrow_dataset - 2 -i)] = values[1:(nrow_dataset - 2 -i)]
+    revised_growth[[`col_name`]] = na_vector
+    
+    df <- df[,-c(1)]
+  }
+  
+  revised_growth_df <- revised_growth
+  
+  # revised_growth = revised_growth %>%
+  #   filter(revision0 < 0)
+  
+  # Now, we are looking into how the growth rates change due to revision
+  lagged_growth <- revised_growth[, -c(ncol(revised_growth))]
+  revised_growth <- revised_growth[,-c(1)]
+  
+  # We're taking the average of the change in growth per revision 
+  change_in_growth <- (revised_growth - lagged_growth)
+  
+  #change_in_growth[sapply(change_in_growth, is.infinite)] <- NA
+  
+  change_in_growth <- change_in_growth %>% 
+    apply(2, mean, na.rm = TRUE)
+  
+  
+  return(list("df" = revised_growth_df, "delta" = change_in_growth))
+}
 
 #####################
 #### DATA SPLICING
@@ -136,45 +200,45 @@ data_splice = function(data, row_start, row_end, col_start, col_end,
 #### VALUES FUNC
 #####################
 
-row_start = "1947 Q1"
-row_end = "2023 Q4"
-col_start = "1965 Q4"
-col_end = "2024 Q1"
-window_start = "2004 Q3"
-window_end = "2014 Q4"
-
-revise_values = function(data, delta, window_start, window_end){
-
-  window_start_yq = as.yearqtr(window_start)
-  window_end_yq = as.yearqtr(window_end)
-  
-  # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
-  ten_year_mark = (window_end_yq - 10 - window_start_yq)*4 + 1
-  end_of_row_mark = (window_end_yq - window_start_yq)*4 + 1
-  
-  end_qtr = as.character(window_end_yq + 1/4)
-  
-  # Most recent values for start of time to 10 years before target date
-  ancient_values <- data[1:ten_year_mark,][[`end_qtr`]]
-  
-  # All other values
-  recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`end_qtr`]]
-  
-  # Applying approximation of final growth numbers on recent values
-  forecast_growth = recent_values 
-  for (i in 1:length(recent_values)){
-    if (forecast_growth[i] < 0){
-      for (j in 1:i){
-        forecast_growth[i] = forecast_growth[i] + (1 / (1 + exp(-abs(forecast_growth[i]))) - 0.5) * delta[41 - j]
-      }
-    }
-  }
-  
-  revised_data = c(ancient_values, forecast_growth)
-  
-  return (revised_data)
-  
-}
+# row_start = "1947 Q1"
+# row_end = "2023 Q4"
+# col_start = "1965 Q4"
+# col_end = "2024 Q1"
+# window_start = "2004 Q3"
+# window_end = "2014 Q4"
+# 
+# revise_values = function(data, delta, window_start, window_end){
+# 
+#   window_start_yq = as.yearqtr(window_start)
+#   window_end_yq = as.yearqtr(window_end)
+#   
+#   # Split dataframe into 10 years before target date and current value of growth for quarters more than 10 years ago
+#   ten_year_mark = (window_end_yq - 10 - window_start_yq)*4 + 1
+#   end_of_row_mark = (window_end_yq - window_start_yq)*4 + 1
+#   
+#   end_qtr = as.character(window_end_yq + 1/4)
+#   
+#   # Most recent values for start of time to 10 years before target date
+#   ancient_values <- data[1:ten_year_mark,][[`end_qtr`]]
+#   
+#   # All other values
+#   recent_values <- data[(ten_year_mark + 1):end_of_row_mark,][[`end_qtr`]]
+#   
+#   # Applying approximation of final growth numbers on recent values
+#   forecast_growth = recent_values 
+#   for (i in 1:length(recent_values)){
+#     if (forecast_growth[i] < 0){
+#       for (j in 1:i){
+#         forecast_growth[i] = forecast_growth[i] + (1 / (1 + exp(-abs(forecast_growth[i]))) - 0.5) * delta[41 - j]
+#       }
+#     }
+#   }
+#   
+#   revised_data = c(ancient_values, forecast_growth)
+#   
+#   return (revised_data)
+#   
+# }
 
 
 ##############

@@ -6,6 +6,15 @@ source("ADL Data.R")
 
 
 #########################################
+## Creating combined dataframe
+#########################################
+
+# NEED TO FORM THE COMBINED DATASET FIRST
+X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts) 
+# set colnames 
+colnames(X_comb_df) <- ADL_variables
+
+#########################################
 ## Combined: Selecting Best Model - AIC 
 #########################################
 

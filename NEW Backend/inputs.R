@@ -1,3 +1,6 @@
+library(zoo)
+library(lubridate)
+
 example_startq = "1980 Q1"
 example_endq = "2023 Q4"
 
