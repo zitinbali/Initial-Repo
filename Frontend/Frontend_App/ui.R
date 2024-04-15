@@ -45,7 +45,7 @@ navbarPage(
             fluidPage(
               chooseSliderSkin("Flat", color = "#787D99"),
               wellPanel(
-                sliderTextInput('year', 'Input time period', 
+                sliderTextInput('year', 'Select Time Period for Training', 
                                 choices = RGDP_Data$DATE[120:length(RGDP_Data$DATE)], #starting from 1976 Q4, the earliest start date all datasets have in common
                                 selected = c(RGDP_Data$DATE[140], RGDP_Data$DATE[200])),
                 #add in from_max to indicate start of test window
@@ -69,7 +69,8 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         plotOutput("model1"),
                                         textOutput("desc1"),
-                                        tableOutput("table1"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table1"),
                                         headerPanel(""), # adds space btwn text and inputs
                                ),
                                tabPanel("Revised AR Model",
@@ -78,7 +79,8 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         plotOutput("model2"),
                                         textOutput("desc2"),
-                                        tableOutput("table2"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table2"),
                                         headerPanel(""), # adds space btwn text and inputs
                                         helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
                                         div(style="display:inline-block", textInput("data1" ,"2024 Q1:")),
@@ -106,7 +108,8 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         headerPanel(""), # adds space btwn text and inputs
                                         plotOutput("model3"),
-                                        tableOutput("table3"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table3"),
                                         textOutput("desc3")
                                ),
                                
@@ -115,7 +118,8 @@ navbarPage(
                                         actionButton("button4", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         plotOutput("model4"),
-                                        tableOutput("table4"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table4"),
                                         textOutput("desc4")
                                ),
                                
@@ -130,7 +134,8 @@ navbarPage(
                                         headerPanel(""), 
                                         actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
-                                        plotOutput("model5")
+                                        plotOutput("model5"),
+                                        DT::dataTableOutput("table5")
                                )
                              )
                            )
@@ -159,6 +164,7 @@ navbarPage(
                   tabPanel("Rolling Test Window", 
                            icon = icon("plus"),
                            headerPanel(" "),
+                           helpText("Please ensure that your training data span across more than 20 years."),
                            uiOutput("rolling_input"),
                            wellPanel(
                              style = "background-color: #f8f9fa",
@@ -185,7 +191,9 @@ navbarPage(
                                         headerPanel(""),
                                         actionButton("button9", "Show Prediction",
                                                      style="background-color: #79818c"),
-                                        plotOutput("model9")
+                                        plotOutput("model9"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table9")
                                         
                                )
                              )
