@@ -1,7 +1,7 @@
 library(sandwich)
-source("GDP Cleaning.R")
-source("inputs.R")
-source("AR_Model_Functions.R")
+#source("GDP Cleaning.R")
+#source("inputs.R")
+#source("AR_Model_Functions.R")
 
 ###########################
 #### ROLLING WINDOW BASIC
@@ -56,6 +56,7 @@ rolling_window_adv = function(df, window_start, dummy, real, start, end, h = 1){
   
   save.coef = matrix(NA,test_length,5)
   save.pred = matrix(NA, test_length, 1)
+  rmse = rep(NA, test_length)
   
   start_str = format(start, "%Y Q%q")
   temp = window_start
@@ -74,6 +75,7 @@ rolling_window_adv = function(df, window_start, dummy, real, start, end, h = 1){
     winfit = fitAR(Y.window,h,dummy.window)
     save.coef[(1+test_length-i),] = c(winfit$coef, rep(0 , 5 - length(winfit$coef))) 
     save.pred[(1+test_length-i),] = winfit$pred
+    rmse[1+test_length-i] = winfit$rmsfe
     
     window_start = window_start + 1/4
   }
@@ -82,12 +84,9 @@ rolling_window_adv = function(df, window_start, dummy, real, start, end, h = 1){
   plot.ts(real_ts, main = "Real values against predicted values", cex.axis = 1.8)
   lines(ts(save.pred, temp, end, freq = 4),col="red") 
   
-  
-  rmse = sqrt(mean((tail(real,test_length)-save.pred)^2)) 
   mae = mean(abs(tail(real,test_length)-save.pred))
-  errors = c("rmse"=rmse,"mae"=mae) 
   
-  return(list("pred"=save.pred,"coef"=save.coef,"errors"=errors))
+  return(list("pred"=save.pred,"coef"=save.coef,"rmse"=rmse, "mae" = mae))
 }
 #####################
 #### DIEBOLD-MARINO TEST

@@ -83,6 +83,86 @@ actual_values_graph <- function(example_startyq, example_endyq, h){
 }
 
 
+actual_values_graph_rolling <- function(example_startyq, example_endyq, window_start, window_length){
+  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(NA,NA,NA,NA)) %>%
+    mutate(Time = as.yearqtr(Time)) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
+  
+  
+  all_GDP_ts <- ts(all_GDP_data, 
+                   start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                   end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                   frequency = 4)
+  
+  all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+  
+  all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+  
+  GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+  
+  
+  GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+  
+  training <- GDPGrowth_ts_df_sliced %>%
+    filter(Time > example_startyq) %>%
+    filter(Time < window_start) %>% 
+    tail(n = 9) %>%
+    select(Time, growth_rate) %>%
+    mutate(category = 1) 
+  
+  joining_value <- GDPGrowth_ts_df_sliced %>%
+    filter(Time == window_start) %>% 
+    select(Time, growth_rate) %>%
+    mutate(category = 3) 
+  
+  training_t <- bind_rows(training, joining_value) 
+  
+  original_test_values <- all_GDP_ts_df %>%
+    filter(Time > window_start) %>% 
+    select(Time, growth_rate) %>%
+    head(window_length) %>%
+    mutate(category = 1) 
+  
+  original_data <- bind_rows(training_t, original_test_values)
+  
+  original_data <- original_data %>%
+    filter(Time <= as.yearqtr("2023 Q4"))
+  
+  training_p <- bind_rows(training, joining_value)
+  
+  return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
+  #original data returns true value graph, training_p returns values of training data before prediction values
+}
+
+# fanplot rmsfe generating fn
+# rmsfe_df from fn that generates rmsfe for h horizons
+
+rmsfe_df_test = c(0.2, 0.4)
+
+fanplot_rmsfe <- function(rmsfe_df, joining_value, predictions, h) {
+  predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
+                                  upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
+  predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
+  predictions_rmsfe$lower_bound_80[1] = joining_value$growth_rate
+  predictions_rmsfe$upper_bound_50[1] = joining_value$growth_rate
+  predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
+  
+  for(i in 2:(h+1)){
+    rmsfe = rmsfe_df
+    predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe[i-1]
+    predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe[i-1]
+    predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe[i-1]
+    predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe[i-1]
+  }
+  return(predictions_rmsfe)
+}
+
+
+
 #rename variable for indiv ADL model
 rename_variable <- function(input_string) { 
   var = NULL
