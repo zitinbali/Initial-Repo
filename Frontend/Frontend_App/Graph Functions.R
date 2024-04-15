@@ -82,6 +82,60 @@ actual_values_graph <- function(example_startyq, example_endyq, h){
   #original data returns true value graph, training_p returns values of training data before prediction values
 }
 
+actual_values_graph_rolling <- function(example_startyq, example_endyq, window_start, window_length){
+  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(NA,NA,NA,NA)) %>%
+    mutate(Time = as.yearqtr(Time)) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
+  
+  
+  all_GDP_ts <- ts(all_GDP_data, 
+                   start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                   end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                   frequency = 4)
+  
+  all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+  
+  all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+  
+  GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+  
+  
+  GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+  
+  training <- GDPGrowth_ts_df_sliced %>%
+    filter(Time > example_startyq) %>%
+    filter(Time < window_start) %>% 
+    tail(n = 9) %>%
+    select(Time, growth_rate) %>%
+    mutate(category = 1) 
+  
+  joining_value <- GDPGrowth_ts_df_sliced %>%
+    filter(Time == window_start) %>% 
+    select(Time, growth_rate) %>%
+    mutate(category = 3) 
+  
+  training_t <- bind_rows(training, joining_value) 
+  
+  original_test_values <- all_GDP_ts_df %>%
+    filter(Time > window_start) %>% 
+    select(Time, growth_rate) %>%
+    head(window_length) %>%
+    mutate(category = 1) 
+  
+  original_data <- bind_rows(training_t, original_test_values)
+  
+  original_data <- original_data %>%
+    filter(Time <= as.yearqtr("2023 Q4"))
+  
+  training_p <- bind_rows(training, joining_value)
+  
+  return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
+  #original data returns true value graph, training_p returns values of training data before prediction values
+}
 
 
 
