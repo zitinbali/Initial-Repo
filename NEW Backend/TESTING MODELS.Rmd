@@ -7,8 +7,8 @@ source("AR_Model_Functions.R")
 source("ADL Data.R")
 source("ADL Functions.R")
 source("ADL_Rolling.R")
-source("Aggregate Functions.R")
 source("DM_test.R")
+source("Combined ADL Functions.R")
 
 ```
 
@@ -22,7 +22,7 @@ source("DM_test.R")
 # basic_AR_input HAS to be a MATRIX. 
 # we take in GDPGrowth_ts and convert it to a matrix. 
 
-AR_predict_all(as.matrix(GDPGrowth_ts), example_fhorizon, covid_dummy)
+basic_AR_output <- AR_predict_all(as.matrix(GDPGrowth_ts), example_fhorizon, covid_dummy)
 
 ```
 
@@ -31,11 +31,7 @@ AR_predict_all(as.matrix(GDPGrowth_ts), example_fhorizon, covid_dummy)
 ```{r Advanced AR model, warning = FALSE}
 
 advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
-
-advanced_AR_output <- fitAR(advanced_AR_input, example_fhorizon, covid_dummy)
-
-ar2_prediction = advanced_AR_output$pred
-ar2_rmsfe = advanced_AR_output$rmsfe
+revised_AR_output <- AR_predict_all(advanced_AR_input, example_fhorizon, covid_dummy)
 
 ```
 
@@ -150,7 +146,7 @@ p_value_results
 
 ```{r combined adl}
 
-# X_comb_df is created in the Combined ADL Functions. R file 
+# X_comb_df is created in the Combined ADL Functions.R file 
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
                  example_startq, example_endq, example_fhorizon, covid_dummy)
 
@@ -179,6 +175,13 @@ p_value
 # Aggregate Model 
 
 ```{r aggregate test}
+
+source("Aggregate Functions.R")
+
+
+# YOU NEED to source the Granger Ramanathan file before running aggregate output
+source("Granger Ramanathan.R")
+# above source takes 50 seconds to load
 
 aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
                  example_endq, example_fhorizon, covid_dummy)

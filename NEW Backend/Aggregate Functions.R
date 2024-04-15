@@ -1,9 +1,3 @@
-source("GDP Cleaning.R")
-source("inputs.R")
-source("ADL Data.R")
-source("AR_Model_Functions.R")
-source("ADL Functions.R")
-source("Combined ADL Functions.R")
 
 ##########################
 # Poor Outlook Function
@@ -19,14 +13,18 @@ poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   m <- length(ADL_var)
   
   forecast_output <- c() 
+  empty_list <- list() 
   
   for (i in 1:m){
     X_temp <- get(ADL_var[i])
     forecast_h <- (ADL_predict_all(Y_ts, X_temp, start, end, f_horizon, dum))$predictions
+    curr_indicator <- c()
     for (j in 1:f_horizon){
       forecast <- forecast_h[j]
       forecast_output <- append(forecast_output, forecast)
+      curr_indicator <- append(curr_indicator, forecast)
     }
+    empty_list[[i]] <- curr_indicator
   }
   
   # what is the number of forecasts that are less than 0
@@ -51,7 +49,8 @@ poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
     indicators_output = unique(indicators_poor)
   }
   
-  return(list("message" = output_message, "indicators" = indicators_output))
+  return(list("message" = output_message, "indicators" = indicators_output,
+              "ADL_predictions" = empty_list))
 }
 
 
@@ -132,28 +131,57 @@ abnormal <- function(ADL_var){
 
 # X_variables refers to a vector comprising the string names of all X variables.
 # The input for X_variable is ADL_variables
-aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
-  
-  forecast_output <- c() 
-  mean_output <- c() 
-  
-  ################################
-  ### INSERT AGGREGATION FUNCTION
-  ################################
-  
-  # placeholder
-  for (i in 1:f_horizon){
-    mean_output <- append(mean_output, 1)
-  }
+aggregate_output <- function(Y_ts, X_comb_df, start, end, f_horizon, dum){
   
   # call poor outlook function 
+  ADL_var <- as.vector(colnames(X_comb_df))
+  
   poor_outlook <- poor_outlook(Y_ts, ADL_var, start, end,
                                f_horizon, covid_dummy)
+  
+  #########################################################
+  # forecasting using GR result from another file 
+  #########################################################
+  
+  ADL_forecasts <- poor_outlook$ADL_predictions 
+  
+  p_constant <- rep(gru2[1], f_horizon)
+  #p_rev_AR
+  p_baa <- ADL_forecasts[[1]]
+  p_tsp <- ADL_forecasts[[2]]
+  p_hstarts <- ADL_forecasts[[3]]
+  p_consent <- ADL_forecasts[[4]]
+  p_nasdaq <- ADL_forecasts[[5]]
+  
+  #currently missing revised AR predictor (it should be gru2[2])
+  forecasts <- p_constant + (gru2[2]*p_baa) + (gru2[3]*p_tsp) + (gru2[4]*p_hstarts) + (gru2[5]*p_consent) + (gru2[6]*p_nasdaq) + (gru2[7]*p_comb)
+  
+  ####################
+  # calculating rmsfe 
+  ####################
+  
+  # append new prediction values to the existing dataframes 
+  new_rev_AR <- append(advanced_AR_input, p_rev_AR)
+  new_baa <- append(as.matrix(X_comb_df[,1]), p_baa)
+  new_tsp <- append(as.matrix(X_comb_df[,2]), p_tsp)
+  new_hstarts <- append(as.matrix(X_comb_df[,3]), p_hstarts)
+  new_consent <- append(as.matrix(X_comb_df[,4]), p_consent)
+  new_nasdaq <- append(as.matrix(X_comb_df[,5]), p_nasdaq)
+  new_comb <- append(as.matrix(comb_original), p_comb)
+  
+  # combine them then find rmsfe 
+  # rmsfe should divide by diff rows to get diff horizons 
+  
   
   # call abnormalities function 
   abnormal <- abnormal(ADL_var)
   
-  return(list("predictions" = mean_output, 
-              "outlook" = poor_outlook, 
+  return(list("predictions" = forecasts, 
+              "outlook_message" = poor_outlook$message,
+              "outlook_indicators" = poor_outlook$indicators,
               "abnormal" = abnormal))
 }
+
+aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
+                 example_endq, 4, covid_dummy)
+  

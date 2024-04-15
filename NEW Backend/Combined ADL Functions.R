@@ -327,6 +327,8 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
                                end = c(upd_end_y, upd_end_q))
       
       output_model <- model_AIC_local$residuals
+      fitted_values <- model_AIC_local$fitted.values
+      
       resid <- as.matrix(output_model)
       rmsfe <- sqrt(sum(resid^2)/nrow(as.matrix(gdp_ts)))
       
@@ -356,6 +358,7 @@ ADL_comb_predict_all <- function(Y_ts, X_combined_ts, ADL_var, start, end,
       }
     }
   }
-  return (list("predictions" = predictions, "rmsfe" = rmsfe_values))
+  return (list("predictions" = predictions, "rmsfe" = rmsfe_values,
+               "fitted_values" = fitted_values))
 }
 

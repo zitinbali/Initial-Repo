@@ -25,6 +25,9 @@ fitAR=function(Y,h, dum){
     # estimate direct h-step AR(p) by OLS 
     model = lm(y~X+dum) 
     
+    # fitted_values 
+    fitted_values <- model$fitted.values
+    
     # extract coefficients
     coef = coef(model)[1:(ncol(X)+1)]
     
@@ -49,7 +52,8 @@ fitAR=function(Y,h, dum){
   
   
   #save estimated AR regression, prediction, and estimated coefficients
-  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p)) 
+  return(list("model"=best_model,"pred"=best_pred,"coef"=best_coef, "rmsfe" = best_rmsfe, "aic"=minimum, "p" = best_p,
+              "fitted_values"=fitted_values)) 
 }
 
 ##########################
