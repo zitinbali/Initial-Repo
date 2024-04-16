@@ -20,6 +20,8 @@ source("../../NEW Backend/GDP Cleaning Functions.R")
 source("../../NEW Backend/AR_Model_Functions.R")
 source("../../NEW Backend/ADL Data Functions.R")
 source("../../NEW Backend/ADL Functions.R")
+source("../../NEW Backend/Combined ADL Functions.R")
+source("../../NEW Backend/Aggregate Functions.R")
 
 check <- basic_cleaning(RGDP_Data)$check
 perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
@@ -54,14 +56,8 @@ nasdaq <- read_excel("Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>%
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
-# 
-# 
-# RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
-# source("../../NEW Backend/inputs.R")
-# source("../../NEW Backend/GDP Cleaning.R")
-# source("../../NEW Backend/ADL Data.R")
+
 # source("../../NEW Backend/ADL_Rolling.R")
-# source("../../NEW Backend/ADL Functions.R")
 # source("../../NEW Backend/Combined ADL Functions.R")
 # source("../../NEW Backend/DM_test.R")
 # #source("../../NEW Backend/Granger Ramanathan.R")
@@ -1503,22 +1499,103 @@ function(input, output, session) {
         #window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
         
         example_fhorizon = as.numeric(input$h)
-       
         
-         #example_fhorizon=3
-        
-        #example_startq = "1980 Q1"
-        #example_startyq = as.yearqtr("1980 Q1")
-        #example_endq = "2012 Q1"
-        #example_endyq = as.yearqtr("2012 Q1")
-        #window_start = as.yearqtr("1995 Q1")
-        
-  
         start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
         end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
         
         start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
         end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + example_fhorizon]
+        
+        ###################
+        # NEW CONTENT HERE
+        ###################
+        
+        GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
+        GDPGrowth_ts <- GDP_prep$GDPGrowth_ts
+        all_GDP_data <- GDP_prep$all_GDP_data
+        spliced_GDP <- GDP_prep$spliced_GDP
+        sliced_perc_change <- GDP_prep$sliced_perc_change
+        perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
+        
+        #h = as.numeric(input$h)
+        
+        covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+        
+        # Dummy if timeframe ends on 2020 Q2, start of covid
+        if (example_startyq <= covid_start & example_endyq == covid_start){
+          index = (covid_start - example_startyq) * 4 + 1
+          covid_dummy[index] = -1
+        }
+        
+        # Dummy if timeframe includes all of covid
+        if (example_startyq <= covid_start & example_endyq >= covid_end){
+          index = (covid_start - example_startyq) * 4 + 1
+          covid_dummy[index] = -1
+          covid_dummy[index + 1] = 1
+        }
+        
+        
+        covid_dummy_ts <- ts(covid_dummy,
+                             start = c(start_y, start_q), 
+                             end = c(end_y, end_q), 
+                             frequency = 4)
+        
+        # define all the ADL indicators
+        baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+        
+        baa_aaa_ts <- ts(baa_aaa$Spread, 
+                         start = c(start_y, start_q), 
+                         end = c(end_y, end_q), 
+                         frequency = 4)
+        
+        tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+        
+        tspread_ts <- ts(tspread$Spread, 
+                         start = c(start_y, start_q), 
+                         end = c(end_y, end_q), 
+                         frequency = 4)
+        
+        hstarts <- ADL_splice(hstarts, example_startyq, example_endyq)
+        
+        hstarts_ts <- ts(hstarts$Spread, 
+                         start = c(start_y, start_q), 
+                         end = c(end_y, end_q), 
+                         frequency = 4)
+        
+        consent <- ADL_splice(consent, example_startyq, example_endyq)
+        
+        consent_ts <- ts(consent$Spread, 
+                         start = c(start_y, start_q), 
+                         end = c(end_y, end_q), 
+                         frequency = 4)
+        
+        nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
+        
+        nasdaq_ts <- ts(nasdaq$Spread, 
+                        start = c(start_y, start_q), 
+                        end = c(end_y, end_q), 
+                        frequency = 4)
+        
+        
+        # X_comb_df 
+        X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts) 
+        # set colnames 
+        colnames(X_comb_df) <- ADL_variables
+        
+        # perc_change_df_spliced
+        start_rownum = which(grepl(example_startyq, check$Time))
+        end_rownum = which(grepl(example_endyq, check$Time))
+        
+        row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+        row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
+        
+        real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
+        perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
+        
+        ###########
+        # ENDS HERE
+        ###########
+        
         
         pred_df = aggregate_output(GDPGrowth_ts, X_comb_df, RGDP_Data, perc_change_df_spliced, real_values,
                                    ADL_variables, example_startq, example_endq, example_fhorizon, covid_dummy)

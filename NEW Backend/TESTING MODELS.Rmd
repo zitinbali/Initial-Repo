@@ -60,7 +60,8 @@ p_value
 ```{r adl model baa-aaa}
 
 test <- ADL_predict_all(GDPGrowth_ts, baa_aaa_ts, example_startq,
-                example_endq, example_fhorizon, covid_dummy)
+                example_endq, 2, covid_dummy)
+test$predictions
 
 test$fitted_values
 
@@ -80,7 +81,7 @@ ADL_predict_all(GDPGrowth_ts, tspread_ts, example_startq,
 ```{r adl model hstarts}
 
 ADL_predict_all(GDPGrowth_ts, hstarts_ts, example_startq,
-                example_endq, example_fhorizon, covid_dummy)
+                example_endq, 2, covid_dummy)
 
 ```
 
@@ -148,7 +149,10 @@ p_value_results
 
 ```{r combined adl}
 
-# X_comb_df is created in the Combined ADL Functions.R file 
+X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts) 
+# set colnames 
+colnames(X_comb_df) <- ADL_variables
+
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
                  example_startq, example_endq, example_fhorizon, covid_dummy)
 
