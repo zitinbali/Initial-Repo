@@ -18,6 +18,7 @@ RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
 source("../../NEW Backend/GDP Cleaning Functions.R")
 source("../../NEW Backend/AR_Model_Functions.R")
+source("../../NEW Backend/ADL Data Functions.R")
 
 check <- basic_cleaning(RGDP_Data)$check
 perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
@@ -25,6 +26,32 @@ covid = c("2020 Q2", "2020 Q3")
 covid_start = as.yearqtr(covid[1])
 covid_end = as.yearqtr(covid[2])
 
+ADL_variables <- c("baa_aaa_ts", "tspread_ts", "hstarts_ts", "consent_ts", 
+                   "nasdaq_ts")
+
+
+# defining ADL predictors
+
+baa_aaa <- read_excel("Data/FRED BAA-AAA Data.xls", 
+                      col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+tspread <- read_excel("Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+hstarts <- read_excel("Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+consent <- read_excel("Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
+
+nasdaq <- read_excel("Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
+  mutate(Date = as.yearqtr(Date), 
+         Spread = as.numeric(Spread))
 
 # 
 # 
@@ -786,7 +813,47 @@ function(input, output, session) {
       start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
       end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + h]
       
-      X_df = rename_variable(input$select_ADL)
+      # define all the ADL indicators 
+      baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+      
+      baa_aaa_ts <- ts(baa_aaa$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+      
+      tspread_ts <- ts(tspread$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      hstarts <- ADL_splice(hstarts, example_startyq, example_endyq)
+      
+      hstarts_ts <- ts(hstarts$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      consent <- ADL_splice(consent, example_startyq, example_endyq)
+      
+      consent_ts <- ts(consent$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
+      
+      nasdaq_ts <- ts(nasdaq$Spread, 
+                      start = c(start_y, start_q), 
+                      end = c(end_y, end_q), 
+                      frequency = 4)
+      
+      
+      X_name = rename_variable(input$select_ADL)
+      X_df = get(X_name)
+      
+      
       
       pred_df = ADL_predict_all(GDPGrowth_ts, X_df, example_startq,
                                 example_endq, h, covid_dummy)
@@ -883,8 +950,6 @@ function(input, output, session) {
         rename("growth_rate" = "value")
       
       all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
-      
-      X_df = rename_variable(input$select_ADL)
       
       pred_df = ADL_predict_all(GDPGrowth_ts, X_df, example_startq,
                                 example_endq, h, covid_dummy)
