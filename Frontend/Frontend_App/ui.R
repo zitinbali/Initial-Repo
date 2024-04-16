@@ -88,7 +88,8 @@ navbarPage(
                                         div(style="display:inline-block", textInput("data2" ,"2024 Q2:")),
                                         div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
                                         div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
-                                        actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c")
+                                        actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c"),
+                                        plotOutput("model2a")
                                )
                              )
                            )
