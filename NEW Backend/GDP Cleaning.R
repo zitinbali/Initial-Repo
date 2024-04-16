@@ -79,20 +79,28 @@ xblocks(time(as.zoo(check_xts)),
 
 # Variance is higher in the earlier years prior to the GDP calculation methodology being changed 
 
-
-
 #####################
 #### BASIC CLEANING
 #####################
 
 
 # Formatting dataframe of quarters and their estimated values
-working_df = RGDP_Data[, -c(1)] %>%
+working_df = RGDP_Data[, -c(1)]
+
+working_df[] <- lapply(working_df, function(x) {
+  if (is.character(x) || is.factor(x)) {
+    x[x == "#N/A"] <- NA
+  }
+  x
+})
+
+working_df <- working_df %>%
   mutate_all(as.numeric)
 
 colnames(working_df) <- sapply(seq(as.Date(as.yearqtr("1965 Q4", format = "%Y Q%q")), by="quarter", length.out = ncol(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
 
 rownames(working_df) <- sapply(seq(as.Date(as.yearqtr("1947 Q1", format = "%Y Q%q")), by="quarter", length.out = nrow(working_df)), function(x) format(as.yearqtr(x), format = "%Y Q%q"))
+
 
 # Calculating growth rate of each quarter
 lagged_working_df = lag(working_df)
@@ -104,15 +112,61 @@ perc_change_df = (100 * (working_df - lagged_working_df) / lagged_working_df)[-c
 #### MODEL FUNC
 #####################
 
+
+# data_across_q <- RGDP_Data 
+# 
+# data_across_q[] <- lapply(data_across_q, function(x) {
+#   if (is.character(x) || is.factor(x)) {
+#     x[x == "#N/A"] <- NA
+#   }
+#   x
+# })
+# 
+# data_across_q[, -1] <- lapply(data_across_q[, -1], as.numeric)
+# data_across_q[, 1] <- NA
+# 
+# colnames(data_across_q) <- NULL
+# 
+# data_across_q <- as.matrix(data_across_q) 
+# 
+# lagged_data_across_q <- lag(data_across_q)
+# 
+# test_df <- 100 * (data_across_q - lagged_data_across_q)/(lagged_data_across_q)
+# 
+# 
+# data_across_q <- RGDP_Data %>%
+#   mutate_all(as.numeric)
+# 
+# colnames(data_across_q) <- NULL
+# 
+# data_across_q <- as.matrix(data_across_q) 
+# 
+# lagged_data_across_q <- lag(data_across_q)
+# 
+# df <- 100 * (data_across_q - lagged_data_across_q)/(lagged_data_across_q)
+  
 # n refers to the number of periods that sum up to 10 years for a given dataset. For instance, n = 40 for a dataset arranged by quarters, and n = 120 for a dataset arranged by months.
 
 prep_func = function(dataset, n){
   
   nrow_dataset = nrow(dataset)
   
+  data_across_q <- dataset 
+  
+  data_across_q[] <- lapply(data_across_q, function(x) {
+    if (is.character(x) || is.factor(x)) {
+      x[x == "#N/A"] <- NA
+    }
+    x
+  })
+  
+  data_across_q[, -1] <- lapply(data_across_q[, -1], as.numeric)
+  
+  data_across_q[, 1] <- NA
+  
   # cut dataset into relevant ranges
-  data_across_q <- dataset %>%
-    mutate_all(as.numeric)
+  # data_across_q <- dataset %>%
+  #   mutate_all(as.numeric)
   
   colnames(data_across_q) <- NULL
   
