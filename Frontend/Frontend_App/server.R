@@ -24,7 +24,7 @@ source("../../NEW Backend/ADL Functions.R")
 source("../../NEW Backend/Combined ADL Functions.R")
 source("../../NEW Backend/DM_test.R")
 #source("../../NEW Backend/Granger Ramanathan.R")
-#source("../../NEW Backend/Aggregate Functions.R")
+source("../../NEW Backend/Aggregate Functions.R")
 #source("../../NEW Backend/Uploading New Indicator.R")
 source("Graph Functions.R")
 
@@ -454,9 +454,9 @@ function(input, output, session) {
   #####################
   
   observeEvent(input$add_data, {
-    
-    ## MODEL 2 ADD DATA PLOT
-    output$model2 <- renderPlot({
+    updateSliderInput(session, "year", value = c(input$year[1], "2023:Q4"))
+    ## MODEL 2a ADD DATA PLOT
+    output$model2a <- renderPlot({
       example_startq = gsub(":", " ", input$year[1])
       example_endq = gsub(":", " ", input$year[2])
       example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
@@ -467,43 +467,46 @@ function(input, output, session) {
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
       h = as.numeric(input$h)
-      
-      add_data = add_data(input$data1, input$data2, input$data3, input$data4)
+      #h=2
+      add_data = add_data(as.numeric(input$data1), as.numeric(input$data2), as.numeric(input$data3), as.numeric(input$data4), h)
       add_data_inputs = add_data$vector
       
       timeframe = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4", "2025 Q1", "2025 Q2", "2025 Q3", "2025 Q4")
       
       add_data_time = timeframe[1:add_data$length]
-      edge_time = timeframe[add_data$length+1: add_data$length+1+h]
+      edge_time = timeframe[((add_data$length)+1): ((add_data$length)+h)]
       total_time = c(add_data_time, edge_time)
       
-      edge_inputs = rep(0, h)
-      
-      total_inputs = c(add_data_inputs, edge_inputs)
-      
-      edge <- data.frame(Time = add_data_time, 
-                         growth_rate = total_inputs) %>%
-        mutate(Time = as.yearqtr(Time)) %>%
-        mutate(growth_rate = as.numeric(growth_rate))
-      
-      example_endyq = as.yearqtr(tail(add_data_time, n=1))
-      
-      all_GDP_ts <- ts(all_GDP_data, 
-                       start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
-                       end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
-                       frequency = 4)
-      
-      all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
-        rename("Time" = "time") %>%
-        rename("growth_rate" = "value")
-      
-      all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
-      
-      GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
-        rename("Time" = "time") %>%
-        rename("growth_rate" = "value")
-      
-      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+       example_endyq = as.yearqtr(tail(add_data_time, n=1))
+       #example_endq = "2023 Q4"
+      #example_endq = tail(add_data_time, n=1)
+       edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4", "2025 Q1", "2025 Q2", "2025 Q3", "2025 Q4"), 
+                          growth_rate = c(NA,NA,NA,NA,NA,NA,NA,NA)) %>%
+         mutate(Time = as.yearqtr(Time)) %>%
+         mutate(growth_rate = as.numeric(growth_rate))
+       
+       input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) #%>%
+       #mutate(category = 2)
+       
+       edge = rbind(input_data_df, tail(edge, n=8-nrow(input_data_df)))
+       
+       all_GDP_ts <- ts(all_GDP_data, 
+                        start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                        end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                        frequency = 4)
+       
+       all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+         rename("Time" = "time") %>%
+         rename("growth_rate" = "value")
+       
+       all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+       
+       GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+         rename("Time" = "time") %>%
+         rename("growth_rate" = "value")
+       
+       
+       GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
       
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
@@ -515,7 +518,7 @@ function(input, output, session) {
       pred_df = AR_predict_all(advanced_AR_input, h, covid_dummy)
       
       ## generating values for prediction graph
-      predictions <- all_GDP_ts_df %>% 
+      predictions <- GDPGrowth_ts_df_sliced %>% 
         filter(Time > example_endyq) %>% 
         head(n = h) %>%
         mutate(new_growth_rate = pred_df$predictions)
@@ -525,7 +528,7 @@ function(input, output, session) {
         rename("growth_rate" = "new_growth_rate") %>% 
         mutate(category = 2) 
       
-      predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq, h)$training_p, predicted_test_values)
+      predicted_data <- rbind(actual_values_graph_add(example_startyq, example_endyq, add_data_time, add_data_inputs, h)$training_p, predicted_test_values)
       
       # fanplot
       
@@ -539,7 +542,7 @@ function(input, output, session) {
         select(Time) %>% 
         mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
       
-      actual_values = actual_values_graph(example_startyq, example_endyq, h)
+      actual_values = actual_values_graph_add(example_startyq, example_endyq, add_data_time, add_data_inputs, h)
       joining_value = actual_values$joining_value
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
@@ -566,7 +569,7 @@ function(input, output, session) {
       recession_block = rectangles %>%
         filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
       
-      model_2 <- ggplot() +
+      model_2a <- ggplot() +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
@@ -583,11 +586,11 @@ function(input, output, session) {
               axis.line = element_line(color = "black"),
               plot.margin = margin(20,20,20,20))
       
-      print(model_2)
+      print(model_2a)
     })
     
-    ## MODEL 2 ADD DATA TABLE    
-    output$table2
+    ## MODEL 2a ADD DATA TABLE    
+    #output$table2a
     
   })
 
@@ -1111,13 +1114,57 @@ function(input, output, session) {
         
         example_fhorizon = as.numeric(input$h)
         
-        source("../../NEW Backend/Granger Ramanathan.R")
-        source("../../NEW Backend/Aggregate Functions.R")
+        ####################
+        ## GRANGER RAMANATHAN
+        #####################
+        
+        rw_revised_AR = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+        
+        X=cbind(rw_revised_AR$pred, rw_baa$pred, rw_tsp$pred, rw_hstarts$pred,
+                rw_consent$pred, rw_nasdaq$pred, rw_comb$pred)
+        
+        
+        # number of out-of-sample observations (test window)
+        noos = (example_endyq - window_start) * 4 + 1 
+        #true values for the validation set
+        oosy2 = as.matrix(tail(real_values, noos))
+        
+        #GR weights, constant, all restrictions in place:
+        X2=cbind(rep(1,nrow(oosy2)),X)
+        
+        temp=diag(8)
+        temp[1,1]=0
+        
+        gru2=lsei(X2, oosy2, c=c(0,rep(1,7)), d=1, e=temp, f=rep(0,8))
+        
+        # Predictions from the individual models 
+        rev_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
+        rev_AR_output <- AR_predict_all(rev_AR_input, example_fhorizon, covid_dummy)
+        p_rev_AR <- rev_AR_output$predictions
+        old_rev_AR <-rev_AR_output$fitted_values
+        
+        
+        comb_output <- ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
+                                            example_startq, example_endq, example_fhorizon, covid_dummy)
+        p_comb <- comb_output$predictions
+        old_comb <- comb_output$fitted_values
+        
+        
+        #source("../../NEW Backend/Granger Ramanathan.R")
+        #source("../../NEW Backend/Aggregate Functions.R")
         
          #example_fhorizon=3
         
         #example_startq = "1976 Q4"
+        #example_startyq = as.yearqtr("1976 Q4")
         #example_endq = "2008 Q3"
+        #example_endyq = as.yearqtr("2008 Q3")
         #window_start = as.yearqtr("1981 Q4")
         
         edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
@@ -1145,7 +1192,7 @@ function(input, output, session) {
         end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
         
         start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
-        end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + h]
+        end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + example_fhorizon]
         
         pred_df = aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
                                    example_endq, example_fhorizon, covid_dummy)
@@ -1154,7 +1201,7 @@ function(input, output, session) {
         ## generating values for prediction graph
         predictions <- all_GDP_ts_df %>% 
           filter(Time > example_endyq) %>% 
-          head(n = h) %>%
+          head(n = example_fhorizon) %>%
           mutate(new_growth_rate = pred_df$predictions)
         
         predicted_test_values <- predictions %>%
@@ -1162,32 +1209,32 @@ function(input, output, session) {
           rename("growth_rate" = "new_growth_rate") %>% 
           mutate(category = 2) 
         
-        predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq, h)$training_p, predicted_test_values)
+        predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq, example_fhorizon)$training_p, predicted_test_values)
         
         # fanplot
         
         time_data <- all_GDP_ts_df %>%
           filter(Time >= example_endyq) %>%
           select(Time) %>%
-          head(h+1)
+          head(example_fhorizon+1)
         
         data <- GDPGrowth_ts_df_sliced %>%
           filter(Time < example_endyq) %>%
           select(Time) %>% 
           mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
         
-        actual_values = actual_values_graph(example_startyq, example_endyq, h)
+        actual_values = actual_values_graph(example_startyq, example_endyq, example_fhorizon)
         joining_value = actual_values$joining_value
         
         #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
         rmsfe_df = pred_df$rmsfe
         
-        rmsfe_data <- cbind(time_data, fanplot_rmsfe(rmsfe_df, joining_value, predictions, h)) 
+        rmsfe_data <- cbind(time_data, fanplot_rmsfe(rmsfe_df, joining_value, predictions, example_fhorizon)) 
         #rmsfe_data <- cbind(time_data, rmsfe_test)
         
         fanplot_data <- rbind(data, rmsfe_data) %>%
           filter(Time >= example_endyq) %>%
-          head(h+1)
+          head(example_fhorizon+1)
         
         # recession blocks
         recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,

@@ -138,6 +138,79 @@ actual_values_graph_rolling <- function(example_startyq, example_endyq, window_s
   #original data returns true value graph, training_p returns values of training data before prediction values
 }
 
+
+
+# graphing function for adding data
+# has extra add_data input to add in input data to plot "original graph"
+actual_values_graph_add <- function(example_startyq, example_endyq, add_data_time, add_data_inputs, h){
+  edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4", "2025 Q1", "2025 Q2", "2025 Q3", "2025 Q4"), 
+                     growth_rate = c(NA,NA,NA,NA,NA,NA,NA,NA)) %>%
+    mutate(Time = as.yearqtr(Time)) %>%
+    mutate(growth_rate = as.numeric(growth_rate))
+  
+  input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) #%>%
+    #mutate(category = 2)
+  
+  edge = rbind(input_data_df, tail(edge, n=8-nrow(input_data_df)))
+  
+  all_GDP_ts <- ts(all_GDP_data, 
+                   start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                   end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                   frequency = 4)
+  
+  all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+  
+  all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+  
+  GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+    rename("Time" = "time") %>%
+    rename("growth_rate" = "value")
+  
+  
+ GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+ 
+ #input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) %>%
+   #mutate(category = 2)
+
+ #GDPGrowth_ts_df_sliced <- left_join(GDPGrowth_ts_df_sliced, input_data_df)
+  
+  training <- GDPGrowth_ts_df_sliced %>%
+    filter(Time > example_startyq) %>%
+    filter(Time < example_endyq) %>% 
+    tail(n = 9) %>%
+    select(Time, growth_rate) %>%
+    mutate(category = 1) 
+  
+  joining_value <- GDPGrowth_ts_df_sliced %>%
+    filter(Time == example_endyq) %>% 
+    select(Time, growth_rate) %>%
+    mutate(category = 3) 
+  
+  training_t <- bind_rows(training, joining_value) 
+  
+  original_test_values <- all_GDP_ts_df %>%
+    filter(Time > example_endyq) %>% 
+    select(Time, growth_rate) %>%
+    head(h) %>%
+    mutate(category = 1) 
+  
+  #input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) %>%
+    #mutate(category = 2)
+  
+  original_data <- bind_rows(training_t, original_test_values)
+  #original_data <- bind_rows(original_data, input_data_df)
+  
+  original_data <- original_data %>%
+    filter(Time <= as.yearqtr("2023 Q4"))
+  
+  training_p <- bind_rows(training, joining_value)
+  
+  return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
+  #original data returns true value graph, training_p returns values of training data before prediction values
+}
+
 # fanplot rmsfe generating fn
 # rmsfe_df from fn that generates rmsfe for h horizons
 
@@ -214,7 +287,7 @@ add_data <- function(data1, data2, data3, data4, h){
   else{
     return(vector)
   }
-  vector = vector[1:h]
+  #vector = vector[1:h]
   length = length(vector)
   return(list("vector" = vector, "length" = length))
 }
