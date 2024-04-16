@@ -14,6 +14,10 @@
 
 3. Click "Show Prediction". 
 
+Additional Notes:
+
+* You can add up to 4 quarters worth of growth rates in the boxes at the bottom in order to predict growth rates slightly further into the future.  
+
 &nbsp;
 
 ### **ADL Models**
@@ -48,6 +52,7 @@ Additional Notes:
 * The shaded blue regions around the prediction line are the 50% and 80% fan plots. It shows what the mean square forecast error, and we expect the majority of our forecasts to be within those intervals.
 * If there is a pink shaded block in the window, that denotes a recession period in the past.
 * Predicted growth rate values can be found below the plot. 
+* [YAP ABOUT DIEBOLD MARINO RESULTS]
 
 &nbsp;
 
@@ -60,15 +65,30 @@ Additional Notes:
 &nbsp;
 
 ## Model Methodologies
+&nbsp;
 
 ### **AR Models**
 
 * The Basic AR Model is a simple autoregression model, using a maximum of 4 lags of GDP Growth rates.
 * The Revised AR Model uses the same algorithm as the Basic AR Model, however, it modifies the inputted data. The data is modified using a Sigmoid function to better represent [CONTINUE YAPPING HERE]
 
+&nbsp;
+
 ### **ADL Models**
 
-* The individual ADL (Autoregressive Distributed Lag) models combine lags of GDP Growth Rates as well as lags of the chosen ADL predictor. 
-* O
+* The individual ADL (Autoregressive Distributed Lag) models combine lags of GDP Growth Rates as well as lags of the chosen ADL predictor. A maximum of 4 lags of the GDP Growth Rate, and 4 lags of the ADL predictor can be included in the model.
+* The combined ADL model considers all the ADL predictors as well as the GDP Growth Rate. A maximum of 2 lags of each variable can be used in the model. 
+* Both models select the optimal combination of lags/variables using the Akaike Information Criterion (AIC). Whichever combination has the lowest AIC is chosen as the optimal model. 
+
+&nbsp;
+
+### **Aggregate Models**
+
+* The aggregate model takes the results of 7 models: the revised AR model, the 5 individual ADL models, and the combined ADL model. Using the Granger-Ramanathan test, weights are then evaluated for each of these models, before arriving at a final model that is deemed to be most optimal. The result of this model is what you see for the GDP Growth forecasts. 
+* To determine a "poor outlook", the algorithm for the aggregate model flags any indicator that shows at least one negative growth rate for the selected forecast horizon. 
+* To determine anomalies, the algorithm highlights 3 different behaviours, leveraging concepts of the Median Average Deviation (MAD) and the median value:
++ When any of the growth rates of an ADL indicator from the past 4 quarters is separated from the median value of the indicator by a value greater than 3 x MAD. This is indicated as a "high deviation". 
++ When 2 of the growth rates of an ADL indicator from the past 4 quarters are separated from the median value of the indicator by a value greater than 2 x MAD. This is indicated as a "medium deviation". 
++ When any of the growth rates of at least 2 ADL indicators from the past 4 quarters are separated from the median value of their individual indicator by a value greater than 2 x MAD. This is indicated as a "medium deviation". 
 
 
