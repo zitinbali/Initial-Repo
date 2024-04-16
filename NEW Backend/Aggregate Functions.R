@@ -271,7 +271,17 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   true_values <- as.matrix(append(tail(real_values, min_row), forecasts))
   
   all_constant <- as.matrix(rep(gru2[1], (min_row+f_horizon)))
-  all_predictions <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
+  
+  second_term <- as.matrix(rep(gru2[2], (min_row+f_horizon)))
+  third_term <- as.matrix(rep(gru2[3], (min_row+f_horizon)))
+  fourth_term <- as.matrix(rep(gru2[4], (min_row+f_horizon)))
+  fifth_term <- as.matrix(rep(gru2[5], (min_row+f_horizon)))
+  sixth_term <- as.matrix(rep(gru2[6], (min_row+f_horizon)))
+  seventh_term <- as.matrix(rep(gru2[7], (min_row+f_horizon)))
+  eighth_term <- as.matrix(rep(gru2[8], (min_row+f_horizon)))
+  
+  #all_predictions_temp <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
+  all_predictions <- all_constant + (second_term * new_rev_AR) + (third_term * new_baa) + (fourth_term * new_tsp) + (fifth_term * new_hstarts) + (sixth_term * new_consent) + (seventh_term * new_nasdaq) + (eighth_term * new_comb)
   
   resid <- all_predictions - true_values
   
@@ -295,3 +305,37 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
               "abnormal" = abnormal))
 }
   
+# 
+# rev_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
+# rev_AR_output <- AR_predict_all(rev_AR_input, example_fhorizon, covid_dummy)
+# old_rev_AR <-rev_AR_output$fitted_values
+# 
+# p_rev_AR <- c(1, 2, 3, 4)
+# 
+# new_rev_AR <- as.matrix(append(tail(as.matrix(old_rev_AR), 176), p_rev_AR))
+# 
+# poor_outlook <- poor_outlook(GDPGrowth_ts, ADL_variables, example_startq, example_endq,
+#                              example_fhorizon, covid_dummy)
+# ADL_forecasts <- poor_outlook$ADL_predictions
+# ADL_fitted_values <- poor_outlook$fitted_values
+# 
+# p_baa <- ADL_forecasts[[1]]
+# old_baa <- as.matrix(ADL_fitted_values[[1]])
+# 
+# new_baa <- as.matrix(append(tail(old_baa, 176), p_baa))
+# 
+# start_yq = as.yearqtr(example_startq)
+# end_yq = as.yearqtr(example_endq)
+# 
+# gru2 <- GRtest(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_values, covid_dummy,
+#                baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df)$weights
+# 
+# all_constant <- as.matrix(rep(gru2[1], (176+example_fhorizon)))
+# 
+# test <- gru2[2]*new_rev_AR
+# second_coeff <- as.matrix(rep(gru2[2], (176+example_fhorizon)))
+# test2 <- second_coeff*new_rev_AR
+# 
+# as.matrix(rep(gru2[2], (176+4))) 
+# length(test2)
+# 
