@@ -280,7 +280,7 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   seventh_term <- as.matrix(rep(gru2[7], (min_row+f_horizon)))
   eighth_term <- as.matrix(rep(gru2[8], (min_row+f_horizon)))
   
-  all_predictions_temp <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
+  #all_predictions_temp <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
   all_predictions <- as.vector(all_constant) + as.vector(second_term * new_rev_AR) + 
     as.vector(third_term * new_baa) + as.vector(fourth_term * new_tsp) + 
     as.vector(fifth_term * new_hstarts) + as.vector(sixth_term * new_consent) + 
