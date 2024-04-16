@@ -85,7 +85,7 @@ AR_predict_all <- function(Y_matrix, h, dum){
 
 
 
-adv_ar_input = function(RGDP_Data, example_startq, example_endq){
+adv_ar_input = function(RGDP_Data, perc_change_df, example_startq, example_endq){
   
   example_startyq = as.yearqtr(example_startq)
   example_endyq = as.yearqtr(example_endq)
