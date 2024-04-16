@@ -80,6 +80,7 @@ abnormal <- function(ADL_var){
   m <- length(ADL_var)
   high_dev_indicators <- c()
   medium_dev_indicators <- c()
+  temp <- c() 
   
   for (i in 1:m){
     X_temp <- get(ADL_var[i])
@@ -114,7 +115,24 @@ abnormal <- function(ADL_var){
       high_dev_indicators <- append(high_dev_indicators, name_indicator)
     } 
     else if (any(last_4_entries %in% outliers_medium)){
-      medium_dev_indicators <- append(medium_dev_indicators, name_indicator)
+      temp <- append(temp, name_indicator)
+      matches <- last_4_entries %in% outliers_medium
+      # only count medium if at least 2 out of the last 4 entries have been above the threshold
+      if (sum(matches) > 1){
+        medium_dev_indicators <- append(medium_dev_indicators, name_indicator)
+      }
+    }
+  }
+  
+  print(length(temp))
+  # if multiple variables are crossing the medium threshold
+  if (length(temp) > 1){
+    for (i in (1:length(temp))){
+      if (temp[i] %in% medium_dev_indicators){
+        medium_dev_indicators = medium_dev_indicators
+      } else{
+        medium_dev_indicators <- append(medium_dev_indicators, temp[i])
+      }
     }
   }
   
