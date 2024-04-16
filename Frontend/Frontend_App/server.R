@@ -1134,52 +1134,7 @@ function(input, output, session) {
         window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
         
         example_fhorizon = as.numeric(input$h)
-        
-        ####################
-        ## GRANGER RAMANATHAN
-        #####################
-        
-        rw_revised_AR = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-        
-        X=cbind(rw_revised_AR$pred, rw_baa$pred, rw_tsp$pred, rw_hstarts$pred,
-                rw_consent$pred, rw_nasdaq$pred, rw_comb$pred)
-        
-        
-        # number of out-of-sample observations (test window)
-        noos = (example_endyq - window_start) * 4 + 1 
-        #true values for the validation set
-        oosy2 = as.matrix(tail(real_values, noos))
-        
-        #GR weights, constant, all restrictions in place:
-        X2=cbind(rep(1,nrow(oosy2)),X)
-        
-        temp=diag(8)
-        temp[1,1]=0
-        
-        gru2=lsei(X2, oosy2, c=c(0,rep(1,7)), d=1, e=temp, f=rep(0,8))
-        
-        # Predictions from the individual models 
-        rev_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
-        rev_AR_output <- AR_predict_all(rev_AR_input, example_fhorizon, covid_dummy)
-        p_rev_AR <- rev_AR_output$predictions
-        old_rev_AR <-rev_AR_output$fitted_values
-        
-        
-        comb_output <- ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
-                                            example_startq, example_endq, example_fhorizon, covid_dummy)
-        p_comb <- comb_output$predictions
-        old_comb <- comb_output$fitted_values
-        
-        
-        
-        #source("../../NEW Backend/Granger Ramanathan.R")
-        #source("../../NEW Backend/Aggregate Functions.R")
+       
         
          #example_fhorizon=3
         
@@ -1197,8 +1152,8 @@ function(input, output, session) {
         start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
         end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + example_fhorizon]
         
-        pred_df = aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
-                                   example_endq, example_fhorizon, covid_dummy)
+        pred_df = aggregate_output(GDPGrowth_ts, X_comb_df, RGDP_Data, perc_change_df_spliced, real_values,
+                                   ADL_variables, example_startq, example_endq, example_fhorizon, covid_dummy)
         
 
         ## generating values for prediction graph
@@ -1355,7 +1310,11 @@ function(input, output, session) {
       end = as.yearqtr(gsub(":", " ", window_end_str))
       #end = as.yearqtr("2020 Q1")
       
+      #window_start_index = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
+      #window_start = GDPGrowth_ts_df_sliced$Time[window_start_index+1]
       window_start = example_endyq
+      
+      
       #window_start = as.yearqtr("2005 Q1")
       #window_start_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
       #window_start = GDPGrowth_ts_df_sliced$Time[window_start_rownum+1] #how do i add one quarter to this bro
@@ -1375,7 +1334,8 @@ function(input, output, session) {
       predictions <- all_GDP_ts_df %>% 
         filter(Time > window_start) %>% 
         head(n = window_length) %>%
-        mutate(new_growth_rate = pred_df$pred)
+        mutate(new_growth_rate = pred_df$pred) %>%
+        head(window_length-1)
       
       predicted_test_values <- predictions %>%
         select(Time, new_growth_rate) %>% 
@@ -1383,6 +1343,7 @@ function(input, output, session) {
         mutate(category = 2) 
       
       predicted_data <- rbind(actual_values_graph(example_startyq, example_endyq, window_length)$training_p, predicted_test_values)
+      
       
       # fanplot
       # extracting time column for predictions
@@ -1399,6 +1360,8 @@ function(input, output, session) {
       
       actual_values = actual_values_graph(example_startyq, window_start, window_length)
       joining_value = actual_values$joining_value
+      original_data = actual_values$original_data %>%
+        filter(Time <= end)
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
       rmsfe_df = pred_df$rmse
@@ -1427,7 +1390,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-        geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+        geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
         geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
@@ -1603,7 +1566,8 @@ function(input, output, session) {
       predictions <- all_GDP_ts_df %>% 
         filter(Time > window_start) %>% 
         head(n = window_length) %>%
-        mutate(new_growth_rate = pred_df$pred)
+        mutate(new_growth_rate = pred_df$pred) %>% 
+        head(n = window_length-1)
       
       predicted_test_values <- predictions %>%
         select(Time, new_growth_rate) %>% 
@@ -1627,6 +1591,8 @@ function(input, output, session) {
       
       actual_values = actual_values_graph(example_startyq, window_start, window_length)
       joining_value = actual_values$joining_value
+      original_data = actual_values$original_data %>%
+        filter(Time <= end)
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
       rmsfe_df = pred_df$rmse
@@ -1655,7 +1621,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-        geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+        geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
         geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
@@ -1706,7 +1672,7 @@ function(input, output, session) {
       
       predictions <- all_GDP_ts_df %>% 
         filter(Time > window_start) %>%
-        head(n = window_length) %>%
+        head(n = window_length-1) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
         select(Date, Predictions) %>% 
         datatable() %>% 
@@ -1785,7 +1751,8 @@ function(input, output, session) {
       predictions <- all_GDP_ts_df %>% 
         filter(Time > window_start) %>% 
         head(n = window_length) %>%
-        mutate(new_growth_rate = pred_df$pred)
+        mutate(new_growth_rate = pred_df$pred) %>% 
+        head(n = window_length-1)
       
       predicted_test_values <- predictions %>%
         select(Time, new_growth_rate) %>% 
@@ -1809,6 +1776,8 @@ function(input, output, session) {
       
       actual_values = actual_values_graph(example_startyq, window_start, window_length)
       joining_value = actual_values$joining_value
+      original_data = actual_values$original_data %>%
+        filter(Time <= end)
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
       rmsfe_df = pred_df$rmse
@@ -1839,7 +1808,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-        geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+        geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
         geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
