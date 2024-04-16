@@ -445,11 +445,25 @@ function(input, output, session) {
         datatable() %>% 
         formatRound(columns=c('Predictions'), digits=3)
       
-      
       predictions
     })
+  })
+  
+  #####################
+  ## ADD DATA TO REV AR
+  #####################
+  
+  observeEvent(input$add_data, {
+    
+    ## MODEL 2 ADD DATA PLOT
+    output$model2
+    
+    
+    ## MODEL 2 ADD DATA TABLE    
+    output$table2
     
   })
+
   
   
   ####################
@@ -470,7 +484,6 @@ function(input, output, session) {
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
       h = as.numeric(input$h)
-      #h=3
       
       edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
         mutate(Time = as.yearqtr(Time)) %>%
@@ -783,13 +796,6 @@ function(input, output, session) {
   
   ## MODEL 5 TABLE
   
-  ##################
-  ## AGGREGATE MODEL
-  ##################
-    
-    
-  
-  ## MODEL 6 PLOT
     
     #################
     ## AGGREGATE MODEL
@@ -1123,13 +1129,97 @@ function(input, output, session) {
       print(model_7)
     })
     
+    ## MODEL 7 TABLE
     
+    output$table7 <- DT::renderDataTable({
+      
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      
+      edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+        mutate(Time = as.yearqtr(Time)) %>%
+        mutate(growth_rate = as.numeric(growth_rate))
+      
+      all_GDP_ts <- ts(all_GDP_data, 
+                       start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                       end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                       frequency = 4)
+      
+      all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+        rename("Time" = "time") %>%
+        rename("growth_rate" = "value")
+      
+      all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+      
+      window_end_str = input$rolling_ADL
+      end = as.yearqtr(gsub(":", " ", window_end_str))
+      
+      window_start = example_endyq
+      
+      window_length = (end - window_start) * 4 + 1
+      
+      X_df = rename_variable(input$select_rolling_ADL)
+      
+      pred_df = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, end)
+      
+      predictions <- all_GDP_ts_df %>% 
+        filter(Time > window_start) %>%
+        head(n = window_length) %>%
+        mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
+        select(Date, Predictions) %>% 
+        datatable() %>% 
+        formatRound(columns=c('Predictions'), digits=3)
+      
+      predictions
+    })
     
+    ## MODEL 7 DM TEST
+    output$desc7 <- renderText({
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+        mutate(Time = as.yearqtr(Time)) %>%
+        mutate(growth_rate = as.numeric(growth_rate))
+      
+      all_GDP_ts <- ts(all_GDP_data, 
+                       start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                       end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                       frequency = 4)
+      
+      all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+        rename("Time" = "time") %>%
+        rename("growth_rate" = "value")
+      
+      all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+      
+      GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+        rename("Time" = "time") %>%
+        rename("growth_rate" = "value")
+      
+      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+      
+      window_end_str = input$rolling_ADL
+      end = as.yearqtr(gsub(":", " ", window_end_str))
+      
+      window_start = example_endyq
+      
+      start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
+      end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
+      
+      row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
+      
+      real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
+      perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
+      
+      pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
+      pred2 = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, end)$pred
+      
+      pval = dm_test(real_values, pred1, pred2, example_startyq, end)
+      
+      paste(pval)
+    })
   })
-  
-  
-  
-  ## MODEL 7 TABLE
   
   
   ####################
@@ -1267,7 +1357,49 @@ function(input, output, session) {
       print(model_8)
     })
     
- 
+ ## MODEL 8 TABLE
+    
+    output$table8 <- DT::renderDataTable({
+      
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      
+      edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+        mutate(Time = as.yearqtr(Time)) %>%
+        mutate(growth_rate = as.numeric(growth_rate))
+      
+      all_GDP_ts <- ts(all_GDP_data, 
+                       start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                       end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                       frequency = 4)
+      
+      all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+        rename("Time" = "time") %>%
+        rename("growth_rate" = "value")
+      
+      all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+      
+      window_end_str = input$rolling_ADL
+      end = as.yearqtr(gsub(":", " ", window_end_str))
+      
+      window_start = example_endyq
+      
+      window_length = (end - window_start) * 4 + 1
+      
+      X_df = rename_variable(input$select_rolling_ADL)
+      
+      pred_df = rolling_window_adl(perc_change_df_spliced, X_df, window_start, covid_dummy, real_values, example_startyq, end)
+      
+      predictions <- all_GDP_ts_df %>% 
+        filter(Time > window_start) %>%
+        head(n = window_length) %>%
+        mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
+        select(Date, Predictions) %>% 
+        datatable() %>% 
+        formatRound(columns=c('Predictions'), digits=3)
+      
+      predictions
+    })
     
   })
   
@@ -1412,9 +1544,9 @@ function(input, output, session) {
     ## MODEL 9 TABLE
     
     output$table9 <- DT::renderDataTable({
-      window_start_str = input$rolling_ADL
-      window_start = as.yearqtr(gsub(":", " ", window_start_str))
-      window_length = (example_endyq - window_start) * 4 + 1
+      
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
       
       edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
         mutate(Time = as.yearqtr(Time)) %>%
@@ -1430,12 +1562,20 @@ function(input, output, session) {
         rename("growth_rate" = "value")
       
       all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
-      pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+      
+      window_end_str = input$rolling_ADL
+      end = as.yearqtr(gsub(":", " ", window_end_str))
+      
+      window_start = example_endyq
+      
+      window_length = (end - window_start) * 4 + 1
+
+      pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, example_endyq, covid_dummy, real_values, example_startyq, end)
       
       predictions <- all_GDP_ts_df %>% 
-        filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>% 
+        filter(Time > window_start) %>% 
         head(n = window_length) %>%
-        mutate(Date = as.character(Time), Predictions = pred_df$predictions) %>%
+        mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
         select(Date, Predictions) %>% 
         datatable() %>% 
         formatRound(columns=c('Predictions'), digits=3)

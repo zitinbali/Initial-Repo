@@ -128,7 +128,7 @@ navbarPage(
                                         headerPanel(""), # adds space btwn text and inputs
                                         fileInput("excel_data", "Upload a .xlsx file following the sample format.",
                                                   multiple = FALSE,
-                                                  accept = c(".xlsx")),
+                                                  accept = c(".xlsx", ".xls")),
                                         helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
                                         headerPanel(""), 
                                         actionButton("button5", "Generate ADL Model",
@@ -169,12 +169,14 @@ navbarPage(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
                                type = "pills",
-                               tabPanel(
-                                 "AR",
-                                 headerPanel(""), 
-                                 actionButton("button7", "Show Prediction",
+                               tabPanel("AR",
+                                        headerPanel(""),
+                                        actionButton("button7", "Show Prediction",
                                               style="background-color: #79818c"),
-                                 plotOutput("model7")
+                                        plotOutput("model7"),
+                                        headerPanel(""),
+                                        DT::dataTableOutput("table7"), 
+                                        textOutput("desc7")
                                ),
                                tabPanel("ADL",
                                         headerPanel(""),
@@ -185,8 +187,8 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         plotOutput("model8"),
                                         headerPanel(""),
-                                        DT::dataTableOutput("table8")
-                                        
+                                        DT::dataTableOutput("table8"),
+                                        textOutput("desc8")
                                ),
                                tabPanel("Combined ADL",
                                         headerPanel(""),
@@ -194,8 +196,8 @@ navbarPage(
                                                      style="background-color: #79818c"),
                                         plotOutput("model9"),
                                         headerPanel(""),
-                                        DT::dataTableOutput("table9")
-                                        
+                                        DT::dataTableOutput("table9"),
+                                        textOutput("desc9")
                                )
                              )
                              
