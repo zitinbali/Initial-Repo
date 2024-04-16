@@ -178,13 +178,9 @@ p_value
 
 ```{r aggregate test}
 
-# YOU NEED to source the Granger Ramanathan file before running aggregate output
-source("Granger Ramanathan.R")
+source("Aggregate Functions.R")
 # above source takes 50 seconds to load
 
-source("Aggregate Functions.R")
-
-aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
-                 example_endq, example_fhorizon, covid_dummy)
-
+aggregate_output(GDPGrowth_ts, X_comb_df, RGDP_Data, perc_change_df_spliced, real_values,
+                 ADL_variables, example_startq, example_endq, example_fhorizon, covid_dummy)
 ```

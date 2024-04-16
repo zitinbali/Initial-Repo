@@ -120,7 +120,6 @@ abnormal <- function(ADL_var){
     }
   }
   
-  print(length(temp))
   # if multiple variables are crossing the medium threshold
   if (length(temp) > 1){
     for (i in (1:length(temp))){
@@ -145,6 +144,45 @@ abnormal <- function(ADL_var){
 }
 
 
+####################################
+# Granger Ramanathan Test Function
+####################################
+
+
+GRtest <- function(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_values, dum,
+                   baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df){
+  
+  window_start = as.yearqtr(start_yq) + 15
+  
+  rw_revised_AR = rolling_window_adv(RGDP_Data, window_start, dum, real_values, start_yq, end_yq)
+  rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start, dum, real_values, start_yq, end_yq)
+  rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, dum, real_values, start_yq, end_yq)
+  rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start, dum, real_values, start_yq, end_yq)
+  rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, dum, real_values, start_yq, end_yq)
+  rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, dum, real_values, start_yq, end_yq)
+  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, dum, real_values, start_yq, end_yq)
+  
+  X=cbind(rw_revised_AR$pred, rw_baa$pred, rw_tsp$pred, rw_hstarts$pred,
+          rw_consent$pred, rw_nasdaq$pred, rw_comb$pred)
+  
+  # number of out-of-sample observations (test window)
+  noos = (end_yq - window_start) * 4 + 1 
+  #true values for the validation set
+  oosy2 = as.matrix(tail(real_values, noos))
+  
+  #GR weights, constant, all restrictions in place:
+  X2=cbind(rep(1,nrow(oosy2)),X)
+  
+  temp=diag(8)
+  temp[1,1]=0
+  
+  gru2=lsei(X2, oosy2, c=c(0,rep(1,7)), d=1, e=temp, f=rep(0,8))
+  
+  
+  return(list("weights" = gru2))
+}
+
+
 ###############################
 # Aggregate Forecast Function
 ###############################
@@ -153,11 +191,33 @@ abnormal <- function(ADL_var){
 
 # X_variables refers to a vector comprising the string names of all X variables.
 # The input for X_variable is ADL_variables
-aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
+aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced, real_values,
+                             ADL_var, start, end, f_horizon, dum){
+  
+  start_yq = as.yearqtr(start)
+  end_yq = as.yearqtr(end)
+  
+  baa_aaa_ts =  get(ADL_var[1])
+  tspread_ts = get(ADL_var[2])
+  hstarts_ts = get(ADL_var[3])
+  consent_ts = get(ADL_var[4])
+  nasdaq_ts = get(ADL_var[5])
+  
+  # call granger ramanathan test
+  gru2 <- GRtest(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_values, dum,
+         baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df)$weights
   
   # call poor outlook function 
   poor_outlook <- poor_outlook(Y_ts, ADL_var, start, end,
-                               f_horizon, covid_dummy)
+                               f_horizon, dum)
+  
+  # call combined ADL function to get output 
+  comb_output <- ADL_comb_predict_all(Y_ts, X_comb_df, ADL_var, 
+                                      start, end, f_horizon, dum)
+  
+  # call revised AR function to get output 
+  rev_AR_input = adv_ar_input(RGDP_Data, start, end)
+  rev_AR_output <- AR_predict_all(rev_AR_input, f_horizon, dum)
   
   #########################################################
   # forecasting using GR result from another file 
@@ -166,12 +226,14 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   ADL_forecasts <- poor_outlook$ADL_predictions 
   
   p_constant <- rep(gru2[1], f_horizon)
-  #p_rev_AR
+  p_rev_AR <- rev_AR_output$predictions
   p_baa <- ADL_forecasts[[1]]
   p_tsp <- ADL_forecasts[[2]]
   p_hstarts <- ADL_forecasts[[3]]
   p_consent <- ADL_forecasts[[4]]
   p_nasdaq <- ADL_forecasts[[5]]
+  p_comb <- comb_output$predictions
+  
   
   #currently missing revised AR predictor (it should be gru2[2])
   forecasts <- p_constant + (gru2[2]*p_rev_AR) + (gru2[3]*p_baa) + (gru2[4]*p_tsp) + (gru2[5]*p_hstarts) + (gru2[6]*p_consent) + (gru2[7]*p_nasdaq) + (gru2[8]*p_comb)
@@ -183,11 +245,13 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   # append new prediction values to the existing dataframes 
   ADL_fitted_values <- poor_outlook$fitted_values
   
+  old_rev_AR <-rev_AR_output$fitted_values
   old_baa <- as.matrix(ADL_fitted_values[[1]])
   old_tsp <- as.matrix(ADL_fitted_values[[2]])
   old_hstarts <- as.matrix(ADL_fitted_values[[3]])
   old_consent <- as.matrix(ADL_fitted_values[[4]])
   old_nasdaq <- as.matrix(ADL_fitted_values[[5]])
+  old_comb <- comb_output$fitted_values
   
   # since all of them use lags, they might not have the same number of rows
   # the objective here is to find the common starting point
@@ -230,5 +294,4 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
               "outlook_indicators" = poor_outlook$indicators,
               "abnormal" = abnormal))
 }
-
   
