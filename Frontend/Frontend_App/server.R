@@ -287,6 +287,44 @@ function(input, output, session) {
     
     output$table1 <- DT::renderDataTable({
       
+      example_startq = gsub(":", " ", input$year[1])
+      example_endq = gsub(":", " ", input$year[2])
+      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
+      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
+      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
+      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
+      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+      
+      h = as.numeric(input$h)
+      
+      GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
+      GDPGrowth_ts <- GDP_prep$GDPGrowth_ts
+      all_GDP_data <- GDP_prep$all_GDP_data
+      spliced_GDP <- GDP_prep$spliced_GDP
+      sliced_perc_change <- GDP_prep$sliced_perc_change
+      
+      covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+      
+      # Dummy if timeframe ends on 2020 Q2, start of covid
+      if (example_startyq <= covid_start & example_endyq == covid_start){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+      }
+      
+      # Dummy if timeframe includes all of covid
+      if (example_startyq <= covid_start & example_endyq >= covid_end){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+        covid_dummy[index + 1] = 1
+      }
+      
+      
+      covid_dummy_ts <- ts(covid_dummy,
+                           start = c(start_y, start_q), 
+                           end = c(end_y, end_q), 
+                           frequency = 4)
+      
       h = as.numeric(input$h)
       
       edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
