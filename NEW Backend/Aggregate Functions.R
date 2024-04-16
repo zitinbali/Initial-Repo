@@ -152,21 +152,21 @@ abnormal <- function(ADL_var){
 GRtest <- function(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_values, dum,
                    baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df){
   
-  window_start = as.yearqtr(start_yq) + 15
+  window_start_p = as.yearqtr(start_yq) + 15
   
-  rw_revised_AR = rolling_window_adv(RGDP_Data, window_start, dum, real_values, start_yq, end_yq)
-  rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start, dum, real_values, start_yq, end_yq)
-  rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start, dum, real_values, start_yq, end_yq)
-  rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start, dum, real_values, start_yq, end_yq)
-  rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start, dum, real_values, start_yq, end_yq)
-  rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start, dum, real_values, start_yq, end_yq)
-  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, dum, real_values, start_yq, end_yq)
+  rw_revised_AR = rolling_window_adv(RGDP_Data, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start_p, dum, real_values, start_yq, end_yq)
   
   X=cbind(rw_revised_AR$pred, rw_baa$pred, rw_tsp$pred, rw_hstarts$pred,
           rw_consent$pred, rw_nasdaq$pred, rw_comb$pred)
   
   # number of out-of-sample observations (test window)
-  noos = (end_yq - window_start) * 4 + 1 
+  noos = (end_yq - window_start_p) * 4 + 1 
   #true values for the validation set
   oosy2 = as.matrix(tail(real_values, noos))
   
