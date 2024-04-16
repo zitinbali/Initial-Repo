@@ -17,8 +17,13 @@ library(DT)
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
 source("../../NEW Backend/GDP Cleaning Functions.R")
+source("../../NEW Backend/AR_Model_Functions.R")
 
-basic_cleaning(RGDP_Data)
+check <- basic_cleaning(RGDP_Data)$check
+perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
+covid = c("2020 Q2", "2020 Q3")
+covid_start = as.yearqtr(covid[1])
+covid_end = as.yearqtr(covid[2])
 
 
 # 
@@ -28,7 +33,6 @@ basic_cleaning(RGDP_Data)
 # source("../../NEW Backend/GDP Cleaning.R")
 # source("../../NEW Backend/ADL Data.R")
 # source("../../NEW Backend/ADL_Rolling.R")
-# source("../../NEW Backend/AR_Model_Functions.R")
 # source("../../NEW Backend/ADL Functions.R")
 # source("../../NEW Backend/Combined ADL Functions.R")
 # source("../../NEW Backend/DM_test.R")
@@ -151,6 +155,31 @@ function(input, output, session) {
       h = as.numeric(input$h)
       
       GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
+      GDPGrowth_ts <- GDP_prep$GDPGrowth_ts
+      all_GDP_data <- GDP_prep$all_GDP_data
+      spliced_GDP <- GDP_prep$spliced_GDP
+      sliced_perc_change <- GDP_prep$sliced_perc_change
+      
+      covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+      
+      # Dummy if timeframe ends on 2020 Q2, start of covid
+      if (example_startyq <= covid_start & example_endyq == covid_start){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+      }
+      
+      # Dummy if timeframe includes all of covid
+      if (example_startyq <= covid_start & example_endyq >= covid_end){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+        covid_dummy[index + 1] = 1
+      }
+      
+      
+      covid_dummy_ts <- ts(covid_dummy,
+                           start = c(start_y, start_q), 
+                           end = c(end_y, end_q), 
+                           frequency = 4)
       
   #      edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
   #       mutate(Time = as.yearqtr(Time)) %>%
