@@ -1130,22 +1130,21 @@ function(input, output, session) {
         
         GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
         
-        start_rownum_window = which(grepl(example_startq, GDPGrowth_ts_df_sliced$Time))
-        window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
+        #start_rownum_window = which(grepl(example_startq, GDPGrowth_ts_df_sliced$Time))
+        #window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
         
         example_fhorizon = as.numeric(input$h)
        
         
          #example_fhorizon=3
         
-        #example_startq = "1976 Q4"
-        #example_startyq = as.yearqtr("1976 Q4")
-        #example_endq = "2008 Q3"
-        #example_endyq = as.yearqtr("2008 Q3")
-        #window_start = as.yearqtr("1981 Q4")
+        #example_startq = "1980 Q1"
+        #example_startyq = as.yearqtr("1980 Q1")
+        #example_endq = "2012 Q1"
+        #example_endyq = as.yearqtr("2012 Q1")
+        #window_start = as.yearqtr("1995 Q1")
         
-       
-        
+  
         start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
         end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
         
