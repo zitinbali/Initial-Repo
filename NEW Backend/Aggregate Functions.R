@@ -1,8 +1,4 @@
 
-# YOU NEED to source the Granger Ramanathan file before running aggregate output
-source("Granger Ramanathan.R")
-# above source takes 50 seconds to load
-
 ##########################
 # Poor Outlook Function
 ##########################
@@ -155,7 +151,6 @@ abnormal <- function(ADL_var){
 
 # Aggregates the forecasts
 
-
 # X_variables refers to a vector comprising the string names of all X variables.
 # The input for X_variable is ADL_variables
 aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
@@ -179,7 +174,7 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   p_nasdaq <- ADL_forecasts[[5]]
   
   #currently missing revised AR predictor (it should be gru2[2])
-  forecasts <- p_constant + (gru2[2]*p_baa) + (gru2[3]*p_tsp) + (gru2[4]*p_hstarts) + (gru2[5]*p_consent) + (gru2[6]*p_nasdaq) + (gru2[7]*p_comb)
+  forecasts <- p_constant + (gru2[2]*p_rev_AR) + (gru2[3]*p_baa) + (gru2[4]*p_tsp) + (gru2[5]*p_hstarts) + (gru2[6]*p_consent) + (gru2[7]*p_nasdaq) + (gru2[8]*p_comb)
   
   ####################
   # calculating rmsfe 
@@ -212,7 +207,7 @@ aggregate_output <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
   true_values <- as.matrix(append(tail(real_values, min_row), forecasts))
   
   all_constant <- as.matrix(rep(gru2[1], (min_row+f_horizon)))
-  all_predictions <- all_constant + (gru2[2]*new_baa) + (gru2[3]*new_tsp) + (gru2[4]*new_hstarts) + (gru2[5]*new_consent) + (gru2[6]*new_nasdaq) + (gru2[7]*new_comb)
+  all_predictions <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
   
   resid <- all_predictions - true_values
   
