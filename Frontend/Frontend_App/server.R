@@ -1444,6 +1444,7 @@ function(input, output, session) {
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
         select(Date, Predictions) %>% 
+        filter(row_number() <= n()-1) %>% 
         datatable() %>% 
         formatRound(columns=c('Predictions'), digits=3)
       
@@ -1663,7 +1664,6 @@ function(input, output, session) {
       end = as.yearqtr(gsub(":", " ", window_end_str))
       
       window_start = example_endyq
-      
       window_length = (end - window_start) * 4 + 1
       
       X_df = rename_variable(input$select_rolling_ADL)
@@ -1672,9 +1672,10 @@ function(input, output, session) {
       
       predictions <- all_GDP_ts_df %>% 
         filter(Time > window_start) %>%
-        head(n = window_length-1) %>%
+        head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
         select(Date, Predictions) %>% 
+        filter(row_number() <= n()-1) %>% 
         datatable() %>% 
         formatRound(columns=c('Predictions'), digits=3)
       
@@ -1860,6 +1861,7 @@ function(input, output, session) {
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred) %>%
         select(Date, Predictions) %>% 
+        filter(row_number() <= n()-1) %>% 
         datatable() %>% 
         formatRound(columns=c('Predictions'), digits=3)
       

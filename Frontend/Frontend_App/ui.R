@@ -145,10 +145,11 @@ navbarPage(
                            wellPanel(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
-                               tabPanel(
+                               tabPanel("",
                                actionButton("button6", "Show Prediction",
                                             style="background-color: #79818c"),
                                plotOutput("model6"),
+                               DT::dataTableOutput("table6"),
                                #headerPanel(""), # adds space btwn text and inputs
                                textOutput("agg_model_prediction"),
                                #headerPanel(""), # adds space btwn text and inputs
