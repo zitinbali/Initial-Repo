@@ -97,7 +97,7 @@ function(input, output, session) {
     
     selectInput("rolling_ADL",
                 "Select Start of Test Window: ",
-                choices = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80:length(RGDP_Data$DATE)],
+                choices = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80:length(RGDP_Data$DATE)-1],
                 selected = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80]
     )
   })
@@ -816,13 +816,19 @@ function(input, output, session) {
         end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
         end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
         
+        start_rownum_window = which(grepl(example_startq, GDPGrowth_ts_df_sliced$Time))
+        window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
+        
+        example_fhorizon = as.numeric(input$h)
+        
         source("../../NEW Backend/Granger Ramanathan.R")
+        source("../../NEW Backend/Aggregate Functions.R")
         
-        h = as.numeric(input$h)
-        #h=3
+         #example_fhorizon=3
         
-        example_startq = "1990 Q1"
-        example_endq = "2008 Q1"
+        #example_startq = "1980 Q1"
+        #example_endq = "2021 Q1"
+        #window_start = as.yearqtr("1995 Q1")
         
         edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
           mutate(Time = as.yearqtr(Time)) %>%
@@ -851,9 +857,8 @@ function(input, output, session) {
         start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
         end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + h]
         
-        example_endq = "2005 Q4"
         pred_df = aggregate_output(GDPGrowth_ts, ADL_variables, example_startq, 
-                                   example_endq, h, covid_dummy)
+                                   example_endq, example_fhorizon, covid_dummy)
         
 
         ## generating values for prediction graph
