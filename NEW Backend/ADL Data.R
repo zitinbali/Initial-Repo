@@ -1,6 +1,6 @@
 
-source("inputs.R")
-source("GDP Cleaning.R")
+#source("inputs.R")
+#source("GDP Cleaning.R")
 
 
 ##############
@@ -55,7 +55,7 @@ ADL_variables <- c("baa_aaa_ts", "tspread_ts", "hstarts_ts", "consent_ts",
 # BAA-AAA 
 ##############
 
-baa_aaa <- read_excel("../Data/FRED BAA-AAA Data.xls", 
+baa_aaa <- read_excel("Data/FRED BAA-AAA Data.xls", 
                       col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
@@ -89,7 +89,7 @@ baa_aaa_ts <- ts(baa_aaa$Spread,
 
 
 
-tspread <- read_excel("../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+tspread <- read_excel("Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -121,7 +121,7 @@ tspread_ts <- ts(tspread$Spread,
 ##############
 
 
-hstarts <- read_excel("../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+hstarts <- read_excel("Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -153,7 +153,7 @@ hstarts_ts <- ts(hstarts$Spread,
 ##############
 
 
-consent <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+consent <- read_excel("Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
@@ -185,7 +185,7 @@ consent_ts <- ts(consent$Spread,
 ############################
 
 
-nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
+nasdaq <- read_excel("Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 

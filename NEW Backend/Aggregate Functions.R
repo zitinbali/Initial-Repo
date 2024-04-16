@@ -245,7 +245,9 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   # append new prediction values to the existing dataframes 
   ADL_fitted_values <- poor_outlook$fitted_values
   
+  
   old_rev_AR <-rev_AR_output$fitted_values
+  #print(old_rev_AR)
   old_baa <- as.matrix(ADL_fitted_values[[1]])
   old_tsp <- as.matrix(ADL_fitted_values[[2]])
   old_hstarts <- as.matrix(ADL_fitted_values[[3]])
@@ -255,7 +257,7 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   
   # since all of them use lags, they might not have the same number of rows
   # the objective here is to find the common starting point
-  min_row <- min(nrow(old_rev_AR), nrow(old_baa), nrow(old_tsp), 
+  min_row <- min(length(old_rev_AR), nrow(old_baa), nrow(old_tsp), 
                  nrow(old_hstarts), nrow(old_consent), nrow(old_nasdaq),
                  nrow(old_comb))
   
@@ -279,6 +281,21 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   sixth_term <- as.matrix(rep(gru2[6], (min_row+f_horizon)))
   seventh_term <- as.matrix(rep(gru2[7], (min_row+f_horizon)))
   eighth_term <- as.matrix(rep(gru2[8], (min_row+f_horizon)))
+  
+  #print(min_row)
+  #print(length(tail(as.matrix(old_rev_AR), min_row)))
+  #test <- as.matrix(append(tail(as.matrix(old_rev_AR), min_row), p_rev_AR))
+  # print(test)
+  # print(length(as.vector(all_constant)))   
+  # print(second_term)
+  # print(new_rev_AR)
+  # print(length(as.vector(second_term * new_rev_AR)))   
+  # print(length(as.vector(third_term * new_baa)))   
+  # print(length(as.vector(fourth_term * new_tsp)))   
+  # print(length(as.vector(fifth_term * new_hstarts)))   
+  # print(length(as.vector(sixth_term * new_consent)))   
+  # print(length(as.vector(seventh_term * new_nasdaq)))   
+  # print(length(as.vector(eighth_term * new_comb)))
   
   #all_predictions_temp <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
   all_predictions <- as.vector(all_constant) + as.vector(second_term * new_rev_AR) + 
