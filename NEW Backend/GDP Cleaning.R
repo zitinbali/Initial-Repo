@@ -1,5 +1,5 @@
 
-source("inputs.R")
+#source("inputs.R")
 
 #####################
 #### BASIC ANALYSIS
@@ -22,7 +22,7 @@ library(lsei)
 library(sandwich)
 
 # reading the GDP data
-RGDP_Data <- read_excel("../Data/RGDP Data.xlsx")
+RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
 # extracting the most revised values/recent data (data as of 2024 Q1) 
 latest_data <- RGDP_Data[, ncol(RGDP_Data)]
