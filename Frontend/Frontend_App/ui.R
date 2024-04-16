@@ -130,7 +130,6 @@ navbarPage(
                                                   multiple = FALSE,
                                                   accept = c(".xlsx", ".xls")),
                                         helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
-                                        headerPanel(""), 
                                         actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
                                         plotOutput("model5"),
