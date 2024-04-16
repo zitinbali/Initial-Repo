@@ -280,8 +280,13 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   seventh_term <- as.matrix(rep(gru2[7], (min_row+f_horizon)))
   eighth_term <- as.matrix(rep(gru2[8], (min_row+f_horizon)))
   
-  #all_predictions_temp <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
-  all_predictions <- all_constant + (second_term * new_rev_AR) + (third_term * new_baa) + (fourth_term * new_tsp) + (fifth_term * new_hstarts) + (sixth_term * new_consent) + (seventh_term * new_nasdaq) + (eighth_term * new_comb)
+  all_predictions_temp <- all_constant + (gru2[2]*new_rev_AR) + (gru2[3]*new_baa) + (gru2[4]*new_tsp) + (gru2[5]*new_hstarts) + (gru2[6]*new_consent) + (gru2[7]*new_nasdaq) + (gru2[8]*new_comb)
+  all_predictions <- as.vector(all_constant) + as.vector(second_term * new_rev_AR) + 
+    as.vector(third_term * new_baa) + as.vector(fourth_term * new_tsp) + 
+    as.vector(fifth_term * new_hstarts) + as.vector(sixth_term * new_consent) + 
+    as.vector(seventh_term * new_nasdaq) + as.vector(eighth_term * new_comb)
+
+  all_predictions <- as.matrix(all_predictions)
   
   resid <- all_predictions - true_values
   
@@ -305,7 +310,7 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
               "abnormal" = abnormal))
 }
   
-# 
+
 # rev_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
 # rev_AR_output <- AR_predict_all(rev_AR_input, example_fhorizon, covid_dummy)
 # old_rev_AR <-rev_AR_output$fitted_values
@@ -336,6 +341,9 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
 # second_coeff <- as.matrix(rep(gru2[2], (176+example_fhorizon)))
 # test2 <- second_coeff*new_rev_AR
 # 
-# as.matrix(rep(gru2[2], (176+4))) 
-# length(test2)
+# test3 <- test + test2
+# test3 == as.matrix(as.vector(test) + as.vector(test2))
 # 
+# as.matrix(rep(gru2[2], (176+4)))
+# length(test2)
+
