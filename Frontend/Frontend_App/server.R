@@ -1109,6 +1109,27 @@ function(input, output, session) {
         end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
         end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
         
+        edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
+          mutate(Time = as.yearqtr(Time)) %>%
+          mutate(growth_rate = as.numeric(growth_rate))
+        
+        all_GDP_ts <- ts(all_GDP_data, 
+                         start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
+                         end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
+                         frequency = 4)
+        
+        all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
+          rename("Time" = "time") %>%
+          rename("growth_rate" = "value")
+        
+        all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
+        
+        GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
+          rename("Time" = "time") %>%
+          rename("growth_rate" = "value")
+        
+        GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+        
         start_rownum_window = which(grepl(example_startq, GDPGrowth_ts_df_sliced$Time))
         window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
         
@@ -1156,6 +1177,7 @@ function(input, output, session) {
         old_comb <- comb_output$fitted_values
         
         
+        
         #source("../../NEW Backend/Granger Ramanathan.R")
         #source("../../NEW Backend/Aggregate Functions.R")
         
@@ -1167,26 +1189,7 @@ function(input, output, session) {
         #example_endyq = as.yearqtr("2008 Q3")
         #window_start = as.yearqtr("1981 Q4")
         
-        edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
-          mutate(Time = as.yearqtr(Time)) %>%
-          mutate(growth_rate = as.numeric(growth_rate))
-        
-        all_GDP_ts <- ts(all_GDP_data, 
-                         start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
-                         end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
-                         frequency = 4)
-        
-        all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
-          rename("Time" = "time") %>%
-          rename("growth_rate" = "value")
-        
-        all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
-        
-        GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
-          rename("Time" = "time") %>%
-          rename("growth_rate" = "value")
-        
-        GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+       
         
         start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
         end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
@@ -1308,46 +1311,7 @@ function(input, output, session) {
   
   ## OUTPUT MESSAGE
   
-  observeEvent(input$button6, {
-    text <- aggregate_output(GDPGrowth_ts, ADL_variables, input$year[1], 
-                             input$year[2], input$h, covid_dummy)
-    
-    output$agg_model_prediction <- renderText({
-      paste("The predicted value is:", text$predictions)
-    })
-    
-    output$outlook_indicators <- renderText({
-      indicators <- paste(text$outlook$indicators, collapse = ", ")
-      return(paste("Indicators that forecast negative growth:", indicators))
-    })
-    
-    output$poor_outlook <- renderText({
-      return(text$outlook$message)
-    })
-    
-    output$abnormal_high_indicators <- renderText({
-      indicators <- if(is.null(text$abnormal$high_dev_indicators)){
-        "None"
-      } else {
-        paste(text$abnormal$high_dev_indicators, collapse = ", ")
-      }
-      return(paste("Indicators with High Level Deviation:", indicators))
-    })
-    
-    output$abnormal_med_indicators <- renderText({
-      indicators <- if(is.null(text$abnormal$medium_dev_indicators)){
-        "None"
-      } else {
-        paste(text$abnormal$medium_dev_indicators, collapse = ", ")
-      }
-      return(paste("Indicators with Medium Level Deviation:", indicators))
-    })
-    
-    output$abnormal_message <- renderText({
-      return(text$abnormal$message)
-    })
-  })
-  
+
   ####################
   ## ROLLING WINDOW AR
   ####################
