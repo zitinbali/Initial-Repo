@@ -145,6 +145,7 @@ navbarPage(
                            wellPanel(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
+                               tabPanel(
                                actionButton("button6", "Show Prediction",
                                             style="background-color: #79818c"),
                                plotOutput("model6"),
@@ -157,6 +158,7 @@ navbarPage(
                                textOutput("abnormal_high_indicators"),
                                textOutput("abnormal_med_indicators"),
                                textOutput("abnormal_message")
+                               )
                              )
                            )
                   ),
