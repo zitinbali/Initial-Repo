@@ -161,7 +161,7 @@ ADL_predict_all <- function(Y_ts, X_ts, start, end, f_horizon, dum){
   predictions <- c()
   rmsfe_values <- c()
   
-  covid_dummy_ts <- ts(covid_dummy,
+  covid_dummy_ts <- ts(dum,
                        start = c(start_y, start_q), 
                        end = c(end_y, end_q), 
                        frequency = 4)
