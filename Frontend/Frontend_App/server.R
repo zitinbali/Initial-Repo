@@ -170,14 +170,16 @@ function(input, output, session) {
   
   observeEvent(input$button1, {
     output$model1 <- renderPlot({
-      example_startq = gsub(":", " ", input$year[1])
-      example_endq = gsub(":", " ", input$year[2])
-      example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-      example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+      example_startq = gsub(":", " ", "1981:Q1")
+      example_endq = gsub(":", " ", "2005:Q1")
+      example_startyq = as.yearqtr(gsub(":", " ", "1981:Q1"))
+      example_endyq = as.yearqtr(gsub(":", " ", "2005:Q1"))
+      start_y = as.numeric(year(as.yearqtr(gsub(":", " ", "1981:Q1"))))
+      start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "1981:Q1"))))
+      end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2005:Q1"))))
+      end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2005:Q1"))))
+      
+      h=2
       
       h = as.numeric(input$h)
       
@@ -227,7 +229,7 @@ function(input, output, session) {
         rename("Time" = "time") %>%
         rename("growth_rate" = "value")
 
-      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+      #GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
 
     start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
     end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
@@ -637,6 +639,34 @@ function(input, output, session) {
       end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
+      GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
+      GDPGrowth_ts <- GDP_prep$GDPGrowth_ts
+      all_GDP_data <- GDP_prep$all_GDP_data
+      spliced_GDP <- GDP_prep$spliced_GDP
+      sliced_perc_change <- GDP_prep$sliced_perc_change
+      perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
+      
+      covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
+      
+      # Dummy if timeframe ends on 2020 Q2, start of covid
+      if (example_startyq <= covid_start & example_endyq == covid_start){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+      }
+      
+      # Dummy if timeframe includes all of covid
+      if (example_startyq <= covid_start & example_endyq >= covid_end){
+        index = (covid_start - example_startyq) * 4 + 1
+        covid_dummy[index] = -1
+        covid_dummy[index + 1] = 1
+      }
+      
+      
+      covid_dummy_ts <- ts(covid_dummy,
+                           start = c(start_y, start_q), 
+                           end = c(end_y, end_q), 
+                           frequency = 4)
+      
       h = as.numeric(input$h)
       #h=2
       add_data = add_data(as.numeric(input$data1), as.numeric(input$data2), as.numeric(input$data3), as.numeric(input$data4), h)
@@ -685,7 +715,7 @@ function(input, output, session) {
       start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
       end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + h]
       
-      advanced_AR_input = adv_ar_input(RGDP_Data, example_startq, example_endq)
+      advanced_AR_input = adv_ar_input(RGDP_Data, perc_change_df, example_startq, example_endq)
       pred_df = AR_predict_all(advanced_AR_input, h, covid_dummy)
       
       ## generating values for prediction graph
@@ -699,7 +729,7 @@ function(input, output, session) {
         rename("growth_rate" = "new_growth_rate") %>% 
         mutate(category = 2) 
       
-      predicted_data <- rbind(actual_values_graph_add(example_startyq, example_endyq, add_data_time, add_data_inputs, h)$training_p, predicted_test_values)
+      predicted_data <- rbind(actual_values_graph_add(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, add_data_time, add_data_inputs, h)$training_p, predicted_test_values)
       
       # fanplot
       
@@ -713,7 +743,7 @@ function(input, output, session) {
         select(Time) %>% 
         mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
       
-      actual_values = actual_values_graph_add(example_startyq, example_endyq, add_data_time, add_data_inputs, h)
+      actual_values = actual_values_graph_add(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, add_data_time, add_data_inputs, h)
       joining_value = actual_values$joining_value
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
@@ -760,7 +790,8 @@ function(input, output, session) {
       print(model_2a)
     })
     
-    ## MODEL 2a ADD DATA TABLE    
+    ## MODEL 2a ADD DATA TABLE   
+    
     #output$table2a
     
   })
@@ -805,7 +836,7 @@ function(input, output, session) {
         rename("Time" = "time") %>%
         rename("growth_rate" = "value")
       
-      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+      #GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
       
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
@@ -1008,7 +1039,7 @@ function(input, output, session) {
         rename("Time" = "time") %>%
         rename("growth_rate" = "value")
       
-      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+      #GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
       
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
