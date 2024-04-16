@@ -27,10 +27,11 @@ covid_dummy_fn <- function(example_startyq, example_endyq){
 
 
 #Graph fn
-actual_values_graph <- function(example_startyq, example_endyq, h){
+actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, h){
    edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(NA,NA,NA,NA)) %>%
     mutate(Time = as.yearqtr(Time)) %>%
     mutate(growth_rate = as.numeric(growth_rate))
+  
   
   
   all_GDP_ts <- ts(all_GDP_data, 
