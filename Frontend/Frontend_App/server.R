@@ -1483,7 +1483,7 @@ function(input, output, session) {
         rename("Time" = "time") %>%
         rename("growth_rate" = "value")
       
-      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
+      #GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
       
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
