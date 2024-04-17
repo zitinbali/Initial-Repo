@@ -8,7 +8,14 @@
 
 
 # X variables is a vector; input would be ADL variables
-poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
+poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum,
+                         baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts){
+  
+  baa_aaa_ts = baa_aaa_ts
+  tspread_ts = tspread_ts
+  hstarts_ts = hstarts_ts
+  consent_ts = consent_ts
+  nasdaq_ts = nasdaq_ts
   
   m <- length(ADL_var)
   
@@ -71,7 +78,13 @@ poor_outlook <- function(Y_ts, ADL_var, start, end, f_horizon, dum){
 # the output for indicators will be NULL.
 
 
-abnormal <- function(ADL_var){
+abnormal <- function(ADL_var, baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts){
+  
+  baa_aaa_ts = baa_aaa_ts
+  tspread_ts = tspread_ts
+  hstarts_ts = hstarts_ts
+  consent_ts = consent_ts
+  nasdaq_ts = nasdaq_ts
   
   m <- length(ADL_var)
   high_dev_indicators <- c()
@@ -149,18 +162,23 @@ abnormal <- function(ADL_var){
 ####################################
 
 
-GRtest <- function(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_values, dum,
+GRtest <- function(RGDP_Data, perc_change_df, perc_change_df_spliced, start_yq, end_yq, 
+                   real_values, dum,
                    baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df){
   
   window_start_p = as.yearqtr(start_yq) + 15
+  ADL_variables <- c("baa_aaa_ts", "tspread_ts", "hstarts_ts", "consent_ts", 
+                     "nasdaq_ts")
   
-  rw_revised_AR = rolling_window_adv(RGDP_Data, window_start_p, dum, real_values, start_yq, end_yq)
-  rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_revised_AR = rolling_window_adv(RGDP_Data, perc_change_df, 
+                                     window_start_p, dum, real_values, start_yq, end_yq)
+  rw_baa = rolling_window_adl(perc_change_df_spliced, baa_aaa_ts, window_start_p, dum, real_values, start_yq, end_yq, h = 1)
   rw_tsp = rolling_window_adl(perc_change_df_spliced, tspread_ts, window_start_p, dum, real_values, start_yq, end_yq)
   rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start_p, dum, real_values, start_yq, end_yq)
   rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start_p, dum, real_values, start_yq, end_yq)
   rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start_p, dum, real_values, start_yq, end_yq)
-  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start_p, dum, real_values, start_yq, end_yq)
+  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start_p, dum, real_values, start_yq, end_yq, h = 1, 
+                                    baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
   
   X=cbind(rw_revised_AR$pred, rw_baa$pred, rw_tsp$pred, rw_hstarts$pred,
           rw_consent$pred, rw_nasdaq$pred, rw_comb$pred)
@@ -191,32 +209,36 @@ GRtest <- function(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_val
 
 # X_variables refers to a vector comprising the string names of all X variables.
 # The input for X_variable is ADL_variables
-aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced, real_values,
-                             ADL_var, start, end, f_horizon, dum){
+aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, 
+                             perc_change_df, perc_change_df_spliced, real_values,
+                             ADL_var, start, end, f_horizon, dum,
+                             baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts){
   
   start_yq = as.yearqtr(start)
   end_yq = as.yearqtr(end)
   
-  baa_aaa_ts =  get(ADL_var[1])
-  tspread_ts = get(ADL_var[2])
-  hstarts_ts = get(ADL_var[3])
-  consent_ts = get(ADL_var[4])
-  nasdaq_ts = get(ADL_var[5])
-  
+  # baa_aaa_ts =  get(ADL_var[1])
+  # tspread_ts = get(ADL_var[2])
+  # hstarts_ts = get(ADL_var[3])
+  # consent_ts = get(ADL_var[4])
+  # nasdaq_ts = get(ADL_var[5])
+  # 
   # call granger ramanathan test
-  gru2 <- GRtest(RGDP_Data, perc_change_df_spliced, start_yq, end_yq, real_values, dum,
-         baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df)$weights
+  gru2 <- GRtest(RGDP_Data, perc_change_df, perc_change_df_spliced, start_yq, end_yq, 
+                 real_values, dum,
+                 baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts, X_comb_df)$weights
   
   # call poor outlook function 
   poor_outlook <- poor_outlook(Y_ts, ADL_var, start, end,
-                               f_horizon, dum)
+                               f_horizon, dum,
+                               baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
   
   # call combined ADL function to get output 
   comb_output <- ADL_comb_predict_all(Y_ts, X_comb_df, ADL_var, 
                                       start, end, f_horizon, dum)
   
   # call revised AR function to get output 
-  rev_AR_input = adv_ar_input(RGDP_Data, start, end)
+  rev_AR_input = adv_ar_input(RGDP_Data, perc_change_df, start, end)
   rev_AR_output <- AR_predict_all(rev_AR_input, f_horizon, dum)
   
   #########################################################
@@ -318,7 +340,7 @@ aggregate_output <- function(Y_ts, X_comb_df, RGDP_Data, perc_change_df_spliced,
   }
   
   # call abnormalities function 
-  abnormal <- abnormal(ADL_var)
+  abnormal <- abnormal(ADL_var, baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
   
   return(list("predictions" = forecasts, 
               "rmsfe" = rmsfe,

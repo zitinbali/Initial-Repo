@@ -51,7 +51,7 @@ rolling_window = function(df, window_start, dummy, real, start, end, h = 1){
 #### ROLLING WINDOW ADVANCED
 #############################
 
-rolling_window_adv = function(df, window_start, dummy, real, start, end, h = 1){
+rolling_window_adv = function(df, perc_change_df, window_start, dummy, real, start, end, h = 1){
   test_length = (end - window_start) * 4 + 1
   
   save.coef = matrix(NA,test_length,5)
@@ -64,7 +64,7 @@ rolling_window_adv = function(df, window_start, dummy, real, start, end, h = 1){
   for(i in test_length:1){
     window_start_str = format(window_start - 1/4, "%Y Q%q")
     
-    Y = adv_ar_input(df, start_str, window_start_str)
+    Y = adv_ar_input(df, perc_change_df, start_str, window_start_str)
     
     Y.window = Y[(1+test_length-i):(length(Y))] 
     Y.window = as.matrix(Y.window)
