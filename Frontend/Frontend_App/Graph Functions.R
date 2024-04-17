@@ -114,14 +114,14 @@ actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, example_star
     mutate(category = 1) 
   
   joining_value <- GDPGrowth_ts_df_sliced %>%
-    filter(Time == window_start) %>% 
+    filter(Time == example_endyq) %>% 
     select(Time, growth_rate) %>%
     mutate(category = 3) 
   
   training_t <- bind_rows(training, joining_value) 
   
   original_test_values <- all_GDP_ts_df %>%
-    filter(Time > window_start) %>% 
+    filter(Time >= window_start) %>% 
     select(Time, growth_rate) %>%
     head(window_length) %>%
     mutate(category = 1) 
@@ -216,6 +216,24 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, example_startyq,
 rmsfe_df_test = c(0.2, 0.4)
 
 fanplot_rmsfe <- function(rmsfe_df, joining_value, predictions, h) {
+  predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
+                                  upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
+  predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
+  predictions_rmsfe$lower_bound_80[1] = joining_value$growth_rate
+  predictions_rmsfe$upper_bound_50[1] = joining_value$growth_rate
+  predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
+  
+  for(i in 2:(h+1)){
+    rmsfe = rmsfe_df
+    predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe[i-1]
+    predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe[i-1]
+    predictions_rmsfe$upper_bound_50[i] = predictions$new_growth_rate[i-1] + 0.67*rmsfe[i-1]
+    predictions_rmsfe$lower_bound_50[i] = predictions$new_growth_rate[i-1] - 0.67*rmsfe[i-1]
+  }
+  return(predictions_rmsfe)
+}
+
+fanplot_rmsfe_rolling <- function(rmsfe_df, joining_value, predictions, h) {
   predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
                                   upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
   predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
