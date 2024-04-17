@@ -27,10 +27,11 @@ covid_dummy_fn <- function(example_startyq, example_endyq){
 
 
 #Graph fn
-actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, h){
+actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, h){
    edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(NA,NA,NA,NA)) %>%
     mutate(Time = as.yearqtr(Time)) %>%
     mutate(growth_rate = as.numeric(growth_rate))
+  
   
   all_GDP_ts <- ts(all_GDP_data, 
                    start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
@@ -64,7 +65,7 @@ actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, example_startyq, exa
   
   training_t <- bind_rows(training, joining_value) 
   
-  original_test_values <- all_GDP_ts_df %>%
+  original_test_values <- full_GDP_growth %>%
     filter(Time > example_endyq) %>% 
     select(Time, growth_rate) %>%
     head(h) %>%
@@ -82,7 +83,7 @@ actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, example_startyq, exa
 }
 
 
-actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, window_start, window_length){
+actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length){
   edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(NA,NA,NA,NA)) %>%
     mutate(Time = as.yearqtr(Time)) %>%
     mutate(growth_rate = as.numeric(growth_rate))
@@ -120,7 +121,7 @@ actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, example_star
   
   training_t <- bind_rows(training, joining_value) 
   
-  original_test_values <- all_GDP_ts_df %>%
+  original_test_values <- full_GDP_growth %>%
     filter(Time >= window_start) %>% 
     select(Time, growth_rate) %>%
     head(window_length) %>%
@@ -141,7 +142,7 @@ actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, example_star
 
 # graphing function for adding data
 # has extra add_data input to add in input data to plot "original graph"
-actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, add_data_time, add_data_inputs, h){
+actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, add_data_time, add_data_inputs, h){
   edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4", "2025 Q1", "2025 Q2", "2025 Q3", "2025 Q4"), 
                      growth_rate = c(NA,NA,NA,NA,NA,NA,NA,NA)) %>%
     mutate(Time = as.yearqtr(Time)) %>%
@@ -189,7 +190,7 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, example_startyq,
   
   training_t <- bind_rows(training, joining_value) 
   
-  original_test_values <- all_GDP_ts_df %>%
+  original_test_values <- full_GDP_growth %>%
     filter(Time > example_endyq) %>% 
     select(Time, growth_rate) %>%
     head(h) %>%
