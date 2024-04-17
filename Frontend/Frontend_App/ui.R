@@ -89,7 +89,8 @@ navbarPage(
                                         div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
                                         div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
                                         actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c"),
-                                        plotOutput("model2a")
+                                        plotOutput("model2a"),
+                                        DT::dataTableOutput("table2a")
                                )
                              )
                            )
@@ -151,13 +152,15 @@ navbarPage(
                                plotOutput("model6"),
                                DT::dataTableOutput("table6"),
                                #headerPanel(""), # adds space btwn text and inputs
-                               textOutput("agg_model_prediction"),
                                #headerPanel(""), # adds space btwn text and inputs
                                textOutput("outlook_indicators"), 
+                               HTML("<br>"), 
                                textOutput("poor_outlook"),
+                               HTML("<br>"), 
                                #headerPanel(""), # adds space btwn text and inputs
                                textOutput("abnormal_high_indicators"),
                                textOutput("abnormal_med_indicators"),
+                               HTML("<br>"), 
                                textOutput("abnormal_message")
                                )
                              )
