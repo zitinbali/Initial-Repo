@@ -71,31 +71,9 @@ nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %
 
 # AR MODELS 
 
-## AR: Basic Model
+## AR Function Prep
 
-```{r AR basic}
-
-# basic_AR_input HAS to be a MATRIX. 
-# we take in GDPGrowth_ts and convert it to a matrix. 
-
-basic_AR_output <- AR_predict_all(as.matrix(GDPGrowth_ts), example_fhorizon, covid_dummy)
-
-```
-
-## AR: Revised Model
-
-```{r Advanced AR model, warning = FALSE}
-
-perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
-
-advanced_AR_input = adv_ar_input(RGDP_Data, perc_change_df, example_startq, example_endq)
-revised_AR_output <- AR_predict_all(advanced_AR_input, example_fhorizon, covid_dummy)
-
-```
-
-## AR: DM Test
-
-```{r AR dm test, warning = FALSE}
+```{r AR prep}
 
 GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
 GDPGrowth_ts <- GDP_prep$GDPGrowth_ts
@@ -124,6 +102,45 @@ covid_dummy_ts <- ts(covid_dummy,
                      start = c(start_y, start_q), 
                      end = c(end_y, end_q), 
                      frequency = 4)
+
+```
+
+## AR: Basic Model
+
+```{r AR basic}
+
+# basic_AR_input HAS to be a MATRIX. 
+# we take in GDPGrowth_ts and convert it to a matrix. 
+
+basic_AR_output <- AR_predict_all(as.matrix(GDPGrowth_ts), example_fhorizon, covid_dummy)
+
+```
+
+## AR: Revised Model
+
+```{r Advanced AR model, warning = FALSE}
+
+perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
+
+advanced_AR_input = adv_ar_input(RGDP_Data, perc_change_df, example_startq, example_endq)
+revised_AR_output <- AR_predict_all(advanced_AR_input, example_fhorizon, covid_dummy)
+
+```
+
+## AR: DM Test
+
+```{r AR dm test, warning = FALSE}
+
+start_rownum = which(grepl(example_startyq, check$Time))
+end_rownum = which(grepl(example_endyq, check$Time))
+
+row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
+
+real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
+perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
+
+pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
 
 pred2 = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
 
