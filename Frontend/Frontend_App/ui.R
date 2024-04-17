@@ -153,15 +153,15 @@ navbarPage(
                                DT::dataTableOutput("table6"),
                                #headerPanel(""), # adds space btwn text and inputs
                                #headerPanel(""), # adds space btwn text and inputs
-                               textOutput("outlook_indicators"), 
+                               #textOutput("outlook_indicators"), 
                                HTML("<br>"), 
-                               textOutput("poor_outlook"),
+                               #textOutput("poor_outlook"),
                                HTML("<br>"), 
                                #headerPanel(""), # adds space btwn text and inputs
-                               textOutput("abnormal_high_indicators"),
-                               textOutput("abnormal_med_indicators"),
+                               #textOutput("abnormal_high_indicators"),
+                               #textOutput("abnormal_med_indicators"),
                                HTML("<br>"), 
-                               textOutput("abnormal_message")
+                               #textOutput("abnormal_message")
                                )
                              )
                            )
