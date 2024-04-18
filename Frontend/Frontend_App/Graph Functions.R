@@ -1,30 +1,3 @@
-#covid dummy fn
-
-
-covid_dummy_fn <- function(example_startyq, example_endyq){
-  
-  covid = c("2020 Q2", "2020 Q3")
-  covid_start = as.yearqtr(covid[1])
-  covid_end = as.yearqtr(covid[2])
-  covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
-  
-  
-  # Timeframe cannot start from during covid or after
-  # Dummy if timeframe ends on 2020 Q2, start of covid
-  if (example_startyq <= covid_start & example_endyq == covid_start){
-    index = (covid_start - example_startyq) * 4 + 1
-    covid_dummy[index] = -1
-  }
-  
-  # Dummy if timeframe includes all of covid
-  if (example_startyq <= covid_start & example_endyq >= covid_end){
-    index = (covid_start - example_startyq) * 4 + 1
-    covid_dummy[index] = -1
-    covid_dummy[index + 1] = 1
-  }
-  return(covid_dummy)
-}
-
 
 #Graph fn
 actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, h){
@@ -63,7 +36,9 @@ actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, exa
     select(Time, growth_rate) %>%
     mutate(category = 3) 
   
-  training_t <- bind_rows(training, joining_value) 
+  #training_t <- bind_rows(training, joining_value) 
+  
+  training_p <- bind_rows(training, joining_value)
   
   original_test_values <- full_GDP_growth %>%
     filter(Time > example_endyq) %>% 
@@ -71,12 +46,11 @@ actual_values_graph <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, exa
     head(h) %>%
     mutate(category = 1) 
   
-  original_data <- bind_rows(training_t, original_test_values)
+  original_data <- bind_rows(training_p, original_test_values)
   
   original_data <- original_data %>%
     filter(Time <= as.yearqtr("2023 Q4"))
   
-  training_p <- bind_rows(training, joining_value)
   
   return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
   #original data returns true value graph, training_p returns values of training data before prediction values
@@ -118,8 +92,8 @@ actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_gro
     filter(Time == example_endyq) %>% 
     select(Time, growth_rate) %>%
     mutate(category = 3) 
-  
-  training_t <- bind_rows(training, joining_value) 
+
+  training_p <- bind_rows(training, joining_value)
   
   original_test_values <- full_GDP_growth %>%
     filter(Time >= window_start) %>% 
@@ -127,12 +101,10 @@ actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_gro
     head(window_length) %>%
     mutate(category = 1) 
   
-  original_data <- bind_rows(training_t, original_test_values)
+  original_data <- bind_rows(training_p, original_test_values)
   
   original_data <- original_data %>%
     filter(Time <= as.yearqtr("2023 Q4"))
-  
-  training_p <- bind_rows(training, joining_value)
   
   return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
   #original data returns true value graph, training_p returns values of training data before prediction values
@@ -188,8 +160,6 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth,
     select(Time, growth_rate) %>%
     mutate(category = 3) 
   
-  training_t <- bind_rows(training, joining_value) 
-  
   original_test_values <- full_GDP_growth %>%
     filter(Time > example_endyq) %>% 
     select(Time, growth_rate) %>%
@@ -198,14 +168,15 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth,
   
   #input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) %>%
     #mutate(category = 2)
-  
-  original_data <- bind_rows(training_t, original_test_values)
+  training_p <- bind_rows(training, joining_value)
+    
+  original_data <- bind_rows(training_p, original_test_values)
   #original_data <- bind_rows(original_data, input_data_df)
   
   original_data <- original_data %>%
     filter(Time <= as.yearqtr("2023 Q4"))
   
-  training_p <- bind_rows(training, joining_value)
+
   
   return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
   #original data returns true value graph, training_p returns values of training data before prediction values
