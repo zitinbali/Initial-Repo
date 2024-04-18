@@ -289,7 +289,7 @@ X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
 colnames(X_comb_df) <- ADL_variables
 
 ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables, 
-                 example_startq, example_endq, 1, covid_dummy)
+                 example_startq, example_endq, 4, covid_dummy)
 
 ```
 
