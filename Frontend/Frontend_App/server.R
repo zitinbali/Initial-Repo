@@ -2377,8 +2377,13 @@ function(input, output, session) {
     
     real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
     perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
+    
+    #rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, real_values, 
+    #example_startyq, example_endyq, baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
+    
+    
     pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, 
-                                      real_values, example_startyq, example_endyq, 1, 
+                                      real_values, example_startyq, end, 1, 
                                       baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
     
     ## generating values for prediction graph
@@ -2392,8 +2397,9 @@ function(input, output, session) {
       rename("growth_rate" = "new_growth_rate") %>% 
       mutate(category = 2) 
     #actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length){
-    predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, 
-                                                        example_endyq, window_start, window_length)$training_p, predicted_test_values)
+    predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, 
+                                                        full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
+    
     
     # fanplot
     # extracting time column for predictions
@@ -2410,12 +2416,14 @@ function(input, output, session) {
     
     actual_values = actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, 
                                                 example_endyq, window_start, window_length)
+    
+    
     joining_value = actual_values$joining_value
     
     rmsfe_df = pred_df$rmse
     
     rmsfe_data <- cbind(time_data, fanplot_rmsfe_rolling(rmsfe_df, joining_value, predictions, window_length)) 
-
+    #rmsfe_data <- cbind(time_data, rmsfe_test)
     
     fanplot_data <- rbind(data, rmsfe_data) %>%
       filter(Time >= example_endyq) %>%
@@ -2465,7 +2473,6 @@ function(input, output, session) {
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
-        filter(row_number() <= n()-1) %>% 
         datatable() %>% 
         formatRound(columns=c('Predictions', 'RMSFE'), digits=3)
       
