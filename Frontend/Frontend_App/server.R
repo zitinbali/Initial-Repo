@@ -1615,7 +1615,7 @@ function(input, output, session) {
     
     output$outlook_indicators <- renderText({
       
-      indicators <- if(is.null(text$outlook_indicators)){
+      indicators <- if(is.null(pred_df$outlook_indicators)){
         "None"
       } else {
         paste(pred_df$outlook_indicators, collapse = ", ")
