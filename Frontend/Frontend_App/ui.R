@@ -131,7 +131,7 @@ navbarPage(
                                         fileInput("excel_data", "Upload a .xlsx file following the sample format.",
                                                   multiple = FALSE,
                                                   accept = c(".xlsx", ".xls")),
-                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Feel free to refer to the sample file as necessary"),
+                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates."),
                                         actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
                                         plotOutput("model5"),
@@ -150,19 +150,20 @@ navbarPage(
                                         headerPanel(""),
                                actionButton("button6", "Show Prediction",
                                             style="background-color: #79818c"),
-                               #plotOutput("model6"),
+                               plotOutput("model6"),
                                DT::dataTableOutput("table6"),
+                               HTML("<br>"),
                                #headerPanel(""), # adds space btwn text and inputs
                                #headerPanel(""), # adds space btwn text and inputs
-                               #textOutput("outlook_indicators"), 
+                               textOutput("outlook_indicators"), 
                                HTML("<br>"), 
-                               #textOutput("poor_outlook"),
+                               textOutput("poor_outlook"),
                                HTML("<br>"), 
                                #headerPanel(""), # adds space btwn text and inputs
-                               #textOutput("abnormal_high_indicators"),
-                               #textOutput("abnormal_med_indicators"),
+                               textOutput("abnormal_high_indicators"),
+                               textOutput("abnormal_med_indicators"),
                                HTML("<br>"), 
-                               #textOutput("abnormal_message")
+                               textOutput("abnormal_message")
                                )
                              )
                            )
@@ -170,7 +171,7 @@ navbarPage(
                   tabPanel("Rolling Test Window", 
                            icon = icon("plus"),
                            headerPanel(" "),
-                           helpText("Ensure the end of your test window is after the end of training window"),
+                           helpText("You can choose any value from the drop down as the end of the test window. Ensure the end of your test window is after the end of training window."),
                            uiOutput("rolling_input"),
                            wellPanel(
                              style = "background-color: #f8f9fa",

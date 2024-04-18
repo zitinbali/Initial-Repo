@@ -1616,7 +1616,7 @@ function(input, output, session) {
     
     output$outlook_indicators <- renderText({
       
-      indicators <- if(is.null(text$outlook_indicators)){
+      indicators <- if(is.null(pred_df$outlook_indicators)){
         "None"
       } else {
         paste(pred_df$outlook_indicators, collapse = ", ")
@@ -2187,9 +2187,8 @@ function(input, output, session) {
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
-        filter(row_number() <= n()-1) %>% 
         datatable() %>% 
-        formatRound(columns=c('Predictions', 'RMSFE'), digits=3)
+        formatRound(columns=c('Predictions', 'RMSFE'), digits=3) 
       
       predictions
     })
