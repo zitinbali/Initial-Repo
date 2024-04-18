@@ -66,7 +66,35 @@ nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+covid_dummy_ts <- ts(covid_dummy,
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
 
+baa_aaa_ts <- ts(baa_aaa$Spread, 
+                 start = c(start_y, start_q), 
+                 end = c(end_y, end_q), 
+                 frequency = 4)
+
+tspread_ts <- ts(tspread$Spread, 
+                 start = c(start_y, start_q), 
+                 end = c(end_y, end_q), 
+                 frequency = 4)
+
+hstarts_ts <- ts(hstarts$Spread, 
+                      start = c(start_y, start_q), 
+                      end = c(end_y, end_q), 
+                      frequency = 4)
+
+consent_ts <- ts(consent$Spread, 
+                 start = c(start_y, start_q), 
+                 end = c(end_y, end_q), 
+                 frequency = 4)
+
+nasdaq_ts <- ts(nasdaq$Spread, 
+                 start = c(start_y, start_q), 
+                 end = c(end_y, end_q), 
+                 frequency = 4)
 
 
 ```
