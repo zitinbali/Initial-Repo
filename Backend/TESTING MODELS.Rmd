@@ -297,7 +297,7 @@ ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables,
 
 ```{r combined adl dm test}
 
-rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, real_values, example_startyq, example_endyq)
 rw_comb$formula
 
 pred2 = rw_comb$pred
