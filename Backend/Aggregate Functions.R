@@ -179,9 +179,7 @@ GRtest <- function(RGDP_Data, perc_change_df, perc_change_df_spliced, start_yq, 
   rw_hstarts = rolling_window_adl(perc_change_df_spliced, hstarts_ts, window_start_p, dum, real_values, start_yq, end_yq)
   rw_consent = rolling_window_adl(perc_change_df_spliced, consent_ts, window_start_p, dum, real_values, start_yq, end_yq)
   rw_nasdaq = rolling_window_adl(perc_change_df_spliced, nasdaq_ts, window_start_p, dum, real_values, start_yq, end_yq)
-  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start_p, dum, real_values, start_yq, end_yq, h = 1, 
-                                    baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
-  
+  rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start_p, dum, real_values, start_yq, end_yq, h = 1)
   X=cbind(rw_revised_AR$pred, rw_baa$pred, rw_tsp$pred, rw_hstarts$pred,
           rw_consent$pred, rw_nasdaq$pred, rw_comb$pred)
   
