@@ -2274,7 +2274,7 @@ function(input, output, session) {
       
       real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
       
-      pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, real_values, example_startyq, end, 1)
+      pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, real_values, example_startyq, end, window_length)
       
       ### full gdp data
       
@@ -2452,7 +2452,7 @@ function(input, output, session) {
       
       X_df = rename_variable(input$select_rolling_ADL)
       
-      pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, real_values, example_startyq, end, h)
+      pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, real_values, example_startyq, end, window_length)
       #print(pred_df$pred)
       
       predictions <- all_GDP_ts_df %>% 
