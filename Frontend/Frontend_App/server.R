@@ -2246,42 +2246,6 @@ function(input, output, session) {
                          end = c(end_y, end_q), 
                          frequency = 4)
     
-    # define all the ADL indicators 
-    baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
-    
-    baa_aaa_ts <- ts(baa_aaa$Spread, 
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q), 
-                     frequency = 4)
-    
-    tspread <- ADL_splice(tspread, example_startyq, example_endyq)
-    
-    tspread_ts <- ts(tspread$Spread, 
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q), 
-                     frequency = 4)
-    
-    hstarts <- ADL_splice(hstarts, example_startyq, example_endyq)
-    
-    hstarts_ts <- ts(hstarts$Spread, 
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q), 
-                     frequency = 4)
-    
-    consent <- ADL_splice(consent, example_startyq, example_endyq)
-    
-    consent_ts <- ts(consent$Spread, 
-                     start = c(start_y, start_q), 
-                     end = c(end_y, end_q), 
-                     frequency = 4)
-    
-    nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
-    
-    nasdaq_ts <- ts(nasdaq$Spread, 
-                    start = c(start_y, start_q), 
-                    end = c(end_y, end_q), 
-                    frequency = 4)
-    
     # pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
     
     edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
@@ -2431,7 +2395,7 @@ function(input, output, session) {
     
     # recession blocks
     recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
-                    2001, 2007:2008)
+                    2001:2001, 2007:2008)
     
     rectangles <- data.frame(
       xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
