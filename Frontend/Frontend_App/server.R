@@ -1841,7 +1841,7 @@ function(input, output, session) {
     output$table7 <- DT::renderDataTable({
       
       predictions <- all_GDP_ts_df %>% 
-        filter(Time > example_endyq) %>%
+        filter(Time >= example_endyq) %>%
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
@@ -2170,7 +2170,7 @@ function(input, output, session) {
     output$table8 <- DT::renderDataTable({
       
       predictions <- all_GDP_ts_df %>% 
-        filter(Time > window_start) %>%
+        filter(Time >= example_endyq) %>%
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
@@ -2419,7 +2419,7 @@ function(input, output, session) {
     output$table9 <- DT::renderDataTable({
       
       predictions <- all_GDP_ts_df %>% 
-        filter(Time > window_start) %>% 
+        filter(Time >= example_endyq) %>% 
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
