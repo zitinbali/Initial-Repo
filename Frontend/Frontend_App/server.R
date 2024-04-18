@@ -241,6 +241,9 @@ function(input, output, session) {
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
     
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
+    
+    
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>%
       filter(Time > example_endyq) %>%
@@ -432,7 +435,7 @@ function(input, output, session) {
     row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + h
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
-    
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
     
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
@@ -631,6 +634,7 @@ function(input, output, session) {
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
     
     full_GDP_growth <- rbind(full_GDP_growth, edge)
+    
     
     ## generating values for prediction graph
     predictions <- GDPGrowth_ts_df_sliced %>% 
@@ -853,6 +857,8 @@ function(input, output, session) {
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
     
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
+    
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
       filter(Time > example_endyq) %>% 
@@ -1072,6 +1078,8 @@ function(input, output, session) {
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
     
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
+    
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
       filter(Time > example_endyq) %>% 
@@ -1263,6 +1271,8 @@ function(input, output, session) {
     row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + h
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
+    
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
     
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
@@ -1520,7 +1530,7 @@ function(input, output, session) {
     row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + example_fhorizon
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
-    
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
     
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
@@ -1765,6 +1775,7 @@ function(input, output, session) {
     row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
     
     ## generating values for prediction graph
     
@@ -2043,6 +2054,7 @@ function(input, output, session) {
     row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
     
     # define all the ADL indicators 
     baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
@@ -2285,6 +2297,7 @@ function(input, output, session) {
     row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
     
     full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
+    full_GDP_growth <- rbind(full_GDP_growth, edge)
     
     # define all the ADL indicators 
     baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
