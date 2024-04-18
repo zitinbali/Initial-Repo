@@ -40,14 +40,18 @@ ADL_variables <- c("baa_aaa_ts", "tspread_ts", "hstarts_ts", "consent_ts",
 
 # defining ADL predictors
 
+
+
 baa_aaa <- read_excel("Data/FRED BAA-AAA Data.xls", 
                       col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+
 tspread <- read_excel("Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
+
 
 hstarts <- read_excel("Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
@@ -1371,7 +1375,7 @@ function(input, output, session) {
     start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
     end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
     end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
-    
+
     
     ###################
     # NEW CONTENT HERE
@@ -1430,6 +1434,7 @@ function(input, output, session) {
     
     #start_rownum_window = which(grepl(example_startq, GDPGrowth_ts_df_sliced$Time))
     #window_start = as.yearqtr(GDPGrowth_ts_df_sliced$Time[start_rownum_window + 60]) #test window starts 15 years after start of slider
+
     
     example_fhorizon = as.numeric(input$h)
     
@@ -1438,6 +1443,7 @@ function(input, output, session) {
     
     start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
     end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + example_fhorizon]
+
     
     # define all the ADL indicators
     baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
@@ -1467,6 +1473,7 @@ function(input, output, session) {
                      start = c(start_y, start_q), 
                      end = c(end_y, end_q), 
                      frequency = 4)
+
     
     nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
     
@@ -1491,18 +1498,17 @@ function(input, output, session) {
     real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
     perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
     
+    
     ###########
     # ENDS HERE
     ###########
     
     
+    # all inputs are present
     pred_df = aggregate_output(GDPGrowth_ts, X_comb_df, RGDP_Data, 
                                perc_change_df, perc_change_df_spliced, real_values,
                                ADL_variables, example_startq, example_endq, example_fhorizon, covid_dummy, 
                                baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
-    
-    #print(pred_df)
-    #print(pred_df$predictions)
     
     
     ### full gdp data
@@ -1746,6 +1752,7 @@ function(input, output, session) {
     
     pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, 
                                  real_values, example_startyq, end, window_length)
+
     
     ### full gdp data
     
@@ -1769,6 +1776,8 @@ function(input, output, session) {
       select(Time, new_growth_rate) %>% 
       rename("growth_rate" = "new_growth_rate") %>% 
       mutate(category = 2) 
+
+    
     #(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length)
     predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, 
                                                         full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
@@ -1786,9 +1795,10 @@ function(input, output, session) {
       filter(Time < example_endyq) %>%
       select(Time) %>% 
       mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
-    
+
     actual_values = actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, 
                                                 example_endyq, window_start, window_length)
+    
     
     joining_value = actual_values$joining_value
     
@@ -1800,6 +1810,7 @@ function(input, output, session) {
     fanplot_data <- rbind(data, rmsfe_data) %>%
       filter(Time >= example_endyq) %>%
       head(window_length+1)
+
     
     # recession blocks
     recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
@@ -1813,6 +1824,7 @@ function(input, output, session) {
     )
     recession_block = rectangles %>%
       filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
+
     
     output$model7 <- renderPlot({
       
@@ -2238,6 +2250,42 @@ function(input, output, session) {
                          end = c(end_y, end_q), 
                          frequency = 4)
     
+    # define all the ADL indicators 
+    baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+    
+    baa_aaa_ts <- ts(baa_aaa$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+    
+    tspread_ts <- ts(tspread$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    hstarts <- ADL_splice(hstarts, example_startyq, example_endyq)
+    
+    hstarts_ts <- ts(hstarts$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    consent <- ADL_splice(consent, example_startyq, example_endyq)
+    
+    consent_ts <- ts(consent$Spread, 
+                     start = c(start_y, start_q), 
+                     end = c(end_y, end_q), 
+                     frequency = 4)
+    
+    nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
+    
+    nasdaq_ts <- ts(nasdaq$Spread, 
+                    start = c(start_y, start_q), 
+                    end = c(end_y, end_q), 
+                    frequency = 4)
+    
     # pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, window_start, covid_dummy, real_values, example_startyq, example_endyq)
     
     edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
@@ -2313,11 +2361,10 @@ function(input, output, session) {
                     start = c(start_y, start_q), 
                     end = c(end_y, end_q), 
                     frequency = 4)
-    print("A")
-    
+
+    print("PLEASE GOD")
     X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts) 
     # set colnames 
-    print("b")
     colnames(X_comb_df) <- ADL_variables
     
     start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
@@ -2335,9 +2382,9 @@ function(input, output, session) {
     
     real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
     perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
-    print("c")
-    pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, real_values, example_startyq, example_endyq)
-    
+    pred_df = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, 
+                                      real_values, example_startyq, example_endyq, 1, 
+                                      baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
     
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
