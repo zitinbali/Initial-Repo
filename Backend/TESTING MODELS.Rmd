@@ -4,12 +4,13 @@
 source("inputs.R")
 #source("GDP Cleaning.R")
 source("GDP Cleaning Functions.R")
-source("AR_Model_Functions.R")
+source("AR Model Functions.R")
 #source("ADL Data.R")
 source("ADL Data Functions.R")
 source("ADL Functions.R")
-source("ADL_Rolling.R")
-source("DM_test.R")
+source("ADL Rolling.R")
+source("AR Rolling.R")
+source("DM test.R")
 source("Combined ADL Functions.R")
 source("Aggregate Functions.R")
 
@@ -297,7 +298,7 @@ ADL_comb_predict_all(GDPGrowth_ts, X_comb_df, ADL_variables,
 
 ```{r combined adl dm test}
 
-rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, real_values, example_startyq, example_endyq)
+rw_comb = rolling_window_comb_adl(perc_change_df_spliced, X_comb_df, ADL_variables, window_start, covid_dummy, real_values, example_startyq, example_endyq, baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts)
 rw_comb$formula
 
 pred2 = rw_comb$pred

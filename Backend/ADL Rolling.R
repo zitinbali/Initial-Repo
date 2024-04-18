@@ -76,7 +76,7 @@ rolling_window_comb_adl = function(Y_df, X_df, ADL_variables, window_start, dumm
   
   test_length = (end - window_start) * 4 + 1
   
-  save.pred = matrix(NA, test_length, 1)
+  save.pred = rep(NA, test_length)
   rmse = rep(NA, test_length)
   
   
@@ -122,29 +122,23 @@ rolling_window_comb_adl = function(Y_df, X_df, ADL_variables, window_start, dumm
     
     formula = gsub("Y_df", "GDPGrowth_ts", selection)
     
-    print("WORKING?")
-    print(formula)
     model_temp = dynlm(as.formula(formula), start = start + (test_length - i) * 1/4, end = window_start - 1/4)
     
-    print(model_temp)
     
     winfit = ADL_comb_predict(GDPGrowth_ts, X.window, ADL_variables, 1, dummy.window, model_temp$coefficients)
+  
     
-    print(winfit)
-    
-    save.pred[(1+test_length-i),] = winfit
-    
-    print("IS THIS RUNNING")
+    save.pred[1+test_length-i] = winfit
+  
     
     rmse[1+test_length-i] = sqrt(mean(model_temp$residuals ^ 2))
     
     window_start = window_start + 1/4
-    print("WORKING? 2")
   }
   
   # real_ts = ts(real, start, end, freq = 4)
   # plot.ts(real_ts, main = "Real values against predicted values", cex.axis = 1.8)
-  lines(ts(save.pred, temp, end, freq = 4),col="red") 
+  # lines(ts(save.pred, temp, end, freq = 4),col="red") 
   
   mae = mean(abs(tail(real,test_length)-save.pred))
   

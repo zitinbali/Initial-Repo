@@ -19,13 +19,14 @@ library(sandwich)
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
 source("../../Backend/GDP Cleaning Functions.R")
-source("../../Backend/AR_Model_Functions.R")
+source("../../Backend/AR Model Functions.R")
 source("../../Backend/ADL Data Functions.R")
 source("../../Backend/ADL Functions.R")
-source("../../Backend/ADL_Rolling.R")
+source("../../Backend/ADL Rolling.R")
 source("../../Backend/Combined ADL Functions.R")
 source("../../Backend/Aggregate Functions.R")
-source("../../Backend/DM_test.R")
+source("../../Backend/AR Rolling.R")
+source("../../Backend/DM test.R")
 source("Graph Functions.R")
 
 check <- basic_cleaning(RGDP_Data)$check
@@ -129,7 +130,7 @@ function(input, output, session) {
   output$rolling_input <- renderUI({
     
     selectInput("rolling_ADL",
-                "Select Start of Test Window: ",
+                "Select End of Test Window: ",
                 choices = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80:length(RGDP_Data$DATE)-1],
                 selected = RGDP_Data$DATE[which(input$year[1]==RGDP_Data$DATE)+80]
     )
@@ -2195,10 +2196,6 @@ function(input, output, session) {
     
   })
   
-  ###############################
-  ## ROLLING WINDOW COMBINED ADL
-  ###############################
-  
   ## MODEL 9 PLOT
   
   ###############################
@@ -2362,7 +2359,6 @@ function(input, output, session) {
                     end = c(end_y, end_q), 
                     frequency = 4)
 
-    print("PLEASE GOD")
     X_comb_df <- ts.union(baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts) 
     # set colnames 
     colnames(X_comb_df) <- ADL_variables
@@ -2445,7 +2441,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-        geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+        geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
         geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
