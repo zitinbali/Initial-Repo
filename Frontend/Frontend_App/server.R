@@ -18,14 +18,14 @@ library(sandwich)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
-source("../../NEW Backend/GDP Cleaning Functions.R")
-source("../../NEW Backend/AR_Model_Functions.R")
-source("../../NEW Backend/ADL Data Functions.R")
-source("../../NEW Backend/ADL Functions.R")
-source("../../NEW Backend/ADL_Rolling.R")
-source("../../NEW Backend/Combined ADL Functions.R")
-source("../../NEW Backend/Aggregate Functions.R")
-source("../../NEW Backend/DM_test.R")
+source("../../Backend/GDP Cleaning Functions.R")
+source("../../Backend/AR_Model_Functions.R")
+source("../../Backend/ADL Data Functions.R")
+source("../../Backend/ADL Functions.R")
+source("../../Backend/ADL_Rolling.R")
+source("../../Backend/Combined ADL Functions.R")
+source("../../Backend/Aggregate Functions.R")
+source("../../Backend/DM_test.R")
 source("Graph Functions.R")
 
 check <- basic_cleaning(RGDP_Data)$check
