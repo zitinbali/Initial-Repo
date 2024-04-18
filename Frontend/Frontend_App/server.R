@@ -2147,7 +2147,7 @@ function(input, output, session) {
       end_rownum = which(grepl(example_endyq, check$Time))
       
       row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
-      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
+      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 
       
       real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
       perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
@@ -2281,6 +2281,7 @@ function(input, output, session) {
       
       start_rownum = which(grepl(example_startyq, check$Time))
       end_rownum = which(grepl(example_endyq, check$Time)) 
+      
       
       row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
       row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
@@ -2573,8 +2574,6 @@ function(input, output, session) {
       end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
       end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
       
-      #example_endyq = as.yearqtr("2005 Q1")
-      
       ###################
       # NEW CONTENT HERE
       ###################
@@ -2586,7 +2585,7 @@ function(input, output, session) {
       sliced_perc_change <- GDP_prep$sliced_perc_change
       perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
       
-      #h = as.numeric(input$h)
+      h = 1
       
       covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
       
@@ -2628,21 +2627,64 @@ function(input, output, session) {
         rename("Time" = "time") %>%
         rename("growth_rate" = "value")
       
-      GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
-      
       window_end_str = input$rolling_ADL
       end = as.yearqtr(gsub(":", " ", window_end_str))
       #end = as.yearqtr("2020 Q1")
       
-      window_start = example_endyq
-      
-      #window_start_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
-      #window_start = GDPGrowth_ts_df_sliced$Time[window_start_rownum+1] #how do i add one quarter to this bro
+      #window_start = example_endyq
+      window_start_index = which(grepl(example_endyq, check$Time))
+      window_start = as.yearqtr(check$Time[window_start_index+1])
       
       window_length = (end - window_start) * 4 + 1
       
+      ### full gdp data
+      start_rownum = which(grepl(example_startyq, check$Time))
+      end_rownum = which(grepl(example_endyq, check$Time)) 
+      
+      row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
+      
+      full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
+      
+      # define all the ADL indicators 
+      baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+      
+      baa_aaa_ts <- ts(baa_aaa$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      tspread <- ADL_splice(tspread, example_startyq, example_endyq)
+      
+      tspread_ts <- ts(tspread$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      hstarts <- ADL_splice(hstarts, example_startyq, example_endyq)
+      
+      hstarts_ts <- ts(hstarts$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      consent <- ADL_splice(consent, example_startyq, example_endyq)
+      
+      consent_ts <- ts(consent$Spread, 
+                       start = c(start_y, start_q), 
+                       end = c(end_y, end_q), 
+                       frequency = 4)
+      
+      nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
+      
+      nasdaq_ts <- ts(nasdaq$Spread, 
+                      start = c(start_y, start_q), 
+                      end = c(end_y, end_q), 
+                      frequency = 4)
+      
       #X_df = baa_aaa_ts
-      X_df = rename_variable(input$select_rolling_ADL)
+      X_name = rename_variable(input$select_rolling_ADL)
+      X_df = get(X_name)
       
       start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
       end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
@@ -2650,50 +2692,58 @@ function(input, output, session) {
       start_plot = GDPGrowth_ts_df_sliced$Time[end_rownum - 10]
       end_plot = GDPGrowth_ts_df_sliced$Time[end_rownum + window_length]
       
+      # perc_change_df_spliced
+      #start_rownum = which(grepl(example_startyq, check$Time))
+      #end_rownum = which(grepl(example_endyq, check$Time))
+      
+      row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
+      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
+      
+      real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
+      perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
+      
       pred_df = rolling_window_adl(perc_change_df_spliced, X_df, window_start, covid_dummy, real_values, example_startyq, end)
       
       ## generating values for prediction graph
-      
       predictions <- all_GDP_ts_df %>% 
-        filter(Time > window_start) %>% 
+        filter(Time >= window_start) %>% 
         head(n = window_length) %>%
-        mutate(new_growth_rate = pred_df$pred) %>% 
-        head(n = window_length-1)
+        mutate(new_growth_rate = pred_df$pred)
       
       predicted_test_values <- predictions %>%
         select(Time, new_growth_rate) %>% 
         rename("growth_rate" = "new_growth_rate") %>% 
         mutate(category = 2) 
-      
-      predicted_data <- rbind(actual_values_graph(all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, window_length)$training_p, predicted_test_values)
+      #actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length){
+      predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, 
+                                                  example_endyq, window_start, window_length)$training_p, predicted_test_values)
       
       # fanplot
       # extracting time column for predictions
-      time_data <- all_GDP_ts_df %>%
-        filter(Time >= window_start) %>%
+      time_data <- full_GDP_growth %>%
+        filter(Time >= example_endyq) %>%
         select(Time) %>%
         head(window_length+1)
       
       #mutate bounds of actual unpredicted data to be 0
       data <- GDPGrowth_ts_df_sliced %>%
-        filter(Time < window_start) %>%
+        filter(Time < example_endyq) %>%
         select(Time) %>% 
         mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
       
-      actual_values = actual_values_graph(all_GDP_data, GDPGrowth_ts, example_startyq, window_start, window_length)
+      actual_values = actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, 
+                                                  example_endyq, window_start, window_length)
       joining_value = actual_values$joining_value
-      original_data = actual_values$original_data %>%
-        filter(Time <= end)
       
       #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
       rmsfe_df = pred_df$rmse
       
-      rmsfe_data <- cbind(time_data, fanplot_rmsfe(rmsfe_df, joining_value, predictions, window_length)) 
+      rmsfe_data <- cbind(time_data, fanplot_rmsfe_rolling(rmsfe_df, joining_value, predictions, window_length)) 
       #rmsfe_data <- cbind(time_data, rmsfe_test)
       
       fanplot_data <- rbind(data, rmsfe_data) %>%
         filter(Time >= example_endyq) %>%
-        head(window_length)
+        head(window_length+1)
       
       # recession blocks
       recessions <- c(1961:1962, 1970, 1974:1975, 1980:1982, 1990:1991,
@@ -2712,7 +2762,7 @@ function(input, output, session) {
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
         geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
-        geom_line(data = original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
+        geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
         geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) + 
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+ 
