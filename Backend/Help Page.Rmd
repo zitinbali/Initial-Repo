@@ -1,4 +1,7 @@
+&nbsp;
+
 *This page provides information on how to use the app and interpret results. Scroll to the bottom for basic information regarding the model methodologies.* 
+
 
 ## <u> Using the App and Interpreting Results </u>
 
@@ -91,8 +94,8 @@ Additional Notes:
 * To determine a "poor outlook", the algorithm for the aggregate model flags any indicator that shows at least one negative growth rate for the selected forecast horizon. 
 
 * To determine anomalies, the algorithm highlights 3 different behaviours, leveraging concepts of the Median Average Deviation (MAD) and the median value:
-  + When any of the growth rates of an ADL indicator from the past 4 quarters is separated from the median value of the indicator by a value greater than 3 x MAD. This is indicated as a "high deviation". 
-  + When 2 of the growth rates of an ADL indicator from the past 4 quarters are separated from the median value of the indicator by a value greater than 2 x MAD. This is indicated as a "medium deviation". 
-  + When any of the growth rates of at least 2 ADL indicators from the past 4 quarters are separated from the median value of their individual indicator by a value greater than 2 x MAD. This is also indicated as a "medium deviation". 
+  + When any of the past 4 quarterly growth rates of an ADL indicator is separated from the median value of the indicator by a value greater than 3 x MAD. This is indicated as a "high deviation". 
+  + When 2 of the past 4 quarterly growth rates of an ADL indicator are separated from the median value of the indicator by a value greater than 2 x MAD. This is indicated as a "medium deviation". 
+  + When any of the growth rates from the past 4 quarters of at least 2 ADL indicators are separated from the median value of their individual indicator by a value greater than 2 x MAD. This is also indicated as a "medium deviation". 
 
 
