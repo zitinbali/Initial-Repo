@@ -234,15 +234,15 @@ fanplot_rmsfe <- function(rmsfe_df, joining_value, predictions, h) {
   return(predictions_rmsfe)
 }
 
-fanplot_rmsfe_rolling <- function(rmsfe_df, joining_value, predictions, h) {
-  predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,h+1), lower_bound_80 = rep(0,h+1), 
-                                  upper_bound_50 = rep(0,h+1), lower_bound_50 = rep(0,h+1))
+fanplot_rmsfe_rolling <- function(rmsfe_df, joining_value, predictions, window_length) {
+  predictions_rmsfe <- data.frame(upper_bound_80 = rep(0,window_length+1), lower_bound_80 = rep(0,window_length+1), 
+                                  upper_bound_50 = rep(0,window_length+1), lower_bound_50 = rep(0,window_length+1))
   predictions_rmsfe$upper_bound_80[1] = joining_value$growth_rate
   predictions_rmsfe$lower_bound_80[1] = joining_value$growth_rate
   predictions_rmsfe$upper_bound_50[1] = joining_value$growth_rate
   predictions_rmsfe$lower_bound_50[1] = joining_value$growth_rate
   
-  for(i in 2:(h+1)){
+  for(i in 2:(window_length+1)){
     rmsfe = rmsfe_df
     predictions_rmsfe$upper_bound_80[i] = predictions$new_growth_rate[i-1] + 1.28*rmsfe[i-1]
     predictions_rmsfe$lower_bound_80[i] = predictions$new_growth_rate[i-1] - 1.28*rmsfe[i-1]

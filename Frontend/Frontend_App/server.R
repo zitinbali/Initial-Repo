@@ -2274,7 +2274,8 @@ function(input, output, session) {
       
       real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
       
-      pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, real_values, example_startyq, end, window_length)
+      pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, 
+                                   real_values, example_startyq, end, window_length)
       
       ### full gdp data
       
@@ -2282,7 +2283,7 @@ function(input, output, session) {
       end_rownum = which(grepl(example_endyq, check$Time)) 
       
       row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
-      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + h
+      row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4 + window_length
       
       full_GDP_growth = data.frame(check[row_start_slice:row_last_slice, 1:2])
       
@@ -2297,8 +2298,9 @@ function(input, output, session) {
         select(Time, new_growth_rate) %>% 
         rename("growth_rate" = "new_growth_rate") %>% 
         mutate(category = 2) 
-      #all_GDP_data, GDPGrowth_ts, example_startyq, example_endyq, window_start, window_length) (all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length)
-      predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
+      #(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length)
+      predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, 
+                                                          full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
       
       
       # fanplot
@@ -2318,10 +2320,7 @@ function(input, output, session) {
                                                   example_endyq, window_start, window_length)
       
       joining_value = actual_values$joining_value
-      # original_data = actual_values$original_data %>%
-      #   filter(Time <= end)
-      
-      #rmsfe_test = fanplot_rmsfe(rmsfe_df_test, joining_value, predictions, h)
+    
       rmsfe_df = pred_df$rmse
       
       rmsfe_data <- cbind(time_data, fanplot_rmsfe_rolling(rmsfe_df, joining_value, predictions, window_length)) 
