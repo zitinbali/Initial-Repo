@@ -50,21 +50,31 @@ baa_aaa <- read_excel("../Data/FRED BAA-AAA Data.xls",
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+baa_aaa <- ADL_splice(baa_aaa, example_startyq, example_endyq)
+
 tspread <- read_excel("../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
+
+tspread <- ADL_splice(tspread, example_startyq, example_endyq)
 
 hstarts <- read_excel("../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+hstarts <- ADL_splice(hstarts, example_startyq, example_endyq)
+
 consent <- read_excel("../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+consent <- ADL_splice(consent, example_startyq, example_endyq)
+
 nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
+
+nasdaq <- ADL_splice(nasdaq, example_startyq, example_endyq)
 
 covid_dummy_ts <- ts(covid_dummy,
                      start = c(start_y, start_q), 
