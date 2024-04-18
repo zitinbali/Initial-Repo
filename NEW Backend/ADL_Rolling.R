@@ -71,14 +71,7 @@ rolling_window_adl = function(Y_df, X_df, window_start, dummy, real, start, end,
   
 }
 
-rolling_window_comb_adl = function(Y_df, X_df, ADL_variables, window_start, dummy, real, start, end, h = 1,
-                                   baa_aaa_ts, tspread_ts, hstarts_ts, consent_ts, nasdaq_ts){
-  
-  baa_aaa_ts = baa_aaa_ts
-  tspread_ts = tspread_ts
-  hstarts_ts = hstarts_ts
-  consent_ts = consent_ts
-  nasdaq_ts = nasdaq_ts
+rolling_window_comb_adl = function(Y_df, X_df, ADL_variables, window_start, dummy, real, start, end, h = 1){
   
   test_length = (end - window_start) * 4 + 1
   
