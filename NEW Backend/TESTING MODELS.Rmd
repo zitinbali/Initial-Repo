@@ -66,6 +66,9 @@ nasdaq <- read_excel("../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
+
+
+
 ```
 
 
