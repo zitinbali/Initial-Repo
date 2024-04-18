@@ -2186,9 +2186,8 @@ function(input, output, session) {
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
-        filter(row_number() <= n()-1) %>% 
         datatable() %>% 
-        formatRound(columns=c('Predictions', 'RMSFE'), digits=3)
+        formatRound(columns=c('Predictions', 'RMSFE'), digits=3) 
       
       predictions
     })

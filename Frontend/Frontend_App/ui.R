@@ -171,7 +171,7 @@ navbarPage(
                   tabPanel("Rolling Test Window", 
                            icon = icon("plus"),
                            headerPanel(" "),
-                           helpText("You can choose any value from the drop down as the start of the test window. Ensure the end of your test window is after the end of training window"),
+                           helpText("You can choose any value from the drop down as the end of the test window. Ensure the end of your test window is after the end of training window."),
                            uiOutput("rolling_input"),
                            wellPanel(
                              style = "background-color: #f8f9fa",
