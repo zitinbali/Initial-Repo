@@ -720,8 +720,9 @@ function(input, output, session) {
     output$table2a <- DT::renderDataTable({
       
       predictions <- GDPGrowth_ts_df_sliced %>% 
-        filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>%
-        tail(n=4) %>% 
+        #filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>%
+        #tail(n=4) %>% 
+        filter(Time >= as.yearqtr(timeframe[add_data$length+1])) %>%
         head(n=h) %>% 
         mutate(Date = as.character(Time), Predictions = pred_df$predictions, RMSFE = pred_df$rmsfe) %>%
         select(Date, Predictions, RMSFE) %>% 
