@@ -11,6 +11,7 @@ library(AICcmodavg)
 library(fresh)
 library(RColorBrewer)
 library(dynlm)
+library(plotly)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
@@ -69,7 +70,7 @@ navbarPage(
                                         actionButton("button1", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         headerPanel(""),
-                                        plotOutput("model1"),
+                                        plotlyOutput("model1"),
                                         textOutput("desc1"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table1"),

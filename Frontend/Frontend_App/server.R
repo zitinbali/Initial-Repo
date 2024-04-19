@@ -15,6 +15,7 @@ library(markdown)
 library(DT)
 library(lsei)
 library(sandwich)
+library(plotly)
 
 RGDP_Data <- read_excel("Data/RGDP Data.xlsx")
 
@@ -290,23 +291,22 @@ function(input, output, session) {
                     2001, 2007:2008)
     
     rectangles <- data.frame(
-      xmin = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
-      xmax = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
-      ymin = -Inf,
-      ymax = Inf
+      x_min = as.yearqtr(c("1961 Q1", "1970 Q1", "1974 Q1", "1980 Q1", "1990 Q1", "2001 Q1", "2007 Q1")),
+      x_max = as.yearqtr(c("1962 Q4", "1970 Q4", "1975 Q4", "1982 Q4", "1991 Q4", "2001 Q4", "2008 Q4")),
+      ymin = -100,
+      ymax = 100
     )
     
     recession_block = rectangles %>%
-      filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
+      filter(x_min >= (example_endyq - 2.5) & x_max <= (example_endyq + h / 4)) #replace w start and end of lineplot
     
-    output$model1 <- renderPlot({
-      
+    output$model1 <- renderPlotly({
+    
       model_1 <- ggplot() +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_80, ymax = upper_bound_80), fill = "#C1F4F7", alpha = 0.3) +
         geom_ribbon(data = fanplot_data, aes(x = Time, ymin = lower_bound_50, ymax = upper_bound_50), fill = "#6DDDFF", alpha = 0.3) +
-        geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction")) +
+        geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction"), alpha = 1) +
         geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value")) +
-        geom_rect(data = recession_block, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "#deafda", alpha = 0.3) +
         geom_hline(yintercept = 0, linetype = "dashed", color = "grey", lwd = 0.5) +
         scale_x_yearqtr(format = '%Y Q%q')+
         labs(x = "Time", y = "Growth Rate", title = "Quarterly Growth Rate of GDP",
@@ -318,7 +318,22 @@ function(input, output, session) {
               axis.line = element_line(color = "black"),
               plot.margin = margin(20,20,20,20))
       
-      print(model_1)
+      y_range = layer_scales(model_1)$y$range$range
+      
+      if (nrow(recession_block) > 0){
+        model_1 <- model_1 +
+          geom_rect(data = recession_block, aes(xmin = x_min, xmax = x_max), ymin = y_range[1] - 1, ymax = y_range[2] + 1, fill = "#deafda", alpha = 0.3)
+      }   
+      
+      model_1 <- model_1 +
+        geom_line(data = predicted_data, aes(x = Time, y = growth_rate, color = "Prediction",
+                                             text = paste0("Quarter: ", Time, "\n Prediction: ", round(growth_rate, 3)))) +
+        geom_line(data = actual_values$original_data, aes(x = Time, y = growth_rate, color = "True Value",
+                                                          text = paste0("Quarter: ", Time, "\n Actual: ", round(growth_rate, 3)))) +
+        ylim(y_range)
+
+      ggplotly(model_1, tooltip = c("text")) %>%
+        style(hoverinfo = "none", traces = c(6))
     })
     
     ## MODEL 1 TABLE
