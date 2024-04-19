@@ -44,26 +44,26 @@ ADL_variables <- c("baa_aaa_ts", "tspread_ts", "hstarts_ts", "consent_ts",
 
 
 
-baa_aaa <- read_excel("Data/FRED BAA-AAA Data.xls", 
+baa_aaa <- read_excel("../../Data/FRED BAA-AAA Data.xls", 
                       col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
 
-tspread <- read_excel("Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
+tspread <- read_excel("../../Data/FRED Treasury Spread.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
 
-hstarts <- read_excel("Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
+hstarts <- read_excel("../../Data/FRED Hstarts.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
-consent <- read_excel("Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
+consent <- read_excel("../../Data/FRED Consumer Sentiment.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
-nasdaq <- read_excel("Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
+nasdaq <- read_excel("../../Data/NASDAQCOM.xls", col_names = c("Date", "Spread")) %>% 
   mutate(Date = as.yearqtr(Date), 
          Spread = as.numeric(Spread))
 
