@@ -536,16 +536,16 @@ function(input, output, session) {
   #####################
   
   observeEvent(input$add_data, {
-    updateSliderInput(session, "year", value = c(input$year[1], "2023:Q4"))
+    updateSliderTextInput(session, "year", selected = c(input$year[1], "2023:Q4"))
     
     example_startq = gsub(":", " ", input$year[1])
-    example_endq = gsub(":", " ", input$year[2])
+    example_endq = gsub(":", " ", "2023:Q4")
     example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-    example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
+    example_endyq = as.yearqtr(gsub(":", " ", "2023:Q4"))
     start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
     start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-    end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-    end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
+    end_y = as.numeric(year(as.yearqtr(gsub(":", " ", "2023:Q4"))))
+    end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", "2023:Q4"))))
     
     GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
     GDPGrowth_ts <- GDP_prep$GDPGrowth_ts

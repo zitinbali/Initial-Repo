@@ -85,7 +85,7 @@ navbarPage(
                                         headerPanel(""),
                                         DT::dataTableOutput("table2"),
                                         headerPanel(""), # adds space btwn text and inputs
-                                        helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024. Ensure the end date of the slider is set to 2023 Q4."), 
+                                        helpText("This model can be updated with new values every year, input values to add to the current dataset to simulate model predictions for 2024."), 
                                         div(style="display:inline-block", textInput("data1" ,"2024 Q1:", value =0)),
                                         div(style="display:inline-block", textInput("data2" ,"2024 Q2:", value =0)),
                                         div(style="display:inline-block", textInput("data3" ,"2024 Q3:", value =0 )),
