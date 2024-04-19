@@ -718,11 +718,12 @@ function(input, output, session) {
       
       predictions <- GDPGrowth_ts_df_sliced %>% 
         filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>%
-        head(n = h) %>%
+        tail(n=4) %>% 
+        head(n=h) %>% 
         mutate(Date = as.character(Time), Predictions = pred_df$predictions, RMSFE = pred_df$rmsfe) %>%
         select(Date, Predictions, RMSFE) %>% 
         datatable() %>% 
-        formatRound(columns=c('Predictions', "RMSFE"), digits=3)
+        formatRound(columns = c('Predictions', "RMSFE"), digits = 3)
       
       predictions
     })
