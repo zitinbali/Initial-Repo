@@ -23,7 +23,6 @@ navbarPage(
     type="text/css", ".dataTables_filter {display: none;    }",
     HTML("
       .navbar-nav > li > a {
-        padding-top: 15px;
         padding-bottom: 15px;
       }
       .tabbable > .nav > li > a[data-value='AR Models'] {background-color: #9ba7a8;   color:white}
@@ -81,7 +80,7 @@ navbarPage(
                                         actionButton("button2", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         headerPanel(""),
-                                        plotOutput("model2"),
+                                        plotlyOutput("model2"),
                                         textOutput("desc2"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table2"),
@@ -92,7 +91,7 @@ navbarPage(
                                         div(style="display:inline-block", textInput("data3" ,"2024 Q3:")),
                                         div(style="display:inline-block", textInput("data4" ,"2024 Q4:")),
                                         actionButton("add_data", "Add Data and Make Prediction", style="background-color: #79818c"),
-                                        plotOutput("model2a"),
+                                        plotlyOutput("model2a"),
                                         DT::dataTableOutput("table2a")
                                )
                              )
@@ -113,7 +112,7 @@ navbarPage(
                                         actionButton("button3", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         headerPanel(""), # adds space btwn text and inputs
-                                        plotOutput("model3"),
+                                        plotlyOutput("model3"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table3"),
                                         textOutput("desc3")
@@ -126,7 +125,7 @@ navbarPage(
                                         headerPanel(""),
                                         helpText("Please note that this model takes up to 1 minute to run. The model works, promise."),
                                         headerPanel(""),
-                                        plotOutput("model4"),
+                                        plotlyOutput("model4"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table4"),
                                         textOutput("desc4")
@@ -141,7 +140,7 @@ navbarPage(
                                         actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
                                         headerPanel(""),
-                                        plotOutput("model5"),
+                                        plotlyOutput("model5"),
                                         DT::dataTableOutput("table5")
                                )
                              )
@@ -160,7 +159,7 @@ navbarPage(
                                headerPanel(""),
                                helpText("Please note that this model takes up to 3 minutes to run. The model works, promise."),
                                headerPanel(""),
-                               plotOutput("model6"),
+                               plotlyOutput("model6"),
                                headerPanel(""),
                                DT::dataTableOutput("table6"),
                                HTML("<br>"),
@@ -193,7 +192,7 @@ navbarPage(
                                         actionButton("button7", "Show Prediction",
                                               style="background-color: #79818c"),
                                         headerPanel(""),
-                                        plotOutput("model7"),
+                                        plotlyOutput("model7"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table7"), 
                                         htmlOutput("desc7")
@@ -206,7 +205,7 @@ navbarPage(
                                         actionButton("button8", "Show Prediction",
                                                      style="background-color: #79818c"),
                                         headerPanel(""),
-                                        plotOutput("model8"),
+                                        plotlyOutput("model8"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table8"),
                                         htmlOutput("desc8")
@@ -218,7 +217,7 @@ navbarPage(
                                         headerPanel(""),
                                         helpText("Please note that this model takes up to 1 minute to run. The model works, promise."),
                                         headerPanel(""),
-                                        plotOutput("model9"),
+                                        plotlyOutput("model9"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table9"),
                                         htmlOutput("desc9")
