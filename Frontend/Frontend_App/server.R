@@ -1800,19 +1800,18 @@ function(input, output, session) {
       mutate(category = 2) 
     #actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length){
     predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, 
-                                                        full_GDP_growth, example_startyq, end, window_start, window_length)$training_p, predicted_test_values)
-    
+                                                        full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
     
     # fanplot
     # extracting time column for predictions
     time_data <- full_GDP_growth %>%
-      filter(Time > example_endyq) %>%
+      filter(Time >= example_endyq) %>%
       select(Time) %>%
       head(window_length+1)
     
     #mutate bounds of actual unpredicted data to be 0
     data <- GDPGrowth_ts_df_sliced %>%
-      filter(Time <= example_endyq) %>%
+      filter(Time < example_endyq) %>%
       select(Time) %>% 
       mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
     
@@ -1844,6 +1843,7 @@ function(input, output, session) {
     )
     recession_block = rectangles %>%
       filter(xmin >= start_plot & xmax <= end_plot) #replace w start and end of lineplot
+    
     output$model7 <- renderPlot({
       
       model_7 <- ggplot() +
@@ -2061,19 +2061,18 @@ function(input, output, session) {
       mutate(category = 2) 
     #actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length){
     predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, 
-                                                        full_GDP_growth, example_startyq, end, window_start, window_length)$training_p, predicted_test_values)
-    
+                                                        full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
     
     # fanplot
     # extracting time column for predictions
     time_data <- full_GDP_growth %>%
-      filter(Time > example_endyq) %>%
+      filter(Time >= example_endyq) %>%
       select(Time) %>%
       head(window_length+1)
     
     #mutate bounds of actual unpredicted data to be 0
     data <- GDPGrowth_ts_df_sliced %>%
-      filter(Time <= example_endyq) %>%
+      filter(Time < example_endyq) %>%
       select(Time) %>% 
       mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
     
@@ -2332,19 +2331,18 @@ function(input, output, session) {
       mutate(category = 2) 
     #actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, window_start, window_length){
     predicted_data <- rbind(actual_values_graph_rolling(all_GDP_data, GDPGrowth_ts, 
-                                                        full_GDP_growth, example_startyq, end, window_start, window_length)$training_p, predicted_test_values)
-    
+                                                        full_GDP_growth, example_startyq, example_endyq, window_start, window_length)$training_p, predicted_test_values)
     
     # fanplot
     # extracting time column for predictions
     time_data <- full_GDP_growth %>%
-      filter(Time > example_endyq) %>%
+      filter(Time >= example_endyq) %>%
       select(Time) %>%
       head(window_length+1)
     
     #mutate bounds of actual unpredicted data to be 0
     data <- GDPGrowth_ts_df_sliced %>%
-      filter(Time <= example_endyq) %>%
+      filter(Time < example_endyq) %>%
       select(Time) %>% 
       mutate(upper_bound_80 = 0, lower_bound_80 = 0, upper_bound_50 = 0, lower_bound_50 = 0)
     

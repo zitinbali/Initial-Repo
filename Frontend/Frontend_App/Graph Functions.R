@@ -83,7 +83,7 @@ actual_values_graph_rolling <- function(all_GDP_data, GDPGrowth_ts, full_GDP_gro
   
   training <- GDPGrowth_ts_df_sliced %>%
     filter(Time > example_startyq) %>%
-    filter(Time < window_start) %>% 
+    filter(Time < example_endyq) %>% 
     tail(n = 9) %>%
     select(Time, growth_rate) %>%
     mutate(category = 1) 
