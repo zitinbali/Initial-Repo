@@ -128,10 +128,10 @@ navbarPage(
                                
                                tabPanel("Add A Predictor", 
                                         headerPanel(""), # adds space btwn text and inputs
-                                        fileInput("excel_data", "Upload a .xlsx file following the sample format.",
+                                        fileInput("excel_data", "Upload a .xlsx or .xls file following the format detailed below.",
                                                   multiple = FALSE,
                                                   accept = c(".xlsx", ".xls")),
-                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates."),
+                                        helpText("The data should only have two columns, with the left being quarters formatted as “YYYY QQ” and the left being the GDP growth rates. Please ensure that there are NO column names. Data values should start from the first row."),
                                         actionButton("button5", "Generate ADL Model",
                                                      style="background-color: #79818c"),
                                         plotOutput("model5"),
@@ -171,7 +171,7 @@ navbarPage(
                   tabPanel("Rolling Test Window", 
                            icon = icon("plus"),
                            headerPanel(" "),
-                           helpText("You can choose any value from the drop down as the end of the test window. Ensure the end of your test window is after the end of training window."),
+                           helpText("You can choose any value from the drop down as the end of the test window. Ensure that the end of your test window is after the end of the training window above. Please note that forecast horizon is not a relevant input for this feature, so the value does not matter. Please refer to the Help tab for more."),
                            uiOutput("rolling_input"),
                            wellPanel(
                              style = "background-color: #f8f9fa",
