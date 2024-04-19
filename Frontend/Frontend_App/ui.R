@@ -160,6 +160,7 @@ navbarPage(
                                helpText("Please note that this model takes up to 3 minutes to run. The model works, promise."),
                                headerPanel(""),
                                plotOutput("model6"),
+                               headerPanel(""),
                                DT::dataTableOutput("table6"),
                                HTML("<br>"),
                                #headerPanel(""), # adds space btwn text and inputs
