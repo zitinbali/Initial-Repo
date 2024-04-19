@@ -1787,7 +1787,6 @@ function(input, output, session) {
     
     pred_df = rolling_window_adv(RGDP_Data, perc_change_df, window_start, covid_dummy, 
                                  real_values, example_startyq, end)
-
     
     ## generating values for prediction graph
     predictions <- all_GDP_ts_df %>% 
@@ -1872,7 +1871,7 @@ function(input, output, session) {
     output$table7 <- DT::renderDataTable({
       
       predictions <- all_GDP_ts_df %>% 
-        filter(Time >= example_endyq) %>%
+        filter(Time > example_endyq) %>%
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
@@ -1884,91 +1883,12 @@ function(input, output, session) {
     
     ## MODEL 7 DM TEST
     output$desc7 <- renderText({
-      # example_startq = gsub(":", " ", input$year[1])
-      # example_endq = gsub(":", " ", input$year[2])
-      # example_startyq = as.yearqtr(gsub(":", " ", input$year[1]))
-      # example_endyq = as.yearqtr(gsub(":", " ", input$year[2]))
-      # start_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[1]))))
-      # start_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[1]))))
-      # end_y = as.numeric(year(as.yearqtr(gsub(":", " ", input$year[2]))))
-      # end_q = as.numeric(quarter(as.yearqtr(gsub(":", " ", input$year[2]))))
-      # 
-      # 
-      # ###################
-      # # NEW CONTENT HERE
-      # ###################
-      # 
-      # GDP_prep <- GDP_prep(RGDP_Data, example_startq, example_endq)
-      # GDPGrowth_ts <- GDP_prep$GDPGrowth_ts
-      # all_GDP_data <- GDP_prep$all_GDP_data
-      # spliced_GDP <- GDP_prep$spliced_GDP
-      # sliced_perc_change <- GDP_prep$sliced_perc_change
-      # perc_change_df <- basic_cleaning(RGDP_Data)$perc_change_df
-      # 
-      # #h = as.numeric(input$h)
-      # 
-      # covid_dummy = rep(0, (example_endyq - example_startyq) * 4 + 1)
-      # 
-      # # Dummy if timeframe ends on 2020 Q2, start of covid
-      # if (example_startyq <= covid_start & example_endyq == covid_start){
-      #   index = (covid_start - example_startyq) * 4 + 1
-      #   covid_dummy[index] = -1
-      # }
-      # 
-      # # Dummy if timeframe includes all of covid
-      # if (example_startyq <= covid_start & example_endyq >= covid_end){
-      #   index = (covid_start - example_startyq) * 4 + 1
-      #   covid_dummy[index] = -1
-      #   covid_dummy[index + 1] = 1
-      # }
-      # 
-      # 
-      # covid_dummy_ts <- ts(covid_dummy,
-      #                      start = c(start_y, start_q), 
-      #                      end = c(end_y, end_q), 
-      #                      frequency = 4)
-      # 
-      # 
-      # edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4"), growth_rate = c(0,0,0,0)) %>%
-      #   mutate(Time = as.yearqtr(Time)) %>%
-      #   mutate(growth_rate = as.numeric(growth_rate))
-      # 
-      # all_GDP_ts <- ts(all_GDP_data, 
-      #                  start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
-      #                  end = c(as.numeric(year(as.yearqtr("2023 Q4"))), as.numeric(quarter(as.yearqtr("2023 Q4")))),
-      #                  frequency = 4)
-      # 
-      # all_GDP_ts_df <- data.frame(time = as.yearqtr(time(all_GDP_ts)), value = as.numeric(all_GDP_ts)) %>% 
-      #   rename("Time" = "time") %>%
-      #   rename("growth_rate" = "value")
-      # 
-      # all_GDP_ts_df <- rbind(all_GDP_ts_df, edge)
-      # 
-      # GDPGrowth_ts_df_sliced <- data.frame(time = as.yearqtr(time(GDPGrowth_ts)), value = as.numeric(GDPGrowth_ts)) %>% 
-      #   rename("Time" = "time") %>%
-      #   rename("growth_rate" = "value")
-      # 
-      # 
-      # window_end_str = input$rolling_ADL
-      # end = as.yearqtr(gsub(":", " ", window_end_str))
-      # 
-      # window_start = example_endyq
-      # 
-      # start_rownum = which(grepl(example_startyq, GDPGrowth_ts_df_sliced$Time))
-      # end_rownum = which(grepl(example_endyq, GDPGrowth_ts_df_sliced$Time))
-      # 
-      # row_start_slice = (example_startyq - as.yearqtr("1947 Q2"))*4 + 1
-      # row_last_slice = nrow(check) - (as.yearqtr("2023 Q4") - example_endyq)*4
-      # 
-      # real_values = as.matrix(check[row_start_slice:row_last_slice, ncol(check)])
-      # perc_change_df_spliced = perc_change_df[start_rownum:end_rownum,]
-      # 
-      # pred1 = rolling_window(RGDP_Data, perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, example_endyq)$pred
-      # pred2 = rolling_window_adv(RGDP_Data, window_start, covid_dummy, real_values, example_startyq, end, h)$pred
-      # 
-      # pval = dm_test(real_values, pred1, pred2, example_startyq, end)
-      # 
-      # paste(pval)
+      pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, end)$pred
+      
+      if (window_length >= 4){
+        t_test = dm_test(tail(real_values, window_length), pred1, pred_df$pred, example_startyq, end)
+        paste0("The Diebold-Mariano test t-value is <b>", round(t_test,3), "</b>. A value above 1.96 indicates that the model performs better than the basic AR model at 5% significance level." )
+      }
     })
   })
   
@@ -2213,7 +2133,7 @@ function(input, output, session) {
     output$table8 <- DT::renderDataTable({
       
       predictions <- all_GDP_ts_df %>% 
-        filter(Time >= example_endyq) %>%
+        filter(Time > example_endyq) %>%
         head(n = window_length) %>%
         mutate(Date = as.character(Time), Predictions = pred_df$pred, RMSFE = pred_df$rmse) %>%
         select(Date, Predictions, RMSFE) %>% 
@@ -2221,6 +2141,17 @@ function(input, output, session) {
         formatRound(columns=c('Predictions', 'RMSFE'), digits=3) 
       
       predictions
+    })
+    
+    ## MODEL 8 DM TEST
+    output$desc8 <- renderText({
+      
+      pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, end)$pred
+
+      if (window_length >= 4){
+        t_test = dm_test(tail(real_values, window_length), pred1, pred_df$pred, example_startyq, end)
+        paste0("The Diebold-Mariano test t-value is <b>", round(t_test,3), "</b>. A value above 1.96 indicates that the model performs better than the basic AR model at 5% significance level." )
+      }
     })
     
   })
@@ -2481,6 +2412,17 @@ function(input, output, session) {
       
       predictions
       
+    })
+    
+    ## MODEL 9 DM TEST
+    output$desc9 <- renderText({
+      
+      pred1 = rolling_window(perc_change_df_spliced, window_start, covid_dummy, real_values, example_startyq, end)$pred
+      
+      if (window_length >= 4){
+        t_test = dm_test(tail(real_values, window_length), pred1, pred_df$pred, example_startyq, end)
+        paste0("The Diebold-Mariano test t-value is <b>", round(t_test,3), "</b>. A value above 1.96 indicates that the model performs better than the basic AR model at 5% significance level." )
+      }
     })
   })
  

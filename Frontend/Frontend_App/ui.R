@@ -181,7 +181,7 @@ navbarPage(
                   tabPanel("Rolling Test Window", 
                            icon = icon("plus"),
                            headerPanel(" "),
-                           helpText("You can choose any value from the drop down as the end of the test window. Ensure that the end of your test window is after the end of the training window above. Please note that forecast horizon is not a relevant input for this feature, so the value does not matter. Please refer to the Help tab for more."),
+                           helpText("You can choose any value from the drop down as the end of the test window. Ensure that the end of your test window is after the end of the training window above. Please note that forecast horizon is not a relevant input for this feature, so the value does not matter. The Diebold-Mariano test results will only displayed for test windows of 4 or more quarters. Please refer to the Help tab for more."),
                            uiOutput("rolling_input"),
                            wellPanel(
                              style = "background-color: #f8f9fa",
@@ -195,7 +195,7 @@ navbarPage(
                                         plotOutput("model7"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table7"), 
-                                        textOutput("desc7")
+                                        htmlOutput("desc7")
                                ),
                                tabPanel("ADL",
                                         headerPanel(""),
@@ -208,7 +208,7 @@ navbarPage(
                                         plotOutput("model8"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table8"),
-                                        textOutput("desc8")
+                                        htmlOutput("desc8")
                                ),
                                tabPanel("Combined ADL",
                                         headerPanel(""),
@@ -220,7 +220,7 @@ navbarPage(
                                         plotOutput("model9"),
                                         headerPanel(""),
                                         DT::dataTableOutput("table9"),
-                                        textOutput("desc9")
+                                        htmlOutput("desc9")
                                )
                              )
                              
