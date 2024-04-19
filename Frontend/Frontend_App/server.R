@@ -568,8 +568,6 @@ function(input, output, session) {
       covid_dummy[index] = -1
       covid_dummy[index + 1] = 1
     }
-    
-    
     covid_dummy_ts <- ts(covid_dummy,
                          start = c(start_y, start_q), 
                          end = c(end_y, end_q), 
@@ -577,18 +575,20 @@ function(input, output, session) {
     
     h = as.numeric(input$h)
     #h=2
-    add_data = add_data(as.numeric(input$data1), as.numeric(input$data2), as.numeric(input$data3), as.numeric(input$data4), h)
-    add_data_inputs = add_data$vector
+    add_data_inputs = add_data(input$data1, input$data2, input$data3, input$data4)$vector
+    length = length(add_data_inputs)
+    add_data_inputs = add_data_inputs[1:length]
     
     timeframe = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4", "2025 Q1", "2025 Q2", "2025 Q3", "2025 Q4")
     
-    add_data_time = timeframe[1:add_data$length]
-    edge_time = timeframe[((add_data$length)+1): ((add_data$length)+h)]
+    add_data_time = timeframe[1:length]
+    edge_time = timeframe[(length+1): (length+h)]
     total_time = c(add_data_time, edge_time)
     
-    example_endyq = as.yearqtr(tail(add_data_time, n=1))
-    #example_endq = "2023 Q4"
+    add_end_yq = as.yearqtr(tail(add_data_time, n=1))
     #example_endq = tail(add_data_time, n=1)
+    #example_endq = tail(add_data_time, n=1)
+    
     edge <- data.frame(Time = c("2024 Q1", "2024 Q2", "2024 Q3", "2024 Q4", "2025 Q1", "2025 Q2", "2025 Q3", "2025 Q4"), 
                        growth_rate = c(NA,NA,NA,NA,NA,NA,NA,NA)) %>%
       mutate(Time = as.yearqtr(Time)) %>%
@@ -597,7 +597,7 @@ function(input, output, session) {
     input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) #%>%
     #mutate(category = 2)
     
-    edge = rbind(input_data_df, tail(edge, n=8-nrow(input_data_df)))
+    edge = rbind(input_data_df, tail(edge, n=8-length))
     
     all_GDP_ts <- ts(all_GDP_data, 
                      start = c(as.numeric(year(as.yearqtr("1976 Q1"))), as.numeric(quarter(as.yearqtr("1976 Q1")))),
@@ -640,8 +640,8 @@ function(input, output, session) {
     
     
     ## generating values for prediction graph
-    predictions <- GDPGrowth_ts_df_sliced %>% 
-      filter(Time > example_endyq) %>% 
+    predictions <- all_GDP_ts_df %>% 
+      filter(Time > add_end_yq) %>% 
       head(n = h) %>%
       mutate(new_growth_rate = pred_df$predictions)
     
@@ -650,7 +650,8 @@ function(input, output, session) {
       rename("growth_rate" = "new_growth_rate") %>% 
       mutate(category = 2) 
     
-    predicted_data <- rbind(actual_values_graph_add(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, example_endyq, add_data_time, add_data_inputs, h)$training_p, predicted_test_values)
+    predicted_data <- rbind(actual_values_graph_add(all_GDP_data, GDPGrowth_ts, full_GDP_growth, example_startyq, 
+                                                    add_end_yq, add_data_time, add_data_inputs, h)$training_p, predicted_test_values)
     
     # fanplot
     
@@ -719,7 +720,7 @@ function(input, output, session) {
     
     output$table2a <- DT::renderDataTable({
       
-      predictions <- GDPGrowth_ts_df_sliced %>% 
+      predictions <- all_GDP_ts_df %>% 
         #filter(Time > as.yearqtr(gsub(":", " ", input$year[2]))) %>%
         #tail(n=4) %>% 
         filter(Time >= as.yearqtr(timeframe[add_data$length+1])) %>%

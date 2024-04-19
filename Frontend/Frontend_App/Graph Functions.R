@@ -143,10 +143,7 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth,
   
  GDPGrowth_ts_df_sliced <- rbind(GDPGrowth_ts_df_sliced, edge)
  
- #input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) %>%
-   #mutate(category = 2)
-
- #GDPGrowth_ts_df_sliced <- left_join(GDPGrowth_ts_df_sliced, input_data_df)
+ #example_endyq = as.yearqtr(tail(add_data_time, n=1))
   
   training <- GDPGrowth_ts_df_sliced %>%
     filter(Time > example_startyq) %>%
@@ -165,9 +162,7 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth,
     select(Time, growth_rate) %>%
     head(h) %>%
     mutate(category = 1) 
-  
-  #input_data_df = data.frame(Time = as.yearqtr(add_data_time), growth_rate = add_data_inputs) %>%
-    #mutate(category = 2)
+
   training_p <- bind_rows(training, joining_value)
     
   original_data <- bind_rows(training_p, original_test_values)
@@ -175,8 +170,6 @@ actual_values_graph_add <- function(all_GDP_data, GDPGrowth_ts, full_GDP_growth,
   
   original_data <- original_data %>%
     filter(Time <= as.yearqtr("2023 Q4"))
-  
-
   
   return(list("original_data" = original_data, "training_p" = training_p, "joining_value" = joining_value)) 
   #original data returns true value graph, training_p returns values of training data before prediction values
@@ -247,34 +240,34 @@ rename_variable <- function(input_string) {
 }
 
 #create vector for adding data
-add_data <- function(data1, data2, data3, data4, h){
+add_data <- function(data1, data2, data3, data4){
   vector = c()
-  if (data1 != ""){
-    vector = c(vector, data1)
+  if (!is.na(data1)){
+    vector = c(vector, as.numeric(data1))
   }
   else{
-    return(vector)
+    return(na.omit(vector))
   }
   
-  if (data2 != ""){
-    vector = c(vector, data2)
+  if (!is.na(data2)){
+    vector = c(vector, as.numeric(data2))
   }
   else{
-    return(vector)
+    return(na.omit(vector))
   }
   
-  if (data3 != ""){
-    vector = c(vector, data3)
+  if (!is.na(data3)){
+    vector = c(vector, as.numeric(data3))
   }
   else{
-    return(vector)
+    return(na.omit(vector))
   }
   
-  if (data4 != ""){
-    vector = c(vector, data4)
+  if (!is.na(data4)){
+    vector = c(vector, as.numeric(data4))
   }
   else{
-    return(vector)
+    return(na.omit(vector))
   }
   #vector = vector[1:h]
   length = length(vector)
