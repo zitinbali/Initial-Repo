@@ -35,7 +35,7 @@ navbarPage(
       .tabbable > .nav > li > a[data-value='Individual ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Combined ADL Model'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Add A Predictor'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
-      .tabbable > .nav > li > a[data-value='AR'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
+      .tabbable > .nav > li > a[data-value='Revised AR'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='ADL'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li > a[data-value='Combined ADL'] {background-color: #transparent;  color:#79818c; border: 1px solid #79818c}
       .tabbable > .nav > li[class=active]    > a {background-color: #5092cf; color: white; border: transparent}
@@ -186,7 +186,7 @@ navbarPage(
                              style = "background-color: #f8f9fa",
                              tabsetPanel(
                                type = "pills",
-                               tabPanel("AR",
+                               tabPanel("Revised AR",
                                         headerPanel(""),
                                         actionButton("button7", "Show Prediction",
                                               style="background-color: #79818c"),
